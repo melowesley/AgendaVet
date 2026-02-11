@@ -1,0 +1,316 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAdminCheck } from '@/hooks/useAdminCheck';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import {
+  ArrowLeft, Stethoscope, FlaskConical, FileText, Calendar,
+  PawPrint, Weight, Syringe, ClipboardList, Camera, MessageSquare,
+  Video, Plus, Printer, ChevronDown, ChevronUp,
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { motion } from 'framer-motion';
+
+interface Pet {
+  id: string;
+  name: string;
+  type: string;
+  breed: string | null;
+  age: string | null;
+  weight: string | null;
+  notes: string | null;
+}
+
+interface OwnerProfile {
+  full_name: string | null;
+  phone: string | null;
+}
+
+interface TimelineEntry {
+  id: string;
+  type: 'appointment';
+  title: string;
+  date: string;
+  time: string;
+  status: string;
+  description?: string;
+  veterinarian?: string | null;
+  attendance_type?: string | null;
+  admin_notes_raw?: string | null;
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Pendente',
+  confirmed: 'Confirmado',
+  completed: 'Concluído',
+  cancelled: 'Cancelado',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  pending: 'border-l-yellow-500',
+  confirmed: 'border-l-blue-500',
+  completed: 'border-l-green-500',
+  cancelled: 'border-l-red-500',
+};
+
+const STATUS_DOT: Record<string, string> = {
+  pending: 'bg-yellow-500',
+  confirmed: 'bg-blue-500',
+  completed: 'bg-green-500',
+  cancelled: 'bg-red-500',
+};
+
+const ACTION_BUTTONS = [
+  { label: 'Atendimento', icon: Stethoscope, bg: 'bg-sky-500 hover:bg-sky-600' },
+  { label: 'Peso', icon: Weight, bg: 'bg-amber-600 hover:bg-amber-700' },
+  { label: 'Patologia', icon: FlaskConical, bg: 'bg-purple-600 hover:bg-purple-700' },
+  { label: 'Documento', icon: FileText, bg: 'bg-green-600 hover:bg-green-700' },
+  { label: 'Exame', icon: FlaskConical, bg: 'bg-rose-500 hover:bg-rose-600' },
+  { label: 'Fotos', icon: Camera, bg: 'bg-teal-600 hover:bg-teal-700' },
+  { label: 'Vacina', icon: Syringe, bg: 'bg-amber-500 hover:bg-amber-600' },
+  { label: 'Receita', icon: ClipboardList, bg: 'bg-violet-500 hover:bg-violet-600' },
+  { label: 'Observações', icon: MessageSquare, bg: 'bg-gray-500 hover:bg-gray-600' },
+  { label: 'Vídeo', icon: Video, bg: 'bg-emerald-600 hover:bg-emerald-700' },
+  { label: 'Internação', icon: Plus, bg: 'bg-red-700 hover:bg-red-800' },
+];
+
+const AdminPetProfile = () => {
+  const { petId } = useParams<{ petId: string }>();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { isAdmin, isLoading: adminLoading } = useAdminCheck();
+  const [pet, setPet] = useState<Pet | null>(null);
+  const [owner, setOwner] = useState<OwnerProfile | null>(null);
+  const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!adminLoading && !isAdmin) {
+      navigate('/admin/login');
+    }
+  }, [isAdmin, adminLoading, navigate]);
+
+  useEffect(() => {
+    if (petId && isAdmin) loadPetData();
+  }, [petId, isAdmin]);
+
+  const loadPetData = async () => {
+    setLoading(true);
+    const [petRes, apptRes] = await Promise.all([
+      supabase.from('pets').select('*').eq('id', petId!).single(),
+      supabase
+        .from('appointment_requests')
+        .select('id, reason, status, preferred_date, preferred_time, scheduled_date, scheduled_time, veterinarian, admin_notes, service:services(name)')
+        .eq('pet_id', petId!)
+        .order('created_at', { ascending: false }),
+    ]);
+
+    if (petRes.data) {
+      setPet(petRes.data);
+      // Fetch owner profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, phone')
+        .eq('user_id', petRes.data.user_id)
+        .single();
+      if (profileData) setOwner(profileData);
+    }
+
+    type AppointmentRow = {
+      id: string;
+      reason: string;
+      status: string;
+      preferred_date: string;
+      preferred_time: string;
+      scheduled_date: string | null;
+      scheduled_time: string | null;
+      veterinarian: string | null;
+      admin_notes: string | null;
+      service: { name?: string | null } | null;
+    };
+
+    const entries: TimelineEntry[] = (apptRes.data || []).map((raw) => {
+      const a = raw as AppointmentRow;
+      let attendanceType: string | null = null;
+      try {
+        const parsed = a.admin_notes ? JSON.parse(a.admin_notes) : null;
+        attendanceType = parsed?.tipo_atendimento || null;
+      } catch { /* ignore parse errors */ }
+      return {
+        id: a.id,
+        type: 'appointment' as const,
+        title: a.service?.name || 'Consulta',
+        date: a.scheduled_date || a.preferred_date,
+        time: a.scheduled_time || a.preferred_time,
+        status: a.status,
+        description: a.reason,
+        veterinarian: a.veterinarian,
+        attendance_type: attendanceType,
+        admin_notes_raw: a.admin_notes,
+      };
+    });
+
+    setTimeline(entries);
+    setLoading(false);
+  };
+
+  const handleAction = (label: string) => {
+    toast({ title: 'Em breve', description: `Funcionalidade "${label}" será implementada em breve.` });
+  };
+
+  if (adminLoading || loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (!pet) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Pet não encontrado.</p>
+      </div>
+    );
+  }
+
+  const emoji = pet.type === 'dog' ? '🐕' : '🐱';
+
+  // Group by year
+  const grouped = timeline.reduce<Record<string, TimelineEntry[]>>((acc, entry) => {
+    const year = new Date(entry.date).getFullYear().toString();
+    if (!acc[year]) acc[year] = [];
+    acc[year].push(entry);
+    return acc;
+  }, {});
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-50 backdrop-blur-md bg-background/80 border-b border-border">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
+              <ArrowLeft size={20} />
+            </Button>
+            <div className="text-3xl">{emoji}</div>
+            <div>
+              <h1 className="font-bold text-lg">{pet.name}</h1>
+              <p className="text-xs text-muted-foreground">
+                {pet.type === 'dog' ? 'Cachorro' : 'Gato'}
+                {pet.breed && ` • ${pet.breed}`}
+                {pet.age && ` • ${pet.age}`}
+                {pet.weight && ` • ${pet.weight}`}
+              </p>
+            </div>
+          </div>
+          <div className="text-right text-sm">
+            {owner && (
+              <div>
+                <p className="font-medium">{owner.full_name || 'Tutor'}</p>
+                <p className="text-xs text-muted-foreground">{owner.phone || ''}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Timeline */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-base flex items-center gap-2">
+                <Calendar size={18} />
+                Linha do Tempo
+              </h2>
+              <Button variant="outline" size="sm">
+                <Printer size={14} className="mr-1" />
+                Imprimir
+              </Button>
+            </div>
+            <ScrollArea className="max-h-[calc(100vh-220px)]">
+              {timeline.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="py-8 text-center">
+                    <PawPrint className="mx-auto mb-2 text-muted-foreground" size={28} />
+                    <p className="text-sm text-muted-foreground">Nenhum registro ainda.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                Object.entries(grouped)
+                  .sort(([a], [b]) => Number(b) - Number(a))
+                  .map(([year, entries]) => (
+                    <div key={year} className="mb-5">
+                      <p className="text-lg font-bold mb-3">{year}</p>
+                      <div className="space-y-3">
+                        {entries.map((entry) => (
+                          <div
+                            key={entry.id}
+                            className={`bg-card border rounded-lg p-3 border-l-4 ${STATUS_COLORS[entry.status] || 'border-l-muted'} flex items-start gap-3`}
+                          >
+                            <div className={`mt-1 w-2.5 h-2.5 rounded-full flex-shrink-0 ${STATUS_DOT[entry.status] || 'bg-muted-foreground'}`} />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-xs font-medium text-primary">
+                                {format(new Date(entry.date), "dd/MM", { locale: ptBR })} às {entry.time}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-semibold">{entry.title}</p>
+                                {entry.attendance_type && (
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    {entry.attendance_type === 'consulta' ? 'Consulta' :
+                                     entry.attendance_type === 'avaliacao_cirurgica' ? 'Aval. Cirúrgica' :
+                                     entry.attendance_type === 'cirurgia' ? 'Cirurgia' :
+                                     entry.attendance_type === 'retorno' ? 'Retorno' : entry.attendance_type}
+                                  </Badge>
+                                )}
+                              </div>
+                              {entry.description && (
+                                <p className="text-xs text-muted-foreground truncate">{entry.description}</p>
+                              )}
+                              {entry.veterinarian && (
+                                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                  <Stethoscope size={10} /> {entry.veterinarian}
+                                </p>
+                              )}
+                            </div>
+                            <Badge variant="outline" className="text-[10px] flex-shrink-0">
+                              {STATUS_LABELS[entry.status]}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+              )}
+            </ScrollArea>
+          </motion.div>
+
+          {/* Action Grid */}
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+            <h2 className="font-bold text-base mb-4">Adicionar</h2>
+            <div className="grid grid-cols-3 gap-3">
+              {ACTION_BUTTONS.map((btn) => (
+                <button
+                  key={btn.label}
+                  onClick={() => handleAction(btn.label)}
+                  className={`${btn.bg} text-white rounded-xl p-4 flex flex-col items-center gap-2 transition-transform hover:scale-105 active:scale-95 shadow-sm`}
+                >
+                  <btn.icon size={26} />
+                  <span className="text-xs font-semibold">{btn.label}</span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default AdminPetProfile;
