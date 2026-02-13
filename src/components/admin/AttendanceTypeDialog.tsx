@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Stethoscope, Scissors, RotateCcw, ClipboardCheck } from 'lucide-react';
+import { Stethoscope, Scissors, RotateCcw, ClipboardCheck, Scale, TestTube, FileText, Syringe } from 'lucide-react';
 import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
 import { ConsultaDialog } from './ConsultaDialog';
 import { AvaliacaoCirurgicaDialog } from './AvaliacaoCirurgicaDialog';
 import { CirurgiaDialog } from './CirurgiaDialog';
 import { RetornoDialog } from './RetornoDialog';
+import { PesoDialog } from './PesoDialog';
+import { ExameDialog } from './ExameDialog';
+import { DocumentoDialog } from './DocumentoDialog';
+import { VacinaDialog } from './VacinaDialog';
+import { ReceitaDialog } from './ReceitaDialog';
 
 interface AttendanceTypeDialogProps {
   open: boolean;
@@ -14,10 +19,12 @@ interface AttendanceTypeDialogProps {
 }
 
 const ATTENDANCE_TYPES = [
-  { key: 'consulta', label: 'Consulta', icon: Stethoscope, description: 'Atendimento clínico com anamnese completa', color: 'bg-sky-500 hover:bg-sky-600' },
-  { key: 'avaliacao_cirurgica', label: 'Avaliação Cirúrgica', icon: ClipboardCheck, description: 'Avaliação pré-operatória do paciente', color: 'bg-amber-500 hover:bg-amber-600' },
-  { key: 'cirurgia', label: 'Cirurgia', icon: Scissors, description: 'Procedimento cirúrgico', color: 'bg-rose-500 hover:bg-rose-600' },
-  { key: 'retorno', label: 'Retorno', icon: RotateCcw, description: 'Retorno de consulta anterior', color: 'bg-emerald-500 hover:bg-emerald-600' },
+  { key: 'consulta', label: 'Atendimento', icon: Stethoscope, description: 'Atendimento clínico com anamnese completa', color: 'bg-sky-500 hover:bg-sky-600' },
+  { key: 'peso', label: 'Peso', icon: Scale, description: 'Registro de peso do paciente', color: 'bg-orange-500 hover:bg-orange-600' },
+  { key: 'exame', label: 'Exame', icon: TestTube, description: 'Solicitação e registro de exames', color: 'bg-rose-500 hover:bg-rose-600' },
+  { key: 'documento', label: 'Documento', icon: FileText, description: 'Atestados, laudos e declarações', color: 'bg-emerald-500 hover:bg-emerald-600' },
+  { key: 'vacina', label: 'Vacina', icon: Syringe, description: 'Registro de vacinação', color: 'bg-cyan-500 hover:bg-cyan-600' },
+  { key: 'receita', label: 'Receita', icon: FileText, description: 'Prescrição médica', color: 'bg-pink-500 hover:bg-pink-600' },
 ];
 
 export const AttendanceTypeDialog = ({ open, onClose, request }: AttendanceTypeDialogProps) => {
@@ -36,6 +43,21 @@ export const AttendanceTypeDialog = ({ open, onClose, request }: AttendanceTypeD
 
   if (selectedType === 'consulta') {
     return <ConsultaDialog open={true} onClose={handleClose} onBack={handleBack} request={request} />;
+  }
+  if (selectedType === 'peso') {
+    return <PesoDialog open={true} onClose={handleClose} onBack={handleBack} request={request} />;
+  }
+  if (selectedType === 'exame') {
+    return <ExameDialog open={true} onClose={handleClose} onBack={handleBack} request={request} />;
+  }
+  if (selectedType === 'documento') {
+    return <DocumentoDialog open={true} onClose={handleClose} onBack={handleBack} request={request} />;
+  }
+  if (selectedType === 'vacina') {
+    return <VacinaDialog open={true} onClose={handleClose} onBack={handleBack} request={request} />;
+  }
+  if (selectedType === 'receita') {
+    return <ReceitaDialog open={true} onClose={handleClose} onBack={handleBack} request={request} />;
   }
   if (selectedType === 'avaliacao_cirurgica') {
     return <AvaliacaoCirurgicaDialog open={true} onClose={handleClose} onBack={handleBack} request={request} />;
