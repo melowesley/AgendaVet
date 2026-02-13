@@ -1,5 +1,19 @@
 import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
 import type { AnamnesisData } from './anamnesisTypes';
+import {
+  SGI_OPTIONS,
+  SGU_OPTIONS,
+  SCR_OPTIONS,
+  SN_OPTIONS,
+  SME_OPTIONS,
+  SOT_OPTIONS,
+  ALIMENTACAO_OPTIONS,
+  VACINACAO_OPTIONS,
+  AMBIENTE_OPTIONS,
+  COMPORTAMENTO_OPTIONS,
+  MUCOSAS_OPTIONS,
+  LINFONODOS_OPTIONS,
+} from '@/data/anamnesisOptions';
 
 interface ExportPdfOptions {
   request: AppointmentRequest;
@@ -11,9 +25,6 @@ interface ExportPdfOptions {
   sectionType?: 'anamnesis' | 'cirurgia' | 'retorno' | 'avaliacao' | 'generic';
 }
 
-const formatList = (arr: string[]): string =>
-  Array.isArray(arr) && arr.length > 0 ? arr.join(', ') : '—';
-
 const formatObj = (obj: Record<string, unknown>): string => {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return '—';
   const parts = Object.entries(obj)
@@ -22,69 +33,88 @@ const formatObj = (obj: Record<string, unknown>): string => {
   return parts.length > 0 ? parts.join(' | ') : '—';
 };
 
+const formatDateLong = (dateStr: string | null): string => {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+};
+
+const optionItem = (label: string, checked: boolean) => {
+  const dot = checked ? '●' : '○';
+  return `<span class="option-item"><span class="option-dot">${dot}</span>${label}</span>`;
+};
+
+const buildCheckboxGroup = (
+  title: string,
+  options: string[],
+  selected: string[]
+): string => `
+  <div class="checkbox-group">
+    <h4 class="checkbox-group-title">${title}</h4>
+    <div class="checkbox-grid">
+      ${options.map((opt) => optionItem(opt, selected.includes(opt))).join('')}
+    </div>
+  </div>
+`;
+
 const buildAnamnesisHtml = (a: AnamnesisData): string => `
-  <div class="print-section">
-    <h3>Anamnese</h3>
-    <div class="field"><strong>Queixa principal:</strong> ${a.queixa_principal || '—'}</div>
-    <div class="field"><strong>Medicamentos em uso:</strong> ${a.medicamentos || '—'}</div>
-    <div class="subsection">
-      <h4>Sistema Gastrintestinal (SGI)</h4>
-      <p>${formatList(a.sistema_gastrintestinal)}</p>
-    </div>
-    <div class="subsection">
-      <h4>Sistema Genitourinário (SGU)</h4>
-      <p>${formatList(a.sistema_genitourinario)}</p>
-    </div>
-    <div class="subsection">
-      <h4>Sistema Cardiorrespiratório (SCR)</h4>
-      <p>${formatList(a.sistema_cardiorespiratório)}</p>
-    </div>
-    <div class="subsection">
-      <h4>Sistema Neurológico (SN)</h4>
-      <p>${formatList(a.sistema_neurologico)}</p>
-    </div>
-    <div class="subsection">
-      <h4>Sistema Musculoesquelético (SME)</h4>
-      <p>${formatList(a.sistema_musculoesqueletico)}</p>
-    </div>
-    <div class="subsection">
-      <h4>Sistema Oto-tegumentar (SOT)</h4>
-      <p>${formatList(a.sistema_ototegumentar)}</p>
-    </div>
-    ${a.sistema_ototegumentar_obs ? `<div class="field"><strong>Obs. SOT:</strong> ${a.sistema_ototegumentar_obs}</div>` : ''}
+  <div class="print-tabs">
+    <span class="tab-active">Anamnese</span>
+    <span class="tab">Manejo</span>
+    <span class="tab">Exame Físico</span>
   </div>
 
   <div class="print-section">
-    <h3>Manejo</h3>
-    <div class="subsection"><h4>Alimentação</h4><p>${formatList(a.alimentacao)}</p></div>
-    <div class="subsection"><h4>Vacinação</h4><p>${formatList(a.vacinacao)}</p></div>
-    <div class="subsection"><h4>Ambiente</h4><p>${formatList(a.ambiente)}</p></div>
-    <div class="subsection"><h4>Comportamento</h4><p>${formatList(a.comportamento)}</p></div>
-    <div class="field"><strong>Ectoparasitas:</strong> ${formatObj(a.ectoparasitas)}</div>
-    <div class="field"><strong>Vermífugo:</strong> ${a.vermifugo || '—'}</div>
-    <div class="field"><strong>Banho:</strong> ${formatObj(a.banho)}</div>
-    <div class="field"><strong>Acesso à rua:</strong> ${formatObj(a.acesso_rua)}</div>
-    <div class="field"><strong>Contactantes:</strong> ${formatObj(a.contactantes)}</div>
+    <div class="field-block">
+      <label>Queixa Principal</label>
+      <div class="field-value">${a.queixa_principal || '—'}</div>
+    </div>
+    <div class="field-block">
+      <label>Medicamentos em uso</label>
+      <div class="field-value">${a.medicamentos || '—'}</div>
+    </div>
+
+    ${buildCheckboxGroup('Sistema Gastrintestinal (SGI)', SGI_OPTIONS, a.sistema_gastrintestinal)}
+    ${buildCheckboxGroup('Sistema Genitourinário (SGU)', SGU_OPTIONS, a.sistema_genitourinario)}
+    ${buildCheckboxGroup('Sistema Cardiorrespiratório (SCR)', SCR_OPTIONS, a.sistema_cardiorespiratório)}
+    ${buildCheckboxGroup('Sistema Neurológico (SN)', SN_OPTIONS, a.sistema_neurologico)}
+    ${buildCheckboxGroup('Sistema Musculoesquelético (SME)', SME_OPTIONS, a.sistema_musculoesqueletico)}
+    ${buildCheckboxGroup('Sistema Oto-tegumentar (SOT)', SOT_OPTIONS, a.sistema_ototegumentar)}
+    ${a.sistema_ototegumentar_obs ? `<div class="field-block"><label>Obs. SOT</label><div class="field-value">${a.sistema_ototegumentar_obs}</div></div>` : ''}
   </div>
 
   <div class="print-section">
-    <h3>Exame Físico</h3>
-    <div class="subsection"><h4>Mucosas</h4><p>${formatList(a.mucosas)}</p></div>
-    <div class="subsection"><h4>Linfonodos</h4><p>${formatList(a.linfonodos)}</p></div>
-    <div class="row">
+    ${buildCheckboxGroup('Alimentação', ALIMENTACAO_OPTIONS, a.alimentacao)}
+    ${buildCheckboxGroup('Vacinação', VACINACAO_OPTIONS, a.vacinacao)}
+    ${buildCheckboxGroup('Ambiente', AMBIENTE_OPTIONS, a.ambiente)}
+    ${buildCheckboxGroup('Comportamento', COMPORTAMENTO_OPTIONS, a.comportamento)}
+    <div class="field-inline"><strong>Ectoparasitas:</strong> ${formatObj(a.ectoparasitas)}</div>
+    <div class="field-inline"><strong>Vermífugo:</strong> ${a.vermifugo || '—'}</div>
+    <div class="field-inline"><strong>Banho:</strong> ${formatObj(a.banho)}</div>
+    <div class="field-inline"><strong>Acesso à rua:</strong> ${formatObj(a.acesso_rua)}</div>
+    <div class="field-inline"><strong>Contactantes:</strong> ${formatObj(a.contactantes)}</div>
+  </div>
+
+  <div class="print-section">
+    ${buildCheckboxGroup('Mucosas', MUCOSAS_OPTIONS, a.mucosas)}
+    ${buildCheckboxGroup('Linfonodos', LINFONODOS_OPTIONS, a.linfonodos)}
+    <div class="row-inline">
       <span><strong>Hidratação:</strong> ${a.hidratacao || '—'}</span>
       <span><strong>Pulso:</strong> ${a.pulso || '—'}</span>
     </div>
-    <div class="row">
+    <div class="row-inline">
       <span><strong>Temperatura:</strong> ${a.temperatura || '—'}</span>
       <span><strong>TPC:</strong> ${a.tpc || '—'}</span>
       <span><strong>FC:</strong> ${a.fc || '—'}</span>
       <span><strong>FR:</strong> ${a.fr || '—'}</span>
     </div>
-    <div class="field"><strong>Campos pulmonares:</strong> ${a.campos_pulmonares || '—'}</div>
-    <div class="field"><strong>Bulhas cardíacas:</strong> ${a.bulhas_cardiacas || '—'}</div>
-    <div class="field"><strong>Ritmo cardíaco:</strong> ${a.ritmo_cardiaco || '—'}</div>
-    <div class="field"><strong>Palpação abdominal:</strong> ${a.palpacao_abdominal || '—'}</div>
+    <div class="field-inline"><strong>Campos pulmonares:</strong> ${a.campos_pulmonares || '—'}</div>
+    <div class="field-inline"><strong>Bulhas cardíacas:</strong> ${a.bulhas_cardiacas || '—'}</div>
+    <div class="field-inline"><strong>Ritmo cardíaco:</strong> ${a.ritmo_cardiaco || '—'}</div>
+    <div class="field-inline"><strong>Palpação abdominal:</strong> ${a.palpacao_abdominal || '—'}</div>
   </div>
 `;
 
@@ -99,7 +129,7 @@ const buildGenericSectionHtml = (sectionTitle: string, data: unknown): string =>
         let val = v;
         if (Array.isArray(v)) val = v.join(', ');
         else if (typeof v === 'object' && v !== null) val = JSON.stringify(v);
-        return `<div class="field"><strong>${label}:</strong> ${String(val)}</div>`;
+        return `<div class="field-inline"><strong>${label}:</strong> ${String(val)}</div>`;
       });
     return `
       <div class="print-section">
@@ -122,7 +152,8 @@ export const exportAppointmentPdf = ({
 }: ExportPdfOptions) => {
   if (typeof window === 'undefined') return;
 
-  const dateLabel = date ? new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+  const dateShort = date ? new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+  const dateLong = date ? formatDateLong(date) : '';
   const timeLabel = time || '';
   const tutorName = request.profile?.full_name || 'N/A';
   const tutorPhone = request.profile?.phone || 'Sem telefone';
@@ -148,74 +179,129 @@ export const exportAppointmentPdf = ({
           body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             font-size: 11px;
-            line-height: 1.35;
+            line-height: 1.4;
             color: #1f2937;
             margin: 0;
-            padding: 14px 18px;
+            padding: 16px 20px;
           }
-          @page {
-            size: A4;
-            margin: 14mm;
-          }
+          @page { size: A4; margin: 12mm; }
           @media print {
             body { padding: 0; }
-            .no-print { display: none !important; }
             .print-section { break-inside: avoid; page-break-inside: avoid; }
           }
+
           .header-clinic {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
             margin-bottom: 12px;
             padding-bottom: 8px;
-            border-bottom: 1px solid #d1d5db;
+            border-bottom: 1px solid #e5e7eb;
           }
           .clinic-name { font-size: 14px; font-weight: 700; }
           .muted { color: #6b7280; font-size: 10px; }
-          h1 { font-size: 15px; margin: 0 0 10px; font-weight: 700; }
-          .meta-grid {
+
+          h1 {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 0 0 12px;
+          }
+
+          .tutor-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px 24px;
+            gap: 12px 24px;
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+          }
+          .tutor-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+          }
+          .tutor-icon {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            background: #9ca3af;
+            border-radius: 4px;
+          }
+          .tutor-item .main { font-weight: 500; font-size: 11px; }
+          .tutor-item .sub { font-size: 10px; color: #6b7280; }
+
+          .print-tabs {
+            display: flex;
+            gap: 0;
             margin-bottom: 12px;
-            padding: 10px 12px;
-            background: #f9fafb;
             border: 1px solid #e5e7eb;
             border-radius: 6px;
+            overflow: hidden;
           }
-          .meta-grid .label { font-size: 10px; color: #6b7280; }
-          .meta-grid .value { font-weight: 500; }
+          .print-tabs .tab, .print-tabs .tab-active {
+            flex: 1;
+            padding: 8px 12px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 500;
+          }
+          .print-tabs .tab { background: #f9fafb; color: #6b7280; }
+          .print-tabs .tab-active { background: #fff; color: #111; border-bottom: 2px solid #111; }
+
           .print-section {
-            margin-bottom: 14px;
-            padding-bottom: 10px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
             border-bottom: 1px solid #e5e7eb;
           }
           .print-section:last-of-type { border-bottom: none; }
-          .print-section h3 {
-            font-size: 12px;
-            font-weight: 700;
+
+          .field-block { margin-bottom: 10px; }
+          .field-block label {
+            display: block;
+            font-size: 10px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 4px;
+          }
+          .field-value {
+            padding: 8px 10px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 11px;
+            min-height: 36px;
+          }
+
+          .checkbox-group { margin-bottom: 12px; }
+          .checkbox-group-title {
+            font-size: 11px;
+            font-weight: 600;
             margin: 0 0 8px;
             color: #374151;
           }
-          .print-section h4 {
-            font-size: 10px;
-            font-weight: 600;
-            margin: 4px 0 2px;
-            color: #6b7280;
+          .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px 16px;
           }
-          .print-section .field, .print-section p {
-            margin: 2px 0;
-            font-size: 10px;
-          }
-          .print-section .row {
+          .option-item {
             display: flex;
-            flex-wrap: wrap;
-            gap: 12px 20px;
-            margin: 4px 0;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            text-transform: capitalize;
           }
-          .print-section .row span { font-size: 10px; }
-          .subsection { margin-bottom: 4px; }
-          .subsection p { margin: 0; }
+          .option-dot {
+            font-size: 12px;
+            line-height: 1;
+            flex-shrink: 0;
+          }
+
+          .field-inline, .row-inline { margin: 4px 0; font-size: 10px; }
+          .row-inline { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+
           .signature-block {
             margin-top: 24px;
             padding-top: 12px;
@@ -237,32 +323,40 @@ export const exportAppointmentPdf = ({
             <p class="muted">Endereço / Contato da clínica</p>
           </div>
           <div class="muted" style="text-align:right;">
-            ${dateLabel} às ${timeLabel}
+            ${dateShort} às ${timeLabel}
           </div>
         </div>
 
         <h1>${title} — ${petName}</h1>
 
-        <div class="meta-grid">
-          <div>
-            <div class="label">Tutor</div>
-            <div class="value">${tutorName}</div>
+        <div class="tutor-grid">
+          <div class="tutor-item">
+            <div class="tutor-icon"></div>
+            <div>
+              <div class="main">${dateLong}</div>
+              <div class="sub">${timeLabel}</div>
+            </div>
           </div>
-          <div>
-            <div class="label">Telefone</div>
-            <div class="value">${tutorPhone}</div>
+          <div class="tutor-item">
+            <div class="tutor-icon"></div>
+            <div>
+              <div class="main">${tutorName}</div>
+              <div class="sub">${tutorPhone}</div>
+            </div>
           </div>
-          <div>
-            <div class="label">Paciente</div>
-            <div class="value">${petName}</div>
+          <div class="tutor-item">
+            <div class="tutor-icon"></div>
+            <div>
+              <div class="main">${petName}</div>
+              <div class="sub">${petType} — ${petBreed}</div>
+            </div>
           </div>
-          <div>
-            <div class="label">Espécie / Raça</div>
-            <div class="value">${petType} — ${petBreed}</div>
-          </div>
-          <div>
-            <div class="label">Motivo</div>
-            <div class="value">${reason}</div>
+          <div class="tutor-item">
+            <div class="tutor-icon"></div>
+            <div>
+              <div class="main">Motivo</div>
+              <div class="sub">${reason}</div>
+            </div>
           </div>
         </div>
 
