@@ -12,16 +12,6 @@ import { ConsultaDialog } from './ConsultaDialog';
 import { AvaliacaoCirurgicaDialog } from './AvaliacaoCirurgicaDialog';
 import { CirurgiaDialog } from './CirurgiaDialog';
 import { RetornoDialog } from './RetornoDialog';
-import { PesoDialog } from './PesoDialog';
-import { PatologiaDialog } from './PatologiaDialog';
-import { DocumentoDialog } from './DocumentoDialog';
-import { ExameDialog } from './ExameDialog';
-import { FotosDialog } from './FotosDialog';
-import { VacinaDialog } from './VacinaDialog';
-import { ReceitaDialog } from './ReceitaDialog';
-import { ObservacoesDialog } from './ObservacoesDialog';
-import { VideoDialog } from './VideoDialog';
-import { InternacaoDialog } from './InternacaoDialog';
 import { format } from 'date-fns';
 
 interface AttendanceTypeDialogProps {
@@ -30,6 +20,7 @@ interface AttendanceTypeDialogProps {
   request?: AppointmentRequest;
   petId?: string;
   petName?: string;
+  onSelectType?: (type: string) => void;
 }
 
 const ATTENDANCE_TYPES = [
@@ -49,16 +40,26 @@ const ATTENDANCE_TYPES = [
   { key: 'internacao', label: 'Internação', icon: Cross, description: 'Registro de internação', color: 'bg-[#B91C1C] hover:bg-[#A90C0C]', isAttendance: false },
 ];
 
-export const AttendanceTypeDialog = ({ open, onClose, request, petId, petName }: AttendanceTypeDialogProps) => {
+export const AttendanceTypeDialog = ({ open, onClose, request, petId, petName, onSelectType }: AttendanceTypeDialogProps) => {
   const { toast } = useToast();
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [tempRequest, setTempRequest] = useState<AppointmentRequest | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSelect = async (key: string) => {
-    // Se for um tipo de atendimento e não houver request, criar um temporário
     const type = ATTENDANCE_TYPES.find(t => t.key === key);
-    if (type?.isAttendance && !request && petId) {
+    
+    // Se não for um tipo de atendimento, fechar este diálogo e abrir o diálogo específico
+    if (!type?.isAttendance) {
+      if (onSelectType) {
+        onSelectType(key);
+      }
+      onClose();
+      return;
+    }
+
+    // Se for um tipo de atendimento e não houver request, criar um temporário
+    if (type.isAttendance && !request && petId) {
       setLoading(true);
       try {
         // Buscar dados do pet
@@ -118,7 +119,8 @@ export const AttendanceTypeDialog = ({ open, onClose, request, petId, petName }:
       } finally {
         setLoading(false);
       }
-    } else {
+    } else if (request) {
+      // Se já tem request, apenas definir o tipo selecionado
       setSelectedType(key);
     }
   };
@@ -150,37 +152,6 @@ export const AttendanceTypeDialog = ({ open, onClose, request, petId, petName }:
     return <RetornoDialog open={true} onClose={handleClose} onBack={handleBack} request={currentRequest} />;
   }
 
-  // Outras funcionalidades que precisam apenas de petId e petName
-  if (selectedType === 'peso' && petId && petName) {
-    return <PesoDialog open={true} onClose={handleClose} petId={petId} petName={petName} />;
-  }
-  if (selectedType === 'patologia' && petId && petName) {
-    return <PatologiaDialog open={true} onClose={handleClose} petId={petId} petName={petName} />;
-  }
-  if (selectedType === 'documento' && petId && petName) {
-    return <DocumentoDialog open={true} onClose={handleClose} petId={petId} petName={petName} />;
-  }
-  if (selectedType === 'exame' && petId && petName) {
-    return <ExameDialog open={true} onClose={handleClose} petId={petId} petName={petName} />;
-  }
-  if (selectedType === 'fotos' && petId && petName) {
-    return <FotosDialog open={true} onClose={handleClose} petId={petId} petName={petName} />;
-  }
-  if (selectedType === 'vacina' && petId && petName) {
-    return <VacinaDialog open={true} onClose={handleClose} petId={petId} petName={petName} />;
-  }
-  if (selectedType === 'receita' && petId && petName) {
-    return <ReceitaDialog open={true} onClose={handleClose} petId={petId} petName={petName} />;
-  }
-  if (selectedType === 'observacoes' && petId && petName) {
-    return <ObservacoesDialog open={true} onClose={handleClose} petId={petId} petName={petName} />;
-  }
-  if (selectedType === 'video' && petId && petName) {
-    return <VideoDialog open={true} onClose={handleClose} petId={petId} petName={petName} />;
-  }
-  if (selectedType === 'internacao' && petId && petName) {
-    return <InternacaoDialog open={true} onClose={handleClose} petId={petId} petName={petName} />;
-  }
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
