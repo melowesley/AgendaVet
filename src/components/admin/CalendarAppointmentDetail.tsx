@@ -75,6 +75,8 @@ export const CalendarAppointmentDetail = ({ request, open, onClose }: CalendarAp
         open={showAttendance}
         onClose={() => { setShowAttendance(false); onClose(); }}
         request={request}
+        petId={request.pet.id}
+        petName={request.pet.name}
       />
     </>
   );

@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 import { RequestAppointmentDialog } from '@/components/client/RequestAppointmentDialog';
+import { ClientLayout } from '@/components/layout/ClientLayout';
 
 interface Pet {
   id: string;
@@ -109,7 +110,7 @@ const PetProfile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="h-full bg-background flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Carregando...</div>
       </div>
     );
@@ -117,7 +118,7 @@ const PetProfile = () => {
 
   if (!pet) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="h-full bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Pet não encontrado.</p>
       </div>
     );
@@ -135,9 +136,10 @@ const PetProfile = () => {
 
 
   return (
-    <div className="min-h-screen bg-background">
+    <ClientLayout>
+    <div className="h-full flex flex-col overflow-hidden bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-background/80 border-b border-border">
+      <header className="sticky top-0 z-50 backdrop-blur-md bg-background/80 border-b border-border mb-4 pb-4">
         <div className="container max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/cliente')}>
             <ArrowLeft size={20} />
@@ -155,7 +157,7 @@ const PetProfile = () => {
         </div>
       </header>
 
-      <main className="container max-w-5xl mx-auto px-4 py-6">
+      <main className="flex-1 min-h-0 overflow-auto container max-w-5xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Timeline - Left */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
@@ -232,6 +234,7 @@ const PetProfile = () => {
         onAppointmentRequested={handleAppointmentRequested}
       />
     </div>
+    </ClientLayout>
   );
 };
 

@@ -1,19 +1,25 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { FlaskConical, Save, Trash2, Edit2 } from 'lucide-react';
+import { FlaskConical, Save, Trash2, Edit2, ArrowLeft, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { exportPetRecordPdf } from './exportPetRecordPdf';
+import { logPetAdminHistory } from './petAdminHistory';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
+import { generatePatologiaSummary } from '@/utils/procedureSummaries';
 
 interface PatologiaDialogProps {
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
+  onSuccess?: () => void;
   petId: string;
   petName: string;
 }
@@ -28,7 +34,7 @@ interface Pathology {
   notes: string | null;
 }
 
-export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDialogProps) => {
+export const PatologiaDialog = ({ open, onClose, onBack, onSuccess, petId, petName }: PatologiaDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<Pathology[]>([]);
@@ -39,6 +45,7 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
   const [treatment, setTreatment] = useState('');
   const [notes, setNotes] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   useEffect(() => {
     if (open) loadRecords();
@@ -79,16 +86,35 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
       } else {
+        const historyDetails = generatePatologiaSummary(name, diagnosisDate, status, description, treatment);
+        await logPetAdminHistory({
+          petId,
+          module: 'patologia',
+          action: 'update',
+          title: 'Ficha de Patologia',
+          details: historyDetails,
+          sourceTable: 'pet_pathologies',
+          sourceId: editingId,
+        });
+        setHistoryRefresh((prev) => prev + 1);
+        onSuccess?.();
         toast({ title: 'Sucesso', description: 'Patologia atualizada com sucesso!' });
         resetForm();
         loadRecords();
       }
     } else {
       // Criar novo registro
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !userData.user?.id) {
+        toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.from('pet_pathologies').insert({
         pet_id: petId,
-        user_id: userData.user?.id,
+        user_id: userData.user.id,
         name,
         diagnosis_date: diagnosisDate,
         status,
@@ -99,7 +125,19 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
 
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+        setLoading(false);
       } else {
+        const historyDetails = generatePatologiaSummary(name, diagnosisDate, status, description, treatment);
+        await logPetAdminHistory({
+          petId,
+          module: 'patologia',
+          action: 'create',
+          title: 'Ficha de Patologia',
+          details: historyDetails,
+          sourceTable: 'pet_pathologies',
+        });
+        setHistoryRefresh((prev) => prev + 1);
+        onSuccess?.();
         toast({ title: 'Sucesso', description: 'Patologia registrada com sucesso!' });
         resetForm();
         loadRecords();
@@ -133,16 +171,56 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'patologia',
+        action: 'delete',
+        title: 'Patologia excluída',
+        details: { registro_id: id },
+        sourceTable: 'pet_pathologies',
+        sourceId: id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
+      onSuccess?.();
       toast({ title: 'Sucesso', description: 'Registro excluído' });
       loadRecords();
     }
   };
 
+  const handleExportPdf = () => {
+    exportPetRecordPdf({
+      title: 'Patologias',
+      petName,
+      sectionTitle: 'Dados de Patologias',
+      sectionData: {
+        registro_atual: {
+          nome: name || '—',
+          data_diagnostico: diagnosisDate || '—',
+          status: status || '—',
+          descricao: description || '—',
+          tratamento: treatment || '—',
+          observacoes: notes || '—',
+        },
+        historico: records.map((record) => ({
+          nome: record.name,
+          data_diagnostico: record.diagnosis_date,
+          status: record.status,
+          descricao: record.description || '—',
+          tratamento: record.treatment || '—',
+          observacoes: record.notes || '—',
+        })),
+      },
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <PageDialogContent className="p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack || onClose}>
+              <ArrowLeft size={16} />
+            </Button>
             <FlaskConical className="h-5 w-5" />
             Patologias - {petName}
           </DialogTitle>
@@ -166,6 +244,8 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: Diabetes, Dermatite..."
+                  spellCheck={true}
+                  lang="pt-BR"
                 />
               </div>
               <div>
@@ -199,6 +279,8 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Descrição da patologia..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div>
@@ -209,6 +291,8 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
                 onChange={(e) => setTreatment(e.target.value)}
                 placeholder="Tratamento prescrito..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div>
@@ -219,12 +303,18 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Observações adicionais..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Salvando...' : editingId ? 'Atualizar' : 'Adicionar Patologia'}
+                {loading ? 'Salvando...' : 'Salvar Informações'}
+              </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
               </Button>
               {editingId && (
                 <Button variant="outline" onClick={resetForm}>
@@ -284,8 +374,15 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
               )}
             </div>
           </div>
+
+          <PetAdminHistorySection
+            petId={petId}
+            module="patologia"
+            title="Histórico Detalhado de Patologias"
+            refreshKey={historyRefresh}
+          />
         </div>
-      </DialogContent>
+      </PageDialogContent>
     </Dialog>
   );
 };

@@ -141,6 +141,7 @@ export const UserManagement = () => {
             </Button>
           </div>
 
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -173,9 +174,11 @@ export const UserManagement = () => {
               )}
             </TableBody>
           </Table>
+          </div>
         </TabsContent>
 
         <TabsContent value="audit" className="space-y-4">
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -209,6 +212,7 @@ export const UserManagement = () => {
               )}
             </TableBody>
           </Table>
+          </div>
         </TabsContent>
       </Tabs>
 

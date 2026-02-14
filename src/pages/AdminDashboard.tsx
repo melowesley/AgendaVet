@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { LogOut, Calendar, Users, Clock, PawPrint, BarChart3, Shield } from 'lucide-react';
+import { Clock, Calendar, Users, PawPrint } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AppointmentRequestsTable } from '@/components/admin/AppointmentRequestsTable';
 import { ServicesManager } from '@/components/admin/ServicesManager';
@@ -13,192 +10,200 @@ import { AdminStatsCard } from '@/components/admin/AdminStatsCard';
 import { CalendarView } from '@/components/admin/CalendarView';
 import { AnalyticsDashboard } from '@/components/admin/AnalyticsDashboard';
 import { UserManagement } from '@/components/admin/UserManagement';
+import { PetsListTab } from '@/components/admin/PetsListTab';
+import { TutorsListTab } from '@/components/admin/TutorsListTab';
 import { useAppointmentRequests } from '@/hooks/useAppointmentRequests';
+import { AdminLayout } from '@/components/layout/AdminLayout';
+
+const VALID_TABS = ['patients', 'tutors', 'calendar', 'requests', 'analytics', 'users', 'services'] as const;
+type AdminTab = (typeof VALID_TABS)[number];
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { isAdmin, isLoading } = useAdminCheck();
   const { requests, refetch: refetchRequests } = useAppointmentRequests();
+
+  const tabFromUrl = searchParams.get('tab') || 'patients';
+  const activeTab: AdminTab = VALID_TABS.includes(tabFromUrl as AdminTab)
+    ? (tabFromUrl as AdminTab)
+    : 'patients';
+
   const [stats, setStats] = useState({
     pendingRequests: 0,
     confirmedToday: 0,
     totalClients: 0,
-    totalPets: 0
+    totalPets: 0,
   });
 
   useEffect(() => {
     if (!isLoading && !isAdmin) {
       toast({
-        title: "Acesso negado",
-        description: "Você não tem permissão para acessar esta área.",
-        variant: "destructive"
+        title: 'Acesso negado',
+        description: 'Você não tem permissão para acessar esta área.',
+        variant: 'destructive',
       });
       navigate('/admin/login');
     }
   }, [isAdmin, isLoading, navigate, toast]);
 
   useEffect(() => {
-    if (isAdmin) {
-      fetchStats();
-    }
+    if (isAdmin) fetchStats();
   }, [isAdmin]);
+
+  // Manter cards em sincronia com a agenda: atualizar ao abrir a aba calendário
+  useEffect(() => {
+    if (isAdmin && activeTab === 'calendar') {
+      fetchStats();
+      refetchRequests();
+    }
+  }, [isAdmin, activeTab]);
 
   const fetchStats = async () => {
     const today = new Date().toISOString().split('T')[0];
-    
     const [pendingRes, confirmedRes, clientsRes, petsRes] = await Promise.all([
       supabase.from('appointment_requests').select('id', { count: 'exact' }).eq('status', 'pending'),
       supabase.from('appointment_requests').select('id', { count: 'exact' }).eq('status', 'confirmed').eq('scheduled_date', today),
       supabase.from('profiles').select('id', { count: 'exact' }),
-      supabase.from('pets').select('id', { count: 'exact' })
+      supabase.from('pets').select('id', { count: 'exact' }),
     ]);
-
     setStats({
       pendingRequests: pendingRes.count || 0,
       confirmedToday: confirmedRes.count || 0,
       totalClients: clientsRes.count || 0,
-      totalPets: petsRes.count || 0
+      totalPets: petsRes.count || 0,
     });
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="h-full flex items-center justify-center bg-teal-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-4 border-teal-200 border-t-teal-600" />
+          <span className="text-sm text-teal-600 font-medium">Carregando...</span>
+        </div>
       </div>
     );
   }
 
-  if (!isAdmin) {
-    return null;
-  }
+  if (!isAdmin) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">V</span>
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">VetAgenda Admin</h1>
-              <p className="text-sm text-muted-foreground">Painel Administrativo</p>
-            </div>
-          </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sair
-          </Button>
-        </div>
-      </header>
+    <AdminLayout>
+      <div className="flex flex-col gap-4 h-full min-h-0 overflow-auto">
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* ── Stats cards ─────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 px-3 sm:px-4 pt-3 sm:pt-4">
           <AdminStatsCard
             title="Solicitações Pendentes"
             value={stats.pendingRequests}
             icon={Clock}
-            description={stats.pendingRequests > 0 ? "Aguardando aprovação" : "Nenhuma pendente"}
+            description={stats.pendingRequests > 0 ? 'Aguardando aprovação' : 'Nenhuma pendente'}
+            variant="amber"
           />
           <AdminStatsCard
             title="Confirmadas Hoje"
             value={stats.confirmedToday}
             icon={Calendar}
             description="Consultas agendadas"
+            variant="blue"
           />
           <AdminStatsCard
             title="Total de Clientes"
             value={stats.totalClients}
             icon={Users}
             description="Clientes cadastrados"
+            variant="emerald"
           />
           <AdminStatsCard
             title="Total de Pets"
             value={stats.totalPets}
             icon={PawPrint}
             description="Animais registrados"
+            variant="violet"
           />
         </div>
 
-        <Tabs defaultValue="calendar" className="space-y-6">
-          <TabsList className="grid w-full max-w-3xl grid-cols-5">
-            <TabsTrigger value="calendar">Agenda</TabsTrigger>
-            <TabsTrigger value="requests">Solicitações</TabsTrigger>
-            <TabsTrigger value="analytics">
-              <BarChart3 className="h-4 w-4 mr-1" />
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="users">
-              <Shield className="h-4 w-4 mr-1" />
-              Usuários
-            </TabsTrigger>
-            <TabsTrigger value="services">Serviços</TabsTrigger>
-          </TabsList>
+        {/* ── Tab content ─────────────────────────────────────────────── */}
+        <div className="flex-1 min-h-0 bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-auto mx-2 sm:mx-4 mb-4">
 
-          <TabsContent value="calendar">
-            <Card>
-              <CardHeader>
-                <CardTitle>Agenda de Consultas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CalendarView requests={requests} />
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {activeTab === 'patients' && (
+            <div className="p-3 sm:p-4">
+              <h2 className="text-base font-bold text-teal-700 flex items-center gap-2 mb-4">
+                <PawPrint size={18} />
+                Pacientes
+              </h2>
+              <PetsListTab />
+            </div>
+          )}
 
-          <TabsContent value="requests">
-            <Card>
-              <CardHeader>
-                <CardTitle>Solicitações de Consulta</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <AppointmentRequestsTable onUpdate={() => { fetchStats(); refetchRequests(); }} />
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {activeTab === 'tutors' && (
+            <div className="p-3 sm:p-4">
+              <h2 className="text-base font-bold text-teal-700 flex items-center gap-2 mb-4">
+                <Users size={18} />
+                Tutores
+              </h2>
+              <TutorsListTab />
+            </div>
+          )}
 
-          <TabsContent value="analytics">
-            <Card>
-              <CardHeader>
-                <CardTitle>Dashboard Analítico</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <AnalyticsDashboard />
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {activeTab === 'calendar' && (
+            <div className="p-3 sm:p-4 min-w-0">
+              <h2 className="text-base font-bold text-teal-700 flex items-center gap-2 mb-4">
+                <Calendar size={18} />
+                Agenda de Consultas
+              </h2>
+              <CalendarView
+                requests={requests}
+                onStatusChange={() => {
+                  fetchStats();
+                  refetchRequests();
+                }}
+              />
+            </div>
+          )}
 
-          <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gerenciar Usuários e Auditoria</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <UserManagement />
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {activeTab === 'requests' && (
+            <div className="p-3 sm:p-4 overflow-x-auto">
+              <h2 className="text-base font-bold text-teal-700 mb-4">
+                Solicitações de Consulta
+              </h2>
+              <AppointmentRequestsTable
+                onUpdate={() => { fetchStats(); refetchRequests(); }}
+              />
+            </div>
+          )}
 
-          <TabsContent value="services">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gerenciar Serviços e Valores</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ServicesManager />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </main>
-    </div>
+          {activeTab === 'analytics' && (
+            <div className="p-3 sm:p-4 overflow-x-auto min-w-0">
+              <h2 className="text-base font-bold text-teal-700 mb-4">
+                Dashboard Analítico
+              </h2>
+              <AnalyticsDashboard />
+            </div>
+          )}
+
+          {activeTab === 'users' && (
+            <div className="p-3 sm:p-4 overflow-x-auto min-w-0">
+              <h2 className="text-base font-bold text-teal-700 mb-4">
+                Gerenciar Usuários e Auditoria
+              </h2>
+              <UserManagement />
+            </div>
+          )}
+
+          {activeTab === 'services' && (
+            <div className="p-3 sm:p-4 overflow-x-auto min-w-0">
+              <h2 className="text-base font-bold text-teal-700 mb-4">
+                Gerenciar Serviços e Valores
+              </h2>
+              <ServicesManager />
+            </div>
+          )}
+        </div>
+      </div>
+    </AdminLayout>
   );
 };
 

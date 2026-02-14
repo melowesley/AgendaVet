@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -14,11 +14,15 @@ import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
 import { useToast } from '@/hooks/use-toast';
 import { TutorInfoSection } from './detail/TutorInfoSection';
 import { exportAppointmentPdf } from './exportAppointmentPdf';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
+import { logPetAdminHistory } from './petAdminHistory';
+import { generateCirurgiaSummary } from '@/utils/procedureSummaries';
 
 interface CirurgiaDialogProps {
   open: boolean;
   onClose: () => void;
   onBack: () => void;
+  onSuccess?: () => void;
   request: AppointmentRequest;
 }
 
@@ -61,12 +65,13 @@ const EMPTY_CIRURGIA: CirurgiaData = {
   retorno_previsto: '',
 };
 
-export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialogProps) => {
+export const CirurgiaDialog = ({ open, onClose, onBack, onSuccess, request }: CirurgiaDialogProps) => {
   const { toast } = useToast();
   const date = request.scheduled_date || request.preferred_date;
   const time = request.scheduled_time || request.preferred_time;
   const [data, setData] = useState<CirurgiaData>(EMPTY_CIRURGIA);
   const [saving, setSaving] = useState(false);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   const updateField = <K extends keyof CirurgiaData>(field: K, value: CirurgiaData[K]) => {
     setData(prev => ({ ...prev, [field]: value }));
@@ -102,6 +107,18 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
     if (error) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
     } else {
+      const historyDetails = generateCirurgiaSummary(data);
+      await logPetAdminHistory({
+        petId: request.pet.id,
+        module: 'cirurgia',
+        action: 'procedure',
+        title: 'Ficha de Cirurgia',
+        details: historyDetails,
+        sourceTable: 'appointment_requests',
+        sourceId: request.id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
+      onSuccess?.();
       toast({ title: 'Registro cirúrgico salvo com sucesso!' });
     }
     setSaving(false);
@@ -120,7 +137,7 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0">
+      <PageDialogContent>
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack}>
@@ -130,7 +147,7 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-100px)]">
+        <ScrollArea className="">
           <div className="px-6 pb-6 space-y-5">
             <TutorInfoSection request={request} date={date} time={time} />
             <Separator />
@@ -141,6 +158,8 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
                 placeholder="Ex: Ovariohisterectomia"
                 value={data.procedimento_realizado}
                 onChange={(e) => updateField('procedimento_realizado', e.target.value)}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -151,6 +170,8 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
                 value={data.tecnica_cirurgica}
                 onChange={(e) => updateField('tecnica_cirurgica', e.target.value)}
                 rows={3}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -186,6 +207,8 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
                 value={data.protocolo_anestesico}
                 onChange={(e) => updateField('protocolo_anestesico', e.target.value)}
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -211,6 +234,8 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
                 value={data.intercorrencias}
                 onChange={(e) => updateField('intercorrencias', e.target.value)}
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -221,6 +246,8 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
                 value={data.pos_operatorio_imediato}
                 onChange={(e) => updateField('pos_operatorio_imediato', e.target.value)}
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -228,6 +255,8 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
               <Label className="font-semibold">Prescrição Pós-operatória</Label>
               <Textarea
                 placeholder="Medicamentos, curativos, restrições..."
+                spellCheck={true}
+                lang="pt-BR"
                 value={data.prescricao_pos_op}
                 onChange={(e) => updateField('prescricao_pos_op', e.target.value)}
                 rows={3}
@@ -258,9 +287,16 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
                 Exportar PDF
               </Button>
             </div>
+
+            <PetAdminHistorySection
+              petId={request.pet.id}
+              module="cirurgia"
+              title="Histórico Detalhado da Cirurgia"
+              refreshKey={historyRefresh}
+            />
           </div>
         </ScrollArea>
-      </DialogContent>
+      </PageDialogContent>
     </Dialog>
   );
 };

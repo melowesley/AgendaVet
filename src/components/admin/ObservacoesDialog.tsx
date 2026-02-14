@@ -1,19 +1,24 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { MessageSquare, Save, Trash2, Edit2 } from 'lucide-react';
+import { MessageSquare, Save, Trash2, Edit2, ArrowLeft, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { exportPetRecordPdf } from './exportPetRecordPdf';
+import { logPetAdminHistory } from './petAdminHistory';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
 
 interface ObservacoesDialogProps {
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
+  onSuccess?: () => void;
   petId: string;
   petName: string;
 }
@@ -26,7 +31,7 @@ interface Observation {
   category: string | null;
 }
 
-export const ObservacoesDialog = ({ open, onClose, petId, petName }: ObservacoesDialogProps) => {
+export const ObservacoesDialog = ({ open, onClose, onBack, onSuccess, petId, petName }: ObservacoesDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<Observation[]>([]);
@@ -35,6 +40,7 @@ export const ObservacoesDialog = ({ open, onClose, petId, petName }: Observacoes
   const [observationDate, setObservationDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [category, setCategory] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   useEffect(() => {
     if (open) loadRecords();
@@ -73,16 +79,34 @@ export const ObservacoesDialog = ({ open, onClose, petId, petName }: Observacoes
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
       } else {
+        await logPetAdminHistory({
+          petId,
+          module: 'observacoes',
+          action: 'update',
+          title: 'Ficha de Observações',
+          details: { titulo: title || '—', categoria: category || '—', data: observationDate, observacao: observation },
+          sourceTable: 'pet_observations',
+          sourceId: editingId,
+        });
+        setHistoryRefresh((prev) => prev + 1);
+        onSuccess?.();
         toast({ title: 'Sucesso', description: 'Observação atualizada com sucesso!' });
         resetForm();
         loadRecords();
       }
     } else {
       // Criar novo registro
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !userData.user?.id) {
+        toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.from('pet_observations').insert({
         pet_id: petId,
-        user_id: userData.user?.id,
+        user_id: userData.user.id,
         title: title || null,
         observation,
         observation_date: observationDate,
@@ -91,7 +115,18 @@ export const ObservacoesDialog = ({ open, onClose, petId, petName }: Observacoes
 
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+        setLoading(false);
       } else {
+        await logPetAdminHistory({
+          petId,
+          module: 'observacoes',
+          action: 'create',
+          title: 'Ficha de Observações',
+          details: { titulo: title || '—', categoria: category || '—', data: observationDate, observacao: observation },
+          sourceTable: 'pet_observations',
+        });
+        setHistoryRefresh((prev) => prev + 1);
+        onSuccess?.();
         toast({ title: 'Sucesso', description: 'Observação registrada com sucesso!' });
         resetForm();
         loadRecords();
@@ -121,6 +156,17 @@ export const ObservacoesDialog = ({ open, onClose, petId, petName }: Observacoes
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'observacoes',
+        action: 'delete',
+        title: 'Observação excluída',
+        details: { registro_id: id },
+        sourceTable: 'pet_observations',
+        sourceId: id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
+      onSuccess?.();
       toast({ title: 'Sucesso', description: 'Observação excluída' });
       loadRecords();
     }
@@ -136,11 +182,36 @@ export const ObservacoesDialog = ({ open, onClose, petId, petName }: Observacoes
     }
   };
 
+  const handleExportPdf = () => {
+    exportPetRecordPdf({
+      title: 'Observacoes',
+      petName,
+      sectionTitle: 'Historico de Observacoes',
+      sectionData: {
+        registro_atual: {
+          titulo: title || '—',
+          categoria: category || '—',
+          data: observationDate || '—',
+          observacao: observation || '—',
+        },
+        historico: records.map((record) => ({
+          titulo: record.title || '—',
+          categoria: record.category || '—',
+          data: record.observation_date,
+          observacao: record.observation,
+        })),
+      },
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <PageDialogContent className="p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack || onClose}>
+              <ArrowLeft size={16} />
+            </Button>
             <MessageSquare className="h-5 w-5" />
             Observações - {petName}
           </DialogTitle>
@@ -164,6 +235,8 @@ export const ObservacoesDialog = ({ open, onClose, petId, petName }: Observacoes
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Título da observação"
+                  spellCheck={true}
+                  lang="pt-BR"
                 />
               </div>
               <div>
@@ -199,12 +272,18 @@ export const ObservacoesDialog = ({ open, onClose, petId, petName }: Observacoes
                 onChange={(e) => setObservation(e.target.value)}
                 placeholder="Descreva a observação..."
                 rows={4}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Salvando...' : editingId ? 'Atualizar' : 'Adicionar Observação'}
+                {loading ? 'Salvando...' : 'Salvar Informações'}
+              </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
               </Button>
               {editingId && (
                 <Button variant="outline" onClick={resetForm}>
@@ -262,8 +341,15 @@ export const ObservacoesDialog = ({ open, onClose, petId, petName }: Observacoes
               )}
             </div>
           </div>
+
+          <PetAdminHistorySection
+            petId={petId}
+            module="observacoes"
+            title="Histórico Detalhado de Observações"
+            refreshKey={historyRefresh}
+          />
         </div>
-      </DialogContent>
+      </PageDialogContent>
     </Dialog>
   );
 };

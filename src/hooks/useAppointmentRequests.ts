@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface AppointmentRequest {
@@ -27,53 +27,45 @@ export interface AppointmentRequest {
   };
 }
 
+async function fetchAppointmentRequests(): Promise<AppointmentRequest[]> {
+  const { data, error } = await supabase
+    .from('appointment_requests')
+    .select(`
+      *,
+      pet:pets(id, name, type, breed)
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  const typedData = (data || []) as { user_id: string }[];
+  const userIds = [...new Set(typedData.map((r) => r.user_id))];
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('user_id, full_name, phone')
+    .in('user_id', userIds);
+
+  type ProfileRow = { user_id: string; full_name: string | null; phone: string | null };
+  const profileMap = new Map<string, { full_name: string | null; phone: string | null }>(
+    ((profiles || []) as ProfileRow[]).map((p) => [p.user_id, { full_name: p.full_name, phone: p.phone }]),
+  );
+
+  return (data || []).map((r) => ({
+    ...(r as AppointmentRequest),
+    profile: profileMap.get((r as AppointmentRequest).user_id) || { full_name: null, phone: null },
+  }));
+}
+
 export const useAppointmentRequests = () => {
-  const [requests, setRequests] = useState<AppointmentRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['appointment-requests'],
+    queryFn: fetchAppointmentRequests,
+  });
 
-  const fetchRequests = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('appointment_requests')
-      .select(`
-        *,
-        pet:pets(id, name, type, breed)
-      `)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching requests:', error);
-      setLoading(false);
-      return;
-    }
-
-    // Fetch profiles for each unique user_id
-    type RequestRow = { user_id: string };
-    const typedData = (data || []) as RequestRow[];
-    const userIds = [...new Set(typedData.map((r) => r.user_id))];
-
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('user_id, full_name, phone')
-      .in('user_id', userIds);
-
-    type ProfileRow = { user_id: string; full_name: string | null; phone: string | null };
-    const profileMap = new Map<string, { full_name: string | null; phone: string | null }>(
-      ((profiles || []) as ProfileRow[]).map((p) => [p.user_id, { full_name: p.full_name, phone: p.phone }]),
-    );
-
-    const enriched = (data || []).map((r) => ({
-      ...(r as AppointmentRequest),
-      profile: profileMap.get((r as AppointmentRequest).user_id) || { full_name: null, phone: null },
-    }));
-
-    setRequests(enriched);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
-
-  return { requests, loading, refetch: fetchRequests };
+  return {
+    requests: data ?? [],
+    loading: isLoading,
+    refetch,
+  };
 };

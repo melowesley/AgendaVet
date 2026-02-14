@@ -1,109 +1,141 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@600;700;800&display=swap');
+/* Página sem rolagem: apenas áreas internas (main, etc.) rolam */
+html, body {
+  height: 100%;
+  overflow: hidden;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+#root {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 
 @layer base {
   :root {
-    --background: 160 30% 98%;
-    --foreground: 200 25% 15%;
+    /* ── Backgrounds ─────────────────────────────────────── */
+    --background: 220 20% 98%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 200 25% 15%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 200 25% 15%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 168 55% 42%;
+    /* ── Primary — Teal veterinário ──────────────────────── */
+    --primary: 173 80% 36%;        /* teal-600  #0d9488 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 160 25% 94%;
-    --secondary-foreground: 200 25% 25%;
+    /* ── Secondary — Teal claro ───────────────────────────── */
+    --secondary: 174 42% 91%;
+    --secondary-foreground: 173 60% 20%;
 
-    --muted: 160 20% 96%;
-    --muted-foreground: 200 15% 45%;
+    /* ── Muted ───────────────────────────────────────────── */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 35 90% 55%;
+    /* ── Accent — Âmbar quente ───────────────────────────── */
+    --accent: 38 92% 50%;          /* amber-600  #D97706 */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 55%;
+    /* ── Semânticas ──────────────────────────────────────── */
+    --destructive: 0 72% 51%;      /* red-600    #DC2626 */
     --destructive-foreground: 0 0% 100%;
 
-    --success: 145 60% 42%;
+    --success: 160 84% 39%;        /* emerald-600 #059669 */
     --success-foreground: 0 0% 100%;
 
-    --warning: 40 95% 55%;
-    --warning-foreground: 30 30% 15%;
+    --warning: 38 92% 50%;         /* amber-600  #D97706 */
+    --warning-foreground: 0 0% 100%;
 
-    --border: 160 20% 88%;
-    --input: 160 20% 88%;
-    --ring: 168 55% 42%;
+    /* ── Bordas / Inputs ─────────────────────────────────── */
+    --border: 174 20% 88%;
+    --input: 174 20% 88%;
+    --ring: 173 80% 36%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 200 25% 25%;
-    --sidebar-primary: 168 55% 42%;
+    /* ── Sidebar ─────────────────────────────────────────── */
+    --sidebar-background: 174 40% 97%;
+    --sidebar-foreground: 173 60% 18%;
+    --sidebar-primary: 173 80% 36%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 160 25% 94%;
-    --sidebar-accent-foreground: 200 25% 25%;
-    --sidebar-border: 160 20% 90%;
-    --sidebar-ring: 168 55% 42%;
+    --sidebar-accent: 174 42% 91%;
+    --sidebar-accent-foreground: 173 60% 20%;
+    --sidebar-border: 174 20% 88%;
+    --sidebar-ring: 173 80% 36%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(168 55% 42%), hsl(175 50% 48%));
-    --gradient-accent: linear-gradient(135deg, hsl(35 90% 55%), hsl(28 85% 50%));
-    --gradient-hero: linear-gradient(135deg, hsl(168 55% 42%) 0%, hsl(180 45% 50%) 50%, hsl(35 90% 55%) 100%);
-    
-    --shadow-sm: 0 1px 2px 0 hsl(200 25% 15% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(200 25% 15% / 0.08), 0 2px 4px -2px hsl(200 25% 15% / 0.05);
-    --shadow-lg: 0 10px 15px -3px hsl(200 25% 15% / 0.08), 0 4px 6px -4px hsl(200 25% 15% / 0.05);
-    --shadow-card: 0 4px 20px -4px hsl(168 55% 42% / 0.12);
+    /* ── Gradientes ──────────────────────────────────────── */
+    --gradient-primary: linear-gradient(135deg, hsl(173 80% 36%), hsl(180 72% 42%));
+    --gradient-accent:  linear-gradient(135deg, hsl(38 92% 50%),  hsl(32 95% 44%));
+    --gradient-hero:    linear-gradient(135deg, hsl(173 80% 36%) 0%, hsl(180 72% 44%) 50%, hsl(160 84% 39%) 100%);
+
+    /* ── Sombras ─────────────────────────────────────────── */
+    --shadow-sm:   0 1px 2px 0 hsl(173 60% 18% / 0.05);
+    --shadow-md:   0 4px 6px -1px hsl(173 60% 18% / 0.08), 0 2px 4px -2px hsl(173 60% 18% / 0.05);
+    --shadow-lg:   0 10px 15px -3px hsl(173 60% 18% / 0.08), 0 4px 6px -4px hsl(173 60% 18% / 0.05);
+    --shadow-card: 0 4px 20px -4px hsl(173 80% 36% / 0.15);
   }
 
   .dark {
-    --background: 200 25% 10%;
-    --foreground: 160 20% 95%;
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
 
-    --card: 200 25% 12%;
-    --card-foreground: 160 20% 95%;
+    --card: 222 47% 10%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 200 25% 12%;
-    --popover-foreground: 160 20% 95%;
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 168 55% 50%;
+    --primary: 173 70% 48%;        /* teal-400  (mais claro no dark) */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 200 20% 18%;
-    --secondary-foreground: 160 20% 90%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 90%;
 
-    --muted: 200 20% 18%;
-    --muted-foreground: 160 15% 60%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 60%;
 
-    --accent: 35 90% 55%;
+    --accent: 38 92% 50%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 65% 50%;
+    --destructive: 0 63% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 145 55% 45%;
+    --success: 160 84% 44%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 40 90% 55%;
-    --warning-foreground: 30 30% 15%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 100%;
 
-    --border: 200 20% 20%;
-    --input: 200 20% 20%;
-    --ring: 168 55% 50%;
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 173 70% 48%;
 
-    --sidebar-background: 200 25% 10%;
-    --sidebar-foreground: 160 20% 90%;
-    --sidebar-primary: 168 55% 50%;
+    --sidebar-background: 222 47% 7%;
+    --sidebar-foreground: 174 40% 90%;
+    --sidebar-primary: 173 70% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 200 20% 18%;
-    --sidebar-accent-foreground: 160 20% 90%;
-    --sidebar-border: 200 20% 20%;
-    --sidebar-ring: 168 55% 50%;
+    --sidebar-accent: 174 30% 17%;
+    --sidebar-accent-foreground: 174 40% 90%;
+    --sidebar-border: 174 30% 20%;
+    --sidebar-ring: 173 70% 48%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(173 70% 48%), hsl(180 65% 54%));
+    --gradient-accent:  linear-gradient(135deg, hsl(38 92% 55%),  hsl(32 95% 48%));
+    --gradient-hero:    linear-gradient(135deg, hsl(173 70% 48%) 0%, hsl(180 65% 52%) 50%, hsl(160 80% 44%) 100%);
+
+    --shadow-card: 0 4px 20px -4px hsl(173 70% 48% / 0.20);
   }
 }
 
@@ -115,10 +147,41 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
+    /* Responsividade base para fontes */
+    font-size: clamp(14px, 1.5vw, 16px);
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Nunito', sans-serif;
+  }
+
+  /* Responsividade para elementos de texto */
+  h1 {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+  }
+
+  h2 {
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+  }
+
+  h3 {
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+  }
+
+  h4 {
+    font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+  }
+
+  /* Botões responsivos */
+  button {
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
+    padding: clamp(0.5rem, 1vw, 0.75rem) clamp(1rem, 2vw, 1.5rem);
+  }
+
+  /* Inputs responsivos */
+  input, textarea, select {
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
+    padding: clamp(0.5rem, 1vw, 0.75rem);
   }
 }
 
@@ -139,3 +202,23 @@
     box-shadow: var(--shadow-card);
   }
 }
+
+/* ── Rich Text Editor placeholder ───────────────────────── */
+.rich-editor:empty::before {
+  content: attr(data-placeholder);
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  display: block;
+}
+
+/* ── Rich Text Editor content styles ────────────────────── */
+.rich-editor b, .rich-editor strong { font-weight: 700; }
+.rich-editor i, .rich-editor em     { font-style: italic; }
+.rich-editor u                      { text-decoration: underline; }
+.rich-editor s                      { text-decoration: line-through; }
+.rich-editor sub                    { vertical-align: sub; font-size: 0.75em; }
+.rich-editor sup                    { vertical-align: super; font-size: 0.75em; }
+.rich-editor ul                     { list-style: disc; padding-left: 1.25rem; margin: 4px 0; }
+.rich-editor ol                     { list-style: decimal; padding-left: 1.25rem; margin: 4px 0; }
+.rich-editor p                      { margin: 2px 0; }
+.rich-editor div                    { margin: 2px 0; }

@@ -1,15 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PawPrint, Plus, Calendar, LogOut, User } from 'lucide-react';
+import { PawPrint, Plus, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { AddPetDialog } from '@/components/client/AddPetDialog';
 import { PetCard } from '@/components/client/PetCard';
 import { RequestAppointmentDialog } from '@/components/client/RequestAppointmentDialog';
 import { AppointmentRequestCard } from '@/components/client/AppointmentRequestCard';
+import { ClientLayout } from '@/components/layout/ClientLayout';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface Pet {
@@ -45,48 +46,99 @@ const ClientPortal = () => {
   const [requestAppointmentOpen, setRequestAppointmentOpen] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate('/auth');
-      } else {
-        setUser(session.user);
-      }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate('/auth');
-      } else {
-        setUser(session.user);
-        loadData();
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+
       const [petsResult, appointmentsResult] = await Promise.all([
-        supabase.from('pets').select('*').order('created_at', { ascending: false }),
-        supabase.from('appointment_requests').select('*, pets(*)').order('created_at', { ascending: false }),
+        supabase
+          .from('pets')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('appointment_requests')
+          .select('*, pets(*)')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }),
       ]);
 
-      if (petsResult.data) setPets(petsResult.data);
-      if (appointmentsResult.data) setAppointments(appointmentsResult.data);
+      if (petsResult.error) {
+        console.error('Error loading pets:', petsResult.error);
+        toast({
+          title: 'Erro ao carregar pets',
+          description: petsResult.error.message,
+          variant: 'destructive',
+        });
+      } else {
+        setPets(petsResult.data || []);
+      }
+
+      if (appointmentsResult.error) {
+        console.error('Error loading appointments:', appointmentsResult.error);
+        toast({
+          title: 'Erro ao carregar solicitações',
+          description: appointmentsResult.error.message,
+          variant: 'destructive',
+        });
+      } else {
+        setAppointments(appointmentsResult.data || []);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao carregar os dados. Tente novamente.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate, toast]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
-  };
+  useEffect(() => {
+    let mounted = true;
+
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!mounted) return;
+
+      if (!session) {
+        navigate('/auth');
+        return;
+      }
+
+      setUser(session.user);
+      await loadData();
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+
+      if (!session) {
+        navigate('/auth');
+      } else {
+        setUser(session.user);
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          loadData();
+        }
+      }
+    });
+
+    checkAuth();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [navigate, loadData]);
 
   const handlePetAdded = (newPet: Pet) => {
     setPets((prev) => [newPet, ...prev]);
@@ -111,47 +163,28 @@ const ClientPortal = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Carregando...</div>
+      <div className="h-full bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <p className="text-sm text-muted-foreground">Carregando portal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="h-full bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">Redirecionando para login...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-background/80 border-b border-border">
-        <div className="container max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl gradient-primary">
-                <PawPrint className="text-primary-foreground" size={24} />
-              </div>
-              <div>
-                <h1 className="font-display font-bold text-lg text-foreground">
-                  Portal do Cliente
-                </h1>
-                <p className="text-xs text-muted-foreground">
-                  {user?.email}
-                </p>
-              </div>
-            </div>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="text-muted-foreground"
-            >
-              <LogOut size={18} className="mr-2" />
-              Sair
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container max-w-4xl mx-auto px-4 py-8">
+    <ClientLayout>
+      <div className="container max-w-4xl mx-auto">
         {/* Pets Section */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
@@ -251,9 +284,8 @@ const ClientPortal = () => {
             </div>
           )}
         </motion.section>
-      </main>
 
-      {/* Dialogs */}
+        {/* Dialogs */}
       <AddPetDialog
         open={addPetOpen}
         onOpenChange={setAddPetOpen}
@@ -267,7 +299,8 @@ const ClientPortal = () => {
         pets={pets}
         onAppointmentRequested={handleAppointmentRequested}
       />
-    </div>
+      </div>
+    </ClientLayout>
   );
 };
 

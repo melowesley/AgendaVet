@@ -30,7 +30,6 @@ if ([string]::IsNullOrWhiteSpace($status)) {
         if ($LASTEXITCODE -eq 0) {
             Write-Host ""
             Write-Host "✅ Push realizado com sucesso!" -ForegroundColor Green
-            Write-Host "⏱️  Aguarde alguns segundos para o Lovable sincronizar..." -ForegroundColor Cyan
         } else {
             Write-Host "❌ Erro ao fazer push. Verifique sua conexão e permissões." -ForegroundColor Red
             exit 1
@@ -115,6 +114,5 @@ Write-Host "══════════════════════�
 Write-Host "✅ Sincronização concluída com sucesso!" -ForegroundColor Green
 Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "⏱️  Aguarde 10-30 segundos para o Lovable sincronizar automaticamente." -ForegroundColor Cyan
-Write-Host "🔗 Verifique seu projeto no Lovable em breve!" -ForegroundColor Cyan
+Write-Host "✅ Alterações enviadas para o GitHub com sucesso!" -ForegroundColor Cyan
 Write-Host ""

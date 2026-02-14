@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Clock, User, PawPrint, FileText } from 'lucide-react';
+import { Clock, User, PawPrint, FileText, MapPin } from 'lucide-react';
 import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
 
 interface TutorInfoSectionProps {
@@ -31,6 +31,15 @@ export const TutorInfoSection = ({ request, date, time }: TutorInfoSectionProps)
           <p className="text-sm text-muted-foreground">{request.profile?.phone || 'Sem telefone'}</p>
         </div>
       </div>
+      {request.profile?.address && (
+        <div className="flex items-start gap-3 sm:col-span-2">
+          <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
+          <div>
+            <p className="text-sm font-medium">Endereço</p>
+            <p className="text-sm text-muted-foreground">{request.profile.address}</p>
+          </div>
+        </div>
+      )}
       <div className="flex items-start gap-3">
         <PawPrint className="h-4 w-4 mt-0.5 text-muted-foreground" />
         <div>

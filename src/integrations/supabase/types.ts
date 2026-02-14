@@ -272,6 +272,53 @@ export type Database = {
         }
         Relationships: []
       }
+      pet_admin_history: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          module: string
+          pet_id: string
+          source_id: string | null
+          source_table: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          module: string
+          pet_id: string
+          source_id?: string | null
+          source_table?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          module?: string
+          pet_id?: string
+          source_id?: string | null
+          source_table?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_admin_history_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pet_documents: {
         Row: {
           id: string
@@ -465,6 +512,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "pet_observations_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      mortes: {
+        Row: {
+          id: string
+          pet_id: string
+          data_de_morte: string | null
+          causa: string | null
+          notas: string | null
+        }
+        Insert: {
+          id?: string
+          pet_id: string
+          data_de_morte?: string | null
+          causa?: string | null
+          notas?: string | null
+        }
+        Update: {
+          id?: string
+          pet_id?: string
+          data_de_morte?: string | null
+          causa?: string | null
+          notas?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mortes_pet_id_fkey"
             columns: ["pet_id"]
             isOneToOne: false
             referencedRelation: "pets"
@@ -825,6 +904,57 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      pet_services: {
+        Row: {
+          id: string
+          pet_id: string
+          service_id: string | null
+          service_name: string
+          price_snapshot: number
+          quantity: number
+          notes: string | null
+          added_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          pet_id: string
+          service_id?: string | null
+          service_name: string
+          price_snapshot: number
+          quantity?: number
+          notes?: string | null
+          added_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          pet_id?: string
+          service_id?: string | null
+          service_name?: string
+          price_snapshot?: number
+          quantity?: number
+          notes?: string | null
+          added_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_services_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       services: {
         Row: {

@@ -1,18 +1,23 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Video, Save, Trash2, Play } from 'lucide-react';
+import { Video, Save, Trash2, Play, ArrowLeft, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { exportPetRecordPdf } from './exportPetRecordPdf';
+import { logPetAdminHistory } from './petAdminHistory';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
 
 interface VideoDialogProps {
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
+  onSuccess?: () => void;
   petId: string;
   petName: string;
 }
@@ -26,7 +31,7 @@ interface VideoRecord {
   tags: string[] | null;
 }
 
-export const VideoDialog = ({ open, onClose, petId, petName }: VideoDialogProps) => {
+export const VideoDialog = ({ open, onClose, onBack, onSuccess, petId, petName }: VideoDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<VideoRecord[]>([]);
@@ -35,6 +40,7 @@ export const VideoDialog = ({ open, onClose, petId, petName }: VideoDialogProps)
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [tags, setTags] = useState('');
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   useEffect(() => {
     if (open) loadRecords();
@@ -57,12 +63,19 @@ export const VideoDialog = ({ open, onClose, petId, petName }: VideoDialogProps)
     }
 
     setLoading(true);
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !userData.user?.id) {
+      toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
     const tagsArray = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
     
     const { error } = await supabase.from('pet_videos').insert({
       pet_id: petId,
-      user_id: userData.user?.id,
+      user_id: userData.user.id,
       title: title || null,
       video_url: videoUrl,
       description: description || null,
@@ -72,7 +85,18 @@ export const VideoDialog = ({ open, onClose, petId, petName }: VideoDialogProps)
 
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      setLoading(false);
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'video',
+        action: 'create',
+        title: 'Ficha de Gravação',
+        details: { titulo: title || '—', data, url: videoUrl, tags: tagsArray },
+        sourceTable: 'pet_videos',
+      });
+      setHistoryRefresh((prev) => prev + 1);
+      onSuccess?.();
       toast({ title: 'Sucesso', description: 'Vídeo registrado com sucesso!' });
       resetForm();
       loadRecords();
@@ -92,16 +116,54 @@ export const VideoDialog = ({ open, onClose, petId, petName }: VideoDialogProps)
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'video',
+        action: 'delete',
+        title: 'Gravação excluída',
+        details: { registro_id: id },
+        sourceTable: 'pet_videos',
+        sourceId: id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
+      onSuccess?.();
       toast({ title: 'Sucesso', description: 'Vídeo excluído' });
       loadRecords();
     }
   };
 
+  const handleExportPdf = () => {
+    exportPetRecordPdf({
+      title: 'Videos',
+      petName,
+      sectionTitle: 'Galeria de Videos',
+      sectionData: {
+        registro_atual: {
+          titulo: title || '—',
+          data: date || '—',
+          url_video: videoUrl || '—',
+          descricao: description || '—',
+          tags: tags || '—',
+        },
+        historico: records.map((record) => ({
+          titulo: record.title || '—',
+          data: record.date,
+          url_video: record.video_url,
+          descricao: record.description || '—',
+          tags: record.tags && record.tags.length ? record.tags.join(', ') : '—',
+        })),
+      },
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <PageDialogContent className="p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack || onClose}>
+              <ArrowLeft size={16} />
+            </Button>
             <Video className="h-5 w-5" />
             Vídeos - {petName}
           </DialogTitle>
@@ -118,6 +180,8 @@ export const VideoDialog = ({ open, onClose, petId, petName }: VideoDialogProps)
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Ex: Comportamento durante consulta"
+                  spellCheck={true}
+                  lang="pt-BR"
                 />
               </div>
               <div>
@@ -147,6 +211,8 @@ export const VideoDialog = ({ open, onClose, petId, petName }: VideoDialogProps)
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Descrição do vídeo..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div>
@@ -156,12 +222,20 @@ export const VideoDialog = ({ open, onClose, petId, petName }: VideoDialogProps)
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
                 placeholder="Ex: comportamento, sintomas, tratamento"
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
-            <Button onClick={handleSave} disabled={loading} className="w-full">
-              <Save className="h-4 w-4 mr-2" />
-              {loading ? 'Salvando...' : 'Adicionar Vídeo'}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleSave} disabled={loading} className="flex-1">
+                <Save className="h-4 w-4 mr-2" />
+                {loading ? 'Salvando...' : 'Salvar Informações'}
+              </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
+            </div>
           </div>
 
           {/* Lista de Vídeos */}
@@ -223,8 +297,15 @@ export const VideoDialog = ({ open, onClose, petId, petName }: VideoDialogProps)
               )}
             </div>
           </div>
+
+          <PetAdminHistorySection
+            petId={petId}
+            module="video"
+            title="Histórico Detalhado de Vídeos"
+            refreshKey={historyRefresh}
+          />
         </div>
-      </DialogContent>
+      </PageDialogContent>
     </Dialog>
   );
 };

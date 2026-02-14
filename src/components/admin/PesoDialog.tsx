@@ -1,18 +1,24 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Weight, Save, Trash2, Edit2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Weight, Save, Trash2, Edit2, TrendingUp, TrendingDown, Minus, ArrowLeft, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
+import { exportPetRecordPdf } from './exportPetRecordPdf';
+import { logPetAdminHistory } from './petAdminHistory';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
+import { generatePesoSummary } from '@/utils/procedureSummaries';
 
 interface PesoDialogProps {
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
+  onSuccess?: () => void;
   petId: string;
   petName: string;
 }
@@ -24,7 +30,7 @@ interface WeightRecord {
   notes: string | null;
 }
 
-export const PesoDialog = ({ open, onClose, petId, petName }: PesoDialogProps) => {
+export const PesoDialog = ({ open, onClose, onBack, onSuccess, petId, petName }: PesoDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<WeightRecord[]>([]);
@@ -32,6 +38,7 @@ export const PesoDialog = ({ open, onClose, petId, petName }: PesoDialogProps) =
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [notes, setNotes] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   useEffect(() => {
     if (open) {
@@ -72,6 +79,18 @@ export const PesoDialog = ({ open, onClose, petId, petName }: PesoDialogProps) =
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
       } else {
+        const historyDetails = generatePesoSummary(weight, date, notes);
+        await logPetAdminHistory({
+          petId,
+          module: 'peso',
+          action: 'update',
+          title: 'Ficha de Peso',
+          details: historyDetails,
+          sourceTable: 'pet_weight_records',
+          sourceId: editingId,
+        });
+        setHistoryRefresh((prev) => prev + 1);
+        onSuccess?.();
         toast({ title: 'Sucesso', description: 'Registro atualizado com sucesso!' });
         resetForm();
         loadRecords();
@@ -89,6 +108,17 @@ export const PesoDialog = ({ open, onClose, petId, petName }: PesoDialogProps) =
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
       } else {
+        const historyDetails = generatePesoSummary(weight, date, notes);
+        await logPetAdminHistory({
+          petId,
+          module: 'peso',
+          action: 'create',
+          title: 'Ficha de Peso',
+          details: historyDetails,
+          sourceTable: 'pet_weight_records',
+        });
+        setHistoryRefresh((prev) => prev + 1);
+        onSuccess?.();
         toast({ title: 'Sucesso', description: 'Peso registrado com sucesso!' });
         resetForm();
         loadRecords();
@@ -125,16 +155,50 @@ export const PesoDialog = ({ open, onClose, petId, petName }: PesoDialogProps) =
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'peso',
+        action: 'delete',
+        title: 'Registro de peso excluído',
+        details: { registro_id: id },
+        sourceTable: 'pet_weight_records',
+        sourceId: id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
+      onSuccess?.();
       toast({ title: 'Sucesso', description: 'Registro excluído' });
       loadRecords();
     }
   };
 
+  const handleExportPdf = () => {
+    exportPetRecordPdf({
+      title: 'Registro de Peso',
+      petName,
+      sectionTitle: 'Dados de Peso',
+      sectionData: {
+        registro_atual: {
+          peso_kg: weight || '—',
+          data: date || '—',
+          observacoes: notes || '—',
+        },
+        historico: records.map((record) => ({
+          peso_kg: record.weight,
+          data: record.date,
+          observacoes: record.notes || '—',
+        })),
+      },
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <PageDialogContent className="p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack || onClose}>
+              <ArrowLeft size={16} />
+            </Button>
             <Weight className="h-5 w-5" />
             Registro de Peso - {petName}
           </DialogTitle>
@@ -220,12 +284,18 @@ export const PesoDialog = ({ open, onClose, petId, petName }: PesoDialogProps) =
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Observações adicionais..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Salvando...' : editingId ? 'Atualizar' : 'Adicionar Registro'}
+                {loading ? 'Salvando...' : 'Salvar Informações'}
+              </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
               </Button>
               {editingId && (
                 <Button variant="outline" onClick={resetForm}>
@@ -274,8 +344,15 @@ export const PesoDialog = ({ open, onClose, petId, petName }: PesoDialogProps) =
               )}
             </div>
           </div>
+
+          <PetAdminHistorySection
+            petId={petId}
+            module="peso"
+            title="Histórico Detalhado do Peso"
+            refreshKey={historyRefresh}
+          />
         </div>
-      </DialogContent>
+      </PageDialogContent>
     </Dialog>
   );
 };

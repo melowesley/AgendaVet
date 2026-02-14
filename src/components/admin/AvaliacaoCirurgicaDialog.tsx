@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -14,11 +14,15 @@ import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
 import { useToast } from '@/hooks/use-toast';
 import { TutorInfoSection } from './detail/TutorInfoSection';
 import { exportAppointmentPdf } from './exportAppointmentPdf';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
+import { logPetAdminHistory } from './petAdminHistory';
+import { generateAvaliacaoSummary } from '@/utils/procedureSummaries';
 
 interface AvaliacaoCirurgicaDialogProps {
   open: boolean;
   onClose: () => void;
   onBack: () => void;
+  onSuccess?: () => void;
   request: AppointmentRequest;
 }
 
@@ -64,12 +68,13 @@ const EMPTY_AVALIACAO: AvaliacaoData = {
   observacoes: '',
 };
 
-export const AvaliacaoCirurgicaDialog = ({ open, onClose, onBack, request }: AvaliacaoCirurgicaDialogProps) => {
+export const AvaliacaoCirurgicaDialog = ({ open, onClose, onBack, onSuccess, request }: AvaliacaoCirurgicaDialogProps) => {
   const { toast } = useToast();
   const date = request.scheduled_date || request.preferred_date;
   const time = request.scheduled_time || request.preferred_time;
   const [data, setData] = useState<AvaliacaoData>(EMPTY_AVALIACAO);
   const [saving, setSaving] = useState(false);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   const updateField = <K extends keyof AvaliacaoData>(field: K, value: AvaliacaoData[K]) => {
     setData(prev => ({ ...prev, [field]: value }));
@@ -106,6 +111,18 @@ export const AvaliacaoCirurgicaDialog = ({ open, onClose, onBack, request }: Ava
     if (error) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
     } else {
+      const historyDetails = generateAvaliacaoSummary(data);
+      await logPetAdminHistory({
+        petId: request.pet.id,
+        module: 'avaliacao_cirurgica',
+        action: 'procedure',
+        title: 'Ficha de Avaliação Cirúrgica',
+        details: historyDetails,
+        sourceTable: 'appointment_requests',
+        sourceId: request.id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
+      onSuccess?.();
       toast({ title: 'Avaliação cirúrgica salva com sucesso!' });
     }
     setSaving(false);
@@ -124,7 +141,7 @@ export const AvaliacaoCirurgicaDialog = ({ open, onClose, onBack, request }: Ava
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0">
+      <PageDialogContent>
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack}>
@@ -134,7 +151,7 @@ export const AvaliacaoCirurgicaDialog = ({ open, onClose, onBack, request }: Ava
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-100px)]">
+        <ScrollArea className="">
           <div className="px-6 pb-6 space-y-5">
             <TutorInfoSection request={request} date={date} time={time} />
             <Separator />
@@ -146,6 +163,8 @@ export const AvaliacaoCirurgicaDialog = ({ open, onClose, onBack, request }: Ava
                 placeholder="Ex: Ovariohisterectomia eletiva"
                 value={data.procedimento_proposto}
                 onChange={(e) => updateField('procedimento_proposto', e.target.value)}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -216,6 +235,8 @@ export const AvaliacaoCirurgicaDialog = ({ open, onClose, onBack, request }: Ava
             <div className="space-y-2">
               <Label className="font-semibold">Observações</Label>
               <Textarea
+                spellCheck={true}
+                lang="pt-BR"
                 placeholder="Observações adicionais sobre a avaliação..."
                 value={data.observacoes}
                 onChange={(e) => updateField('observacoes', e.target.value)}
@@ -238,9 +259,16 @@ export const AvaliacaoCirurgicaDialog = ({ open, onClose, onBack, request }: Ava
                 Exportar PDF
               </Button>
             </div>
+
+            <PetAdminHistorySection
+              petId={request.pet.id}
+              module="avaliacao_cirurgica"
+              title="Histórico Detalhado da Avaliação"
+              refreshKey={historyRefresh}
+            />
           </div>
         </ScrollArea>
-      </DialogContent>
+      </PageDialogContent>
     </Dialog>
   );
 };

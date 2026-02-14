@@ -18,7 +18,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "✅ Concluído! Aguarde alguns segundos para o Lovable sincronizar." -ForegroundColor Green
+    Write-Host "✅ Concluído! Push realizado com sucesso." -ForegroundColor Green
 } else {
     Write-Host "❌ Erro no push. Execute manualmente: git push origin master" -ForegroundColor Red
 }

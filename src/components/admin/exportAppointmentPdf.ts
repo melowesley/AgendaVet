@@ -25,11 +25,21 @@ interface ExportPdfOptions {
   sectionType?: 'anamnesis' | 'cirurgia' | 'retorno' | 'avaliacao' | 'generic';
 }
 
+const escapeHtml = (unsafe: unknown): string => {
+  if (unsafe === null || unsafe === undefined) return '';
+  return String(unsafe)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
 const formatObj = (obj: Record<string, unknown>): string => {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return '—';
   const parts = Object.entries(obj)
     .filter(([, v]) => v !== null && v !== undefined && v !== '')
-    .map(([k, v]) => `${k}: ${String(v)}`);
+    .map(([k, v]) => `${escapeHtml(k)}: ${escapeHtml(v)}`);
   return parts.length > 0 ? parts.join(' | ') : '—';
 };
 
@@ -44,7 +54,7 @@ const formatDateLong = (dateStr: string | null): string => {
 
 const optionItem = (label: string, checked: boolean) => {
   const dot = checked ? '●' : '○';
-  return `<span class="option-item"><span class="option-dot">${dot}</span>${label}</span>`;
+  return `<span class="option-item"><span class="option-dot">${dot}</span>${escapeHtml(label)}</span>`;
 };
 
 const buildCheckboxGroup = (
@@ -53,7 +63,7 @@ const buildCheckboxGroup = (
   selected: string[]
 ): string => `
   <div class="checkbox-group">
-    <h4 class="checkbox-group-title">${title}</h4>
+    <h4 class="checkbox-group-title">${escapeHtml(title)}</h4>
     <div class="checkbox-grid">
       ${options.map((opt) => optionItem(opt, selected.includes(opt))).join('')}
     </div>
@@ -70,11 +80,11 @@ const buildAnamnesisHtml = (a: AnamnesisData): string => `
   <div class="print-section">
     <div class="field-block">
       <label>Queixa Principal</label>
-      <div class="field-value">${a.queixa_principal || '—'}</div>
+      <div class="field-value">${escapeHtml(a.queixa_principal) || '—'}</div>
     </div>
     <div class="field-block">
       <label>Medicamentos em uso</label>
-      <div class="field-value">${a.medicamentos || '—'}</div>
+      <div class="field-value">${escapeHtml(a.medicamentos) || '—'}</div>
     </div>
 
     ${buildCheckboxGroup('Sistema Gastrintestinal (SGI)', SGI_OPTIONS, a.sistema_gastrintestinal)}
@@ -83,7 +93,7 @@ const buildAnamnesisHtml = (a: AnamnesisData): string => `
     ${buildCheckboxGroup('Sistema Neurológico (SN)', SN_OPTIONS, a.sistema_neurologico)}
     ${buildCheckboxGroup('Sistema Musculoesquelético (SME)', SME_OPTIONS, a.sistema_musculoesqueletico)}
     ${buildCheckboxGroup('Sistema Oto-tegumentar (SOT)', SOT_OPTIONS, a.sistema_ototegumentar)}
-    ${a.sistema_ototegumentar_obs ? `<div class="field-block"><label>Obs. SOT</label><div class="field-value">${a.sistema_ototegumentar_obs}</div></div>` : ''}
+    ${a.sistema_ototegumentar_obs ? `<div class="field-block"><label>Obs. SOT</label><div class="field-value">${escapeHtml(a.sistema_ototegumentar_obs)}</div></div>` : ''}
   </div>
 
   <div class="print-section">
@@ -92,7 +102,7 @@ const buildAnamnesisHtml = (a: AnamnesisData): string => `
     ${buildCheckboxGroup('Ambiente', AMBIENTE_OPTIONS, a.ambiente)}
     ${buildCheckboxGroup('Comportamento', COMPORTAMENTO_OPTIONS, a.comportamento)}
     <div class="field-inline"><strong>Ectoparasitas:</strong> ${formatObj(a.ectoparasitas)}</div>
-    <div class="field-inline"><strong>Vermífugo:</strong> ${a.vermifugo || '—'}</div>
+    <div class="field-inline"><strong>Vermífugo:</strong> ${escapeHtml(a.vermifugo) || '—'}</div>
     <div class="field-inline"><strong>Banho:</strong> ${formatObj(a.banho)}</div>
     <div class="field-inline"><strong>Acesso à rua:</strong> ${formatObj(a.acesso_rua)}</div>
     <div class="field-inline"><strong>Contactantes:</strong> ${formatObj(a.contactantes)}</div>
@@ -102,19 +112,19 @@ const buildAnamnesisHtml = (a: AnamnesisData): string => `
     ${buildCheckboxGroup('Mucosas', MUCOSAS_OPTIONS, a.mucosas)}
     ${buildCheckboxGroup('Linfonodos', LINFONODOS_OPTIONS, a.linfonodos)}
     <div class="row-inline">
-      <span><strong>Hidratação:</strong> ${a.hidratacao || '—'}</span>
-      <span><strong>Pulso:</strong> ${a.pulso || '—'}</span>
+      <span><strong>Hidratação:</strong> ${escapeHtml(a.hidratacao) || '—'}</span>
+      <span><strong>Pulso:</strong> ${escapeHtml(a.pulso) || '—'}</span>
     </div>
     <div class="row-inline">
-      <span><strong>Temperatura:</strong> ${a.temperatura || '—'}</span>
-      <span><strong>TPC:</strong> ${a.tpc || '—'}</span>
-      <span><strong>FC:</strong> ${a.fc || '—'}</span>
-      <span><strong>FR:</strong> ${a.fr || '—'}</span>
+      <span><strong>Temperatura:</strong> ${escapeHtml(a.temperatura) || '—'}</span>
+      <span><strong>TPC:</strong> ${escapeHtml(a.tpc) || '—'}</span>
+      <span><strong>FC:</strong> ${escapeHtml(a.fc) || '—'}</span>
+      <span><strong>FR:</strong> ${escapeHtml(a.fr) || '—'}</span>
     </div>
-    <div class="field-inline"><strong>Campos pulmonares:</strong> ${a.campos_pulmonares || '—'}</div>
-    <div class="field-inline"><strong>Bulhas cardíacas:</strong> ${a.bulhas_cardiacas || '—'}</div>
-    <div class="field-inline"><strong>Ritmo cardíaco:</strong> ${a.ritmo_cardiaco || '—'}</div>
-    <div class="field-inline"><strong>Palpação abdominal:</strong> ${a.palpacao_abdominal || '—'}</div>
+    <div class="field-inline"><strong>Campos pulmonares:</strong> ${escapeHtml(a.campos_pulmonares) || '—'}</div>
+    <div class="field-inline"><strong>Bulhas cardíacas:</strong> ${escapeHtml(a.bulhas_cardiacas) || '—'}</div>
+    <div class="field-inline"><strong>Ritmo cardíaco:</strong> ${escapeHtml(a.ritmo_cardiaco) || '—'}</div>
+    <div class="field-inline"><strong>Palpação abdominal:</strong> ${escapeHtml(a.palpacao_abdominal) || '—'}</div>
   </div>
 `;
 
@@ -125,20 +135,21 @@ const buildGenericSectionHtml = (sectionTitle: string, data: unknown): string =>
     const rows = Object.entries(obj)
       .filter(([, v]) => v !== null && v !== undefined)
       .map(([k, v]) => {
-        const label = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        const label = escapeHtml(k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()));
         let val = v;
-        if (Array.isArray(v)) val = v.join(', ');
-        else if (typeof v === 'object' && v !== null) val = JSON.stringify(v);
-        return `<div class="field-inline"><strong>${label}:</strong> ${String(val)}</div>`;
+        if (Array.isArray(v)) val = v.map(i => escapeHtml(i)).join(', ');
+        else if (typeof v === 'object' && v !== null) val = escapeHtml(JSON.stringify(v));
+        else val = escapeHtml(v);
+        return `<div class="field-inline"><strong>${label}:</strong> ${val}</div>`;
       });
     return `
       <div class="print-section">
-        <h3>${sectionTitle}</h3>
+        <h3>${escapeHtml(sectionTitle)}</h3>
         ${rows.join('')}
       </div>
     `;
   }
-  return `<div class="print-section"><h3>${sectionTitle}</h3><p>${String(data)}</p></div>`;
+  return `<div class="print-section"><h3>${escapeHtml(sectionTitle)}</h3><p>${escapeHtml(data)}</p></div>`;
 };
 
 export const exportAppointmentPdf = ({
@@ -168,12 +179,15 @@ export const exportAppointmentPdf = ({
     ? buildAnamnesisHtml(sectionData as AnamnesisData)
     : buildGenericSectionHtml(sectionTitle, sectionData);
 
+  const safeTitle = escapeHtml(title);
+  const safePetName = escapeHtml(petName);
+
   const htmlContent = `
     <!DOCTYPE html>
     <html lang="pt-BR">
       <head>
         <meta charset="utf-8" />
-        <title>${title} — ${petName}</title>
+        <title>${safeTitle} — ${safePetName}</title>
         <style>
           *, *::before, *::after { box-sizing: border-box; }
           body {
@@ -327,35 +341,35 @@ export const exportAppointmentPdf = ({
           </div>
         </div>
 
-        <h1>${title} — ${petName}</h1>
+        <h1>${escapeHtml(title)} — ${escapeHtml(petName)}</h1>
 
         <div class="tutor-grid">
           <div class="tutor-item">
             <div class="tutor-icon"></div>
             <div>
-              <div class="main">${dateLong}</div>
-              <div class="sub">${timeLabel}</div>
+              <div class="main">${escapeHtml(dateLong)}</div>
+              <div class="sub">${escapeHtml(timeLabel)}</div>
             </div>
           </div>
           <div class="tutor-item">
             <div class="tutor-icon"></div>
             <div>
-              <div class="main">${tutorName}</div>
-              <div class="sub">${tutorPhone}</div>
+              <div class="main">${escapeHtml(tutorName)}</div>
+              <div class="sub">${escapeHtml(tutorPhone)}</div>
             </div>
           </div>
           <div class="tutor-item">
             <div class="tutor-icon"></div>
             <div>
-              <div class="main">${petName}</div>
-              <div class="sub">${petType} — ${petBreed}</div>
+              <div class="main">${escapeHtml(petName)}</div>
+              <div class="sub">${escapeHtml(petType)} — ${escapeHtml(petBreed)}</div>
             </div>
           </div>
           <div class="tutor-item">
             <div class="tutor-icon"></div>
             <div>
               <div class="main">Motivo</div>
-              <div class="sub">${reason}</div>
+              <div class="sub">${escapeHtml(reason)}</div>
             </div>
           </div>
         </div>
@@ -364,7 +378,7 @@ export const exportAppointmentPdf = ({
 
         <div class="signature-block">
           <div class="signature-line">
-            ${veterinarian}<br />
+            ${escapeHtml(veterinarian)}<br />
             <span class="muted">Médico(a) Veterinário(a)</span>
           </div>
         </div>

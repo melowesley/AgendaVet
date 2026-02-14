@@ -1,18 +1,24 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Syringe, Save, Trash2, Calendar, Edit2 } from 'lucide-react';
+import { Syringe, Save, Trash2, Calendar, Edit2, ArrowLeft, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { exportPetRecordPdf } from './exportPetRecordPdf';
+import { logPetAdminHistory } from './petAdminHistory';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
+import { generateVacinaSummary } from '@/utils/procedureSummaries';
 
 interface VacinaDialogProps {
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
+  onSuccess?: () => void;
   petId: string;
   petName: string;
 }
@@ -27,7 +33,7 @@ interface Vaccine {
   notes: string | null;
 }
 
-export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProps) => {
+export const VacinaDialog = ({ open, onClose, onBack, onSuccess, petId, petName }: VacinaDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<Vaccine[]>([]);
@@ -38,6 +44,7 @@ export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProp
   const [veterinarian, setVeterinarian] = useState('');
   const [notes, setNotes] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   useEffect(() => {
     if (open) loadRecords();
@@ -78,16 +85,35 @@ export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProp
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
       } else {
+        const historyDetails = generateVacinaSummary(vaccineName, applicationDate, nextDoseDate, batchNumber);
+        await logPetAdminHistory({
+          petId,
+          module: 'vacina',
+          action: 'update',
+          title: 'Ficha de Vacina',
+          details: historyDetails,
+          sourceTable: 'pet_vaccines',
+          sourceId: editingId,
+        });
+        setHistoryRefresh((prev) => prev + 1);
+        onSuccess?.();
         toast({ title: 'Sucesso', description: 'Vacina atualizada com sucesso!' });
         resetForm();
         loadRecords();
       }
     } else {
       // Criar novo registro
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !userData.user?.id) {
+        toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.from('pet_vaccines').insert({
         pet_id: petId,
-        user_id: userData.user?.id,
+        user_id: userData.user.id,
         vaccine_name: vaccineName,
         application_date: applicationDate,
         next_dose_date: nextDoseDate || null,
@@ -98,7 +124,19 @@ export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProp
 
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+        setLoading(false);
       } else {
+        const historyDetails = generateVacinaSummary(vaccineName, applicationDate, nextDoseDate, batchNumber);
+        await logPetAdminHistory({
+          petId,
+          module: 'vacina',
+          action: 'create',
+          title: 'Ficha de Vacina',
+          details: historyDetails,
+          sourceTable: 'pet_vaccines',
+        });
+        setHistoryRefresh((prev) => prev + 1);
+        onSuccess?.();
         toast({ title: 'Sucesso', description: 'Vacina registrada com sucesso!' });
         resetForm();
         loadRecords();
@@ -132,16 +170,56 @@ export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProp
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'vacina',
+        action: 'delete',
+        title: 'Vacina excluída',
+        details: { registro_id: id },
+        sourceTable: 'pet_vaccines',
+        sourceId: id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
+      onSuccess?.();
       toast({ title: 'Sucesso', description: 'Vacina excluída' });
       loadRecords();
     }
   };
 
+  const handleExportPdf = () => {
+    exportPetRecordPdf({
+      title: 'Vacinas',
+      petName,
+      sectionTitle: 'Controle Vacinal',
+      sectionData: {
+        registro_atual: {
+          nome_vacina: vaccineName || '—',
+          data_aplicacao: applicationDate || '—',
+          proxima_dose: nextDoseDate || '—',
+          lote: batchNumber || '—',
+          veterinario: veterinarian || '—',
+          observacoes: notes || '—',
+        },
+        historico: records.map((record) => ({
+          nome_vacina: record.vaccine_name,
+          data_aplicacao: record.application_date,
+          proxima_dose: record.next_dose_date || '—',
+          lote: record.batch_number || '—',
+          veterinario: record.veterinarian || '—',
+          observacoes: record.notes || '—',
+        })),
+      },
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <PageDialogContent className="p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack || onClose}>
+              <ArrowLeft size={16} />
+            </Button>
             <Syringe className="h-5 w-5" />
             Vacinas - {petName}
           </DialogTitle>
@@ -165,6 +243,8 @@ export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProp
                   value={vaccineName}
                   onChange={(e) => setVaccineName(e.target.value)}
                   placeholder="Ex: V10, Antirrábica..."
+                  spellCheck={true}
+                  lang="pt-BR"
                 />
               </div>
               <div>
@@ -204,6 +284,8 @@ export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProp
                 value={veterinarian}
                 onChange={(e) => setVeterinarian(e.target.value)}
                 placeholder="Nome do veterinário"
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div>
@@ -214,12 +296,18 @@ export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProp
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Observações adicionais..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Salvando...' : editingId ? 'Atualizar' : 'Adicionar Vacina'}
+                {loading ? 'Salvando...' : 'Salvar Informações'}
+              </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
               </Button>
               {editingId && (
                 <Button variant="outline" onClick={resetForm}>
@@ -296,8 +384,15 @@ export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProp
               )}
             </div>
           </div>
+
+          <PetAdminHistorySection
+            petId={petId}
+            module="vacina"
+            title="Histórico Detalhado de Vacinas"
+            refreshKey={historyRefresh}
+          />
         </div>
-      </DialogContent>
+      </PageDialogContent>
     </Dialog>
   );
 };

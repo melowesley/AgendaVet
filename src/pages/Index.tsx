@@ -1,204 +1,232 @@
-import { useState } from 'react';
-import { Appointment } from '@/types/appointment';
-import { mockAppointments } from '@/data/mockAppointments';
-import { AppointmentCard } from '@/components/AppointmentCard';
-import { CaseSummaryDialog } from '@/components/CaseSummaryDialog';
-import { AddAppointmentDialog } from '@/components/AddAppointmentDialog';
-import { StatsCard } from '@/components/StatsCard';
-import { Button } from '@/components/ui/button';
-import {
-  Calendar,
-  Plus,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Stethoscope,
-  PawPrint,
-} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import {
+  Stethoscope, CalendarCheck, FileText,
+  ShieldCheck, PawPrint, ArrowRight, Clock, Users,
+} from 'lucide-react';
+
+const features = [
+  {
+    icon: CalendarCheck,
+    title: 'Agendamento Online',
+    description: 'Solicite consultas de forma rápida e prática, a qualquer hora do dia.',
+    bg: 'bg-teal-50',
+    iconBg: 'bg-teal-100',
+    iconColor: 'text-teal-600',
+  },
+  {
+    icon: FileText,
+    title: 'Prontuário Digital',
+    description: 'Histórico completo do seu pet sempre disponível e seguro na nuvem.',
+    bg: 'bg-emerald-50',
+    iconBg: 'bg-emerald-100',
+    iconColor: 'text-emerald-600',
+  },
+  {
+    icon: Stethoscope,
+    title: 'Gestão Clínica',
+    description: 'Receitas, exames, vacinas e muito mais em um só sistema moderno.',
+    bg: 'bg-cyan-50',
+    iconBg: 'bg-cyan-100',
+    iconColor: 'text-cyan-600',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Dados Protegidos',
+    description: 'Informações armazenadas com segurança e disponíveis quando precisar.',
+    bg: 'bg-teal-50',
+    iconBg: 'bg-teal-100',
+    iconColor: 'text-teal-700',
+  },
+];
+
+const stats = [
+  { icon: Users,   value: '2',    label: 'Veterinários'     },
+  { icon: Clock,   value: '24h',  label: 'Agendamento'      },
+  { icon: PawPrint, value: '100%', label: 'Digital'         },
+];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
 
 const Index = () => {
-  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-  const [caseDialogOpen, setCaseDialogOpen] = useState(false);
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
-
-  const handleAppointmentClick = (appointment: Appointment) => {
-    setSelectedAppointment(appointment);
-    setCaseDialogOpen(true);
-  };
-
-  const handleStatusChange = (id: string, status: Appointment['status']) => {
-    setAppointments((prev) =>
-      prev.map((apt) =>
-        apt.id === id ? { ...apt, status } : apt
-      )
-    );
-    setSelectedAppointment((prev) =>
-      prev?.id === id ? { ...prev, status } : prev
-    );
-  };
-
-  const handleAddAppointment = (appointment: Appointment) => {
-    setAppointments((prev) => [...prev, appointment].sort((a, b) => 
-      a.time.localeCompare(b.time)
-    ));
-  };
-
-  const today = new Date().toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-
-  const stats = {
-    total: appointments.length,
-    pending: appointments.filter((a) => a.status === 'pending').length,
-    confirmed: appointments.filter((a) => a.status === 'confirmed').length,
-    inProgress: appointments.filter((a) => a.status === 'in-progress').length,
-    completed: appointments.filter((a) => a.status === 'completed').length,
-  };
+  const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-background/80 border-b border-border">
-        <div className="container max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl gradient-primary">
-                <PawPrint className="text-primary-foreground" size={28} />
-              </div>
-              <div>
-                <h1 className="font-display font-bold text-xl text-foreground">
-                  VetAgenda
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  Clínica Veterinária
-                </p>
-              </div>
-            </div>
+    <div className="h-full flex flex-col overflow-hidden font-sans bg-white">
 
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => window.location.href = '/admin'}
-              >
-                Área Admin
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => window.location.href = '/auth'}
-              >
-                Portal do Cliente
-              </Button>
-              <Button
-                onClick={() => setAddDialogOpen(true)}
-                className="gradient-primary text-primary-foreground shadow-md hover:shadow-lg transition-shadow"
-              >
-                <Plus size={18} className="mr-2" />
-                Cadastrar Pet
-              </Button>
-            </div>
+      {/* ── Navbar ──────────────────────────────────────────────── */}
+      <nav className="bg-teal-600 text-white px-4 sm:px-6 py-3 flex items-center justify-between gap-2 shadow-lg flex-wrap shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="bg-teal-700 rounded-xl p-2 shrink-0 border border-teal-500/30">
+            <img
+              src="/agendavet-logo.png" alt="AgendaVet"
+              className="h-8 w-8 object-contain rounded-lg"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
+          </div>
+          <div className="min-w-0">
+            <span className="font-black text-base sm:text-lg truncate block">AgendaVet</span>
+            <span className="text-teal-200 text-xs ml-0 sm:ml-2 hidden sm:inline">· Clínica Veterinária</span>
           </div>
         </div>
-      </header>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => navigate('/auth')}
+            className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-teal-100 hover:text-white transition-colors"
+          >
+            Portal do Tutor
+          </button>
+          <button
+            onClick={() => navigate('/admin/login')}
+            className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold bg-white text-teal-700 hover:bg-teal-50 rounded-xl transition-colors shadow-sm"
+          >
+            Portal do Usuário
+          </button>
+        </div>
+      </nav>
 
-      {/* Main Content */}
-      <main className="container max-w-6xl mx-auto px-4 py-8">
-        {/* Date & Stats */}
+      {/* ── Conteúdo rolável (rolagem só aqui) ───────────────────── */}
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+      {/* ── Hero ────────────────────────────────────────────────── */}
+      <section className="bg-gradient-to-br from-teal-600 via-teal-500 to-emerald-500 text-white py-20 px-6">
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          transition={{ duration: 0.7 }}
+          className="max-w-4xl mx-auto text-center"
         >
-          <div className="flex items-center gap-2 text-muted-foreground mb-6">
-            <Calendar size={18} className="text-primary" />
-            <span className="capitalize">{today}</span>
+          <div className="inline-flex items-center gap-2 bg-white/20 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
+            <PawPrint size={14} />
+            Sistema Veterinário Completo
           </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatsCard
-              icon={Stethoscope}
-              label="Total de Consultas"
-              value={stats.total}
-              variant="primary"
-            />
-            <StatsCard
-              icon={AlertCircle}
-              label="Pendentes"
-              value={stats.pending}
-              variant="warning"
-            />
-            <StatsCard
-              icon={Clock}
-              label="Em Atendimento"
-              value={stats.inProgress}
-              variant="accent"
-            />
-            <StatsCard
-              icon={CheckCircle}
-              label="Concluídas"
-              value={stats.completed}
-              variant="success"
-            />
+          <h1 className="text-4xl md:text-6xl font-black leading-tight mb-6">
+            Cuidado veterinário<br />
+            <span className="text-teal-200">simples e digital</span>
+          </h1>
+          <p className="text-lg text-teal-100 max-w-xl mx-auto mb-8 leading-relaxed">
+            Agende consultas, acompanhe a saúde do seu pet e acesse prontuários completos com Dr. Cleyton Chaves.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => navigate('/auth')}
+              className="flex items-center justify-center gap-2 px-8 py-4 bg-white text-teal-700 font-bold rounded-2xl hover:bg-teal-50 transition-all shadow-lg hover:shadow-xl text-base"
+            >
+              <PawPrint size={18} />
+              Acessar Portal do Tutor
+              <ArrowRight size={16} />
+            </button>
+            <button
+              onClick={() => navigate('/admin/login')}
+              className="px-8 py-4 border-2 border-white/50 text-white font-semibold rounded-2xl hover:bg-white/10 transition-all text-base"
+            >
+              Portal do Usuário
+            </button>
           </div>
         </motion.div>
 
-        {/* Appointments List */}
-        <div>
-          <h2 className="font-display font-bold text-lg text-foreground mb-4">
-            Agenda de Hoje
-          </h2>
-
-          <div className="space-y-3">
-            {appointments
-              .sort((a, b) => a.time.localeCompare(b.time))
-              .map((appointment, index) => (
-                <motion.div
-                  key={appointment.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <AppointmentCard
-                    appointment={appointment}
-                    onClick={() => handleAppointmentClick(appointment)}
-                  />
-                </motion.div>
-              ))}
-          </div>
-
-          {appointments.length === 0 && (
-            <div className="text-center py-12">
-              <div className="p-4 rounded-full bg-muted inline-block mb-4">
-                <Calendar size={32} className="text-muted-foreground" />
+        {/* Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+          className="flex justify-center gap-8 mt-14 max-w-lg mx-auto"
+        >
+          {stats.map(({ icon: Icon, value, label }) => (
+            <div key={label} className="flex flex-col items-center gap-1 text-center">
+              <div className="bg-white/20 rounded-xl p-3 mb-1">
+                <Icon size={20} />
               </div>
-              <h3 className="font-display font-semibold text-lg text-foreground mb-2">
-                Nenhuma consulta agendada
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                Clique no botão acima para agendar uma nova consulta.
-              </p>
+              <div className="text-2xl font-black">{value}</div>
+              <div className="text-teal-200 text-xs font-medium">{label}</div>
             </div>
-          )}
+          ))}
+        </motion.div>
+      </section>
+
+      {/* ── Features ────────────────────────────────────────────── */}
+      <section className="py-16 px-6 bg-gray-50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-black text-gray-800 mb-3">
+              Tudo que você precisa
+            </h2>
+            <p className="text-gray-500 max-w-md mx-auto text-sm">
+              Uma plataforma completa para a saúde e bem-estar do seu pet.
+            </p>
+          </div>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+          >
+            {features.map((f) => {
+              const Icon = f.icon;
+              return (
+                <motion.div
+                  key={f.title}
+                  variants={itemVariants}
+                  className={`${f.bg} rounded-2xl p-6 border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1`}
+                >
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 ${f.iconBg}`}>
+                    <Icon size={22} className={f.iconColor} />
+                  </div>
+                  <h3 className="font-bold text-gray-800 mb-2 text-sm">{f.title}</h3>
+                  <p className="text-xs text-gray-500 leading-relaxed">{f.description}</p>
+                </motion.div>
+              );
+            })}
+          </motion.div>
         </div>
-      </main>
+      </section>
 
-      {/* Dialogs */}
-      <CaseSummaryDialog
-        appointment={selectedAppointment}
-        open={caseDialogOpen}
-        onOpenChange={setCaseDialogOpen}
-        onStatusChange={handleStatusChange}
-      />
+      {/* ── CTA ─────────────────────────────────────────────────── */}
+      <section className="py-14 px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-3xl mx-auto bg-gradient-to-br from-teal-600 to-emerald-600 rounded-3xl p-10 text-center text-white shadow-2xl"
+        >
+          <PawPrint size={40} className="mx-auto mb-4 text-teal-200" />
+          <h2 className="font-black text-2xl mb-3">Pronto para começar?</h2>
+          <p className="text-teal-100 text-sm mb-6 max-w-sm mx-auto">
+            Crie sua conta gratuitamente e tenha acesso a todos os registros do seu pet.
+          </p>
+          <button
+            onClick={() => navigate('/auth')}
+            className="px-8 py-3 bg-white text-teal-700 font-bold rounded-xl hover:bg-teal-50 transition-colors shadow-lg text-sm"
+          >
+            Criar conta grátis →
+          </button>
+        </motion.div>
+      </section>
 
-      <AddAppointmentDialog
-        open={addDialogOpen}
-        onOpenChange={setAddDialogOpen}
-        onAdd={handleAddAppointment}
-      />
+      {/* ── Footer ──────────────────────────────────────────────── */}
+      <footer className="bg-teal-700 text-white py-6 px-6 text-center">
+        <div className="flex items-center justify-center gap-2 mb-1">
+          <PawPrint size={16} className="text-teal-300" />
+          <span className="font-bold text-sm">AgendaVet</span>
+        </div>
+        <p className="text-teal-300 text-xs">
+          Dr. Cleyton Chaves · Clínica Veterinária · {new Date().getFullYear()}
+        </p>
+        <div className="flex justify-center gap-4 mt-3 text-xs text-teal-400">
+          <button onClick={() => navigate('/auth')} className="hover:text-teal-200 transition-colors">Portal do Tutor</button>
+          <span>·</span>
+          <button onClick={() => navigate('/admin/login')} className="hover:text-teal-200 transition-colors">Portal do Usuário</button>
+        </div>
+      </footer>
+      </div>
     </div>
   );
 };

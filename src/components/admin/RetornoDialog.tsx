@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -13,11 +13,15 @@ import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
 import { useToast } from '@/hooks/use-toast';
 import { TutorInfoSection } from './detail/TutorInfoSection';
 import { exportAppointmentPdf } from './exportAppointmentPdf';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
+import { logPetAdminHistory } from './petAdminHistory';
+import { generateRetornoSummary } from '@/utils/procedureSummaries';
 
 interface RetornoDialogProps {
   open: boolean;
   onClose: () => void;
   onBack: () => void;
+  onSuccess?: () => void;
   request: AppointmentRequest;
 }
 
@@ -59,12 +63,13 @@ const EMPTY_RETORNO: RetornoData = {
   observacoes: '',
 };
 
-export const RetornoDialog = ({ open, onClose, onBack, request }: RetornoDialogProps) => {
+export const RetornoDialog = ({ open, onClose, onBack, onSuccess, request }: RetornoDialogProps) => {
   const { toast } = useToast();
   const date = request.scheduled_date || request.preferred_date;
   const time = request.scheduled_time || request.preferred_time;
   const [data, setData] = useState<RetornoData>(EMPTY_RETORNO);
   const [saving, setSaving] = useState(false);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   const updateField = <K extends keyof RetornoData>(field: K, value: RetornoData[K]) => {
     setData(prev => ({ ...prev, [field]: value }));
@@ -91,6 +96,18 @@ export const RetornoDialog = ({ open, onClose, onBack, request }: RetornoDialogP
     if (error) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
     } else {
+      const historyDetails = generateRetornoSummary(data);
+      await logPetAdminHistory({
+        petId: request.pet.id,
+        module: 'retorno',
+        action: 'procedure',
+        title: 'Ficha de Retorno',
+        details: historyDetails,
+        sourceTable: 'appointment_requests',
+        sourceId: request.id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
+      onSuccess?.();
       toast({ title: 'Retorno salvo com sucesso!' });
     }
     setSaving(false);
@@ -109,7 +126,7 @@ export const RetornoDialog = ({ open, onClose, onBack, request }: RetornoDialogP
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0">
+      <PageDialogContent>
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack}>
@@ -119,7 +136,7 @@ export const RetornoDialog = ({ open, onClose, onBack, request }: RetornoDialogP
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-100px)]">
+        <ScrollArea className="">
           <div className="px-6 pb-6 space-y-5">
             <TutorInfoSection request={request} date={date} time={time} />
             <Separator />
@@ -188,6 +205,8 @@ export const RetornoDialog = ({ open, onClose, onBack, request }: RetornoDialogP
                 value={data.exame_fisico_resumido}
                 onChange={(e) => updateField('exame_fisico_resumido', e.target.value)}
                 rows={3}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -198,6 +217,8 @@ export const RetornoDialog = ({ open, onClose, onBack, request }: RetornoDialogP
                 value={data.exames_complementares}
                 onChange={(e) => updateField('exames_complementares', e.target.value)}
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -208,6 +229,8 @@ export const RetornoDialog = ({ open, onClose, onBack, request }: RetornoDialogP
                 value={data.conduta}
                 onChange={(e) => updateField('conduta', e.target.value)}
                 rows={3}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -245,9 +268,16 @@ export const RetornoDialog = ({ open, onClose, onBack, request }: RetornoDialogP
                 Exportar PDF
               </Button>
             </div>
+
+            <PetAdminHistorySection
+              petId={request.pet.id}
+              module="retorno"
+              title="Histórico Detalhado de Retorno"
+              refreshKey={historyRefresh}
+            />
           </div>
         </ScrollArea>
-      </DialogContent>
+      </PageDialogContent>
     </Dialog>
   );
 };

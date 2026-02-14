@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -14,15 +14,19 @@ import { ManejoTab } from './detail/ManejoTab';
 import { ExameFisicoTab } from './detail/ExameFisicoTab';
 import { AnamnesisData, EMPTY_ANAMNESIS } from './anamnesisTypes';
 import { exportAppointmentPdf } from './exportAppointmentPdf';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
+import { logPetAdminHistory } from './petAdminHistory';
+import { generateAnamnesisSummary } from '@/utils/anamnesisSummary';
 
 interface ConsultaDialogProps {
   open: boolean;
   onClose: () => void;
   onBack: () => void;
+  onSuccess?: () => void;
   request: AppointmentRequest;
 }
 
-export const ConsultaDialog = ({ open, onClose, onBack, request }: ConsultaDialogProps) => {
+export const ConsultaDialog = ({ open, onClose, onBack, onSuccess, request }: ConsultaDialogProps) => {
   const { toast } = useToast();
   const date = request.scheduled_date || request.preferred_date;
   const time = request.scheduled_time || request.preferred_time;
@@ -30,6 +34,7 @@ export const ConsultaDialog = ({ open, onClose, onBack, request }: ConsultaDialo
   const [anamnesisId, setAnamnesisId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   useEffect(() => {
     if (open && request.id) fetchAnamnesis();
@@ -140,6 +145,21 @@ export const ConsultaDialog = ({ open, onClose, onBack, request }: ConsultaDialo
         .from('appointment_requests')
         .update({ status: 'completed', admin_notes: JSON.stringify({ tipo_atendimento: 'consulta', salvo_em: new Date().toISOString() }) })
         .eq('id', request.id);
+      
+      // Build a complete ordered summary following the form order
+      const consultaSummary = generateAnamnesisSummary(anamnesis);
+
+      await logPetAdminHistory({
+        petId: request.pet.id,
+        module: 'consulta',
+        action: 'procedure',
+        title: 'Ficha de Consulta',
+        details: consultaSummary,
+        sourceTable: 'anamnesis',
+        sourceId: anamnesisId || request.id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
+      onSuccess?.();
       toast({ title: 'Ficha salva com sucesso!' });
       fetchAnamnesis();
     }
@@ -164,7 +184,7 @@ export const ConsultaDialog = ({ open, onClose, onBack, request }: ConsultaDialo
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0">
+      <PageDialogContent>
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack}>
@@ -174,7 +194,7 @@ export const ConsultaDialog = ({ open, onClose, onBack, request }: ConsultaDialo
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-100px)]">
+        <ScrollArea className="">
           <div className="px-6 pb-6">
             <TutorInfoSection request={request} date={date} time={time} />
             <Separator className="my-4" />
@@ -223,9 +243,16 @@ export const ConsultaDialog = ({ open, onClose, onBack, request }: ConsultaDialo
                 </Button>
               </div>
             )}
+
+            <PetAdminHistorySection
+              petId={request.pet.id}
+              module="consulta"
+              title="Histórico Detalhado da Consulta"
+              refreshKey={historyRefresh}
+            />
           </div>
         </ScrollArea>
-      </DialogContent>
+      </PageDialogContent>
     </Dialog>
   );
 };

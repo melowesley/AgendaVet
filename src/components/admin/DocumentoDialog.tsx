@@ -1,18 +1,23 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Save, Trash2, Download } from 'lucide-react';
+import { FileText, Save, Trash2, Download, ArrowLeft, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
+import { exportPetRecordPdf } from './exportPetRecordPdf';
+import { logPetAdminHistory } from './petAdminHistory';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
 
 interface DocumentoDialogProps {
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
+  onSuccess?: () => void;
   petId: string;
   petName: string;
 }
@@ -26,7 +31,7 @@ interface Document {
   date: string;
 }
 
-export const DocumentoDialog = ({ open, onClose, petId, petName }: DocumentoDialogProps) => {
+export const DocumentoDialog = ({ open, onClose, onBack, onSuccess, petId, petName }: DocumentoDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<Document[]>([]);
@@ -35,6 +40,7 @@ export const DocumentoDialog = ({ open, onClose, petId, petName }: DocumentoDial
   const [fileUrl, setFileUrl] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   useEffect(() => {
     if (open) loadRecords();
@@ -57,10 +63,17 @@ export const DocumentoDialog = ({ open, onClose, petId, petName }: DocumentoDial
     }
 
     setLoading(true);
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !userData.user?.id) {
+      toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.from('pet_documents').insert({
       pet_id: petId,
-      user_id: userData.user?.id,
+      user_id: userData.user.id,
       title,
       document_type: documentType || null,
       file_url: fileUrl || null,
@@ -70,7 +83,18 @@ export const DocumentoDialog = ({ open, onClose, petId, petName }: DocumentoDial
 
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      setLoading(false);
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'documento',
+        action: 'create',
+        title: 'Ficha de Documento',
+        details: { titulo: title, tipo_documento: documentType || '—', data: date, arquivo: fileUrl || '—', descricao: description || '—' },
+        sourceTable: 'pet_documents',
+      });
+      setHistoryRefresh((prev) => prev + 1);
+      onSuccess?.();
       toast({ title: 'Sucesso', description: 'Documento registrado com sucesso!' });
       resetForm();
       loadRecords();
@@ -90,16 +114,54 @@ export const DocumentoDialog = ({ open, onClose, petId, petName }: DocumentoDial
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'documento',
+        action: 'delete',
+        title: 'Documento excluído',
+        details: { registro_id: id },
+        sourceTable: 'pet_documents',
+        sourceId: id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
+      onSuccess?.();
       toast({ title: 'Sucesso', description: 'Documento excluído' });
       loadRecords();
     }
   };
 
+  const handleExportPdf = () => {
+    exportPetRecordPdf({
+      title: 'Documentos',
+      petName,
+      sectionTitle: 'Documentos e Anexos',
+      sectionData: {
+        registro_atual: {
+          titulo: title || '—',
+          tipo_documento: documentType || '—',
+          data: date || '—',
+          url_arquivo: fileUrl || '—',
+          descricao: description || '—',
+        },
+        historico: records.map((record) => ({
+          titulo: record.title,
+          tipo_documento: record.document_type || '—',
+          data: record.date,
+          url_arquivo: record.file_url || '—',
+          descricao: record.description || '—',
+        })),
+      },
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <PageDialogContent className="p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack || onClose}>
+              <ArrowLeft size={16} />
+            </Button>
             <FileText className="h-5 w-5" />
             Documentos - {petName}
           </DialogTitle>
@@ -116,6 +178,8 @@ export const DocumentoDialog = ({ open, onClose, petId, petName }: DocumentoDial
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Ex: Atestado de Saúde, Laudo..."
+                  spellCheck={true}
+                  lang="pt-BR"
                 />
               </div>
               <div>
@@ -161,12 +225,20 @@ export const DocumentoDialog = ({ open, onClose, petId, petName }: DocumentoDial
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Descrição do documento..."
                 rows={3}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
-            <Button onClick={handleSave} disabled={loading} className="w-full">
-              <Save className="h-4 w-4 mr-2" />
-              {loading ? 'Salvando...' : 'Adicionar Documento'}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleSave} disabled={loading} className="flex-1">
+                <Save className="h-4 w-4 mr-2" />
+                {loading ? 'Salvando...' : 'Salvar Informações'}
+              </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
+            </div>
           </div>
 
           {/* Histórico */}
@@ -217,8 +289,15 @@ export const DocumentoDialog = ({ open, onClose, petId, petName }: DocumentoDial
               )}
             </div>
           </div>
+
+          <PetAdminHistorySection
+            petId={petId}
+            module="documento"
+            title="Histórico Detalhado de Documentos"
+            refreshKey={historyRefresh}
+          />
         </div>
-      </DialogContent>
+      </PageDialogContent>
     </Dialog>
   );
 };

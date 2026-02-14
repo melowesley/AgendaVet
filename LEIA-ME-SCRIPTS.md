@@ -54,7 +54,7 @@ Dois scripts PowerShell foram criados para facilitar o envio de suas alteraçõe
 
 ### Passo 2: Navegue até a pasta do projeto
 ```powershell
-cd "C:\Users\Computador\OneDrive\Desktop\pet-care-companion-main"
+cd "C:\Users\Computador\OneDrive\Desktop\AgendaVet"
 ```
 
 ### Passo 3: Execute o script

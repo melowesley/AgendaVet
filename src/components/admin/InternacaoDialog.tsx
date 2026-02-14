@@ -1,19 +1,24 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Save, Trash2, Calendar } from 'lucide-react';
+import { Plus, Save, Trash2, Calendar, ArrowLeft, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { exportPetRecordPdf } from './exportPetRecordPdf';
+import { logPetAdminHistory } from './petAdminHistory';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
 
 interface InternacaoDialogProps {
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
+  onSuccess?: () => void;
   petId: string;
   petName: string;
 }
@@ -31,7 +36,7 @@ interface Hospitalization {
   notes: string | null;
 }
 
-export const InternacaoDialog = ({ open, onClose, petId, petName }: InternacaoDialogProps) => {
+export const InternacaoDialog = ({ open, onClose, onBack, onSuccess, petId, petName }: InternacaoDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<Hospitalization[]>([]);
@@ -43,6 +48,7 @@ export const InternacaoDialog = ({ open, onClose, petId, petName }: InternacaoDi
   const [diagnosis, setDiagnosis] = useState('');
   const [treatment, setTreatment] = useState('');
   const [notes, setNotes] = useState('');
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   useEffect(() => {
     if (open) loadRecords();
@@ -65,10 +71,17 @@ export const InternacaoDialog = ({ open, onClose, petId, petName }: InternacaoDi
     }
 
     setLoading(true);
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !userData.user?.id) {
+      toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.from('pet_hospitalizations').insert({
       pet_id: petId,
-      user_id: userData.user?.id,
+      user_id: userData.user.id,
       admission_date: admissionDate,
       discharge_date: dischargeDate || null,
       reason,
@@ -82,7 +95,25 @@ export const InternacaoDialog = ({ open, onClose, petId, petName }: InternacaoDi
 
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      setLoading(false);
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'internacao',
+        action: 'create',
+        title: 'Ficha de Internação',
+        details: {
+          admissao: admissionDate,
+          alta: dischargeDate || '—',
+          motivo: reason,
+          status,
+          veterinario: veterinarian || '—',
+          diagnostico: diagnosis || '—',
+        },
+        sourceTable: 'pet_hospitalizations',
+      });
+      setHistoryRefresh((prev) => prev + 1);
+      onSuccess?.();
       toast({ title: 'Sucesso', description: 'Internação registrada com sucesso!' });
       resetForm();
       loadRecords();
@@ -105,16 +136,60 @@ export const InternacaoDialog = ({ open, onClose, petId, petName }: InternacaoDi
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'internacao',
+        action: 'delete',
+        title: 'Internação excluída',
+        details: { registro_id: id },
+        sourceTable: 'pet_hospitalizations',
+        sourceId: id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
+      onSuccess?.();
       toast({ title: 'Sucesso', description: 'Internação excluída' });
       loadRecords();
     }
   };
 
+  const handleExportPdf = () => {
+    exportPetRecordPdf({
+      title: 'Internacoes',
+      petName,
+      sectionTitle: 'Dados de Internacao',
+      sectionData: {
+        registro_atual: {
+          admissao: admissionDate || '—',
+          alta: dischargeDate || '—',
+          motivo: reason || '—',
+          status: status || '—',
+          veterinario: veterinarian || '—',
+          diagnostico: diagnosis || '—',
+          tratamento: treatment || '—',
+          observacoes: notes || '—',
+        },
+        historico: records.map((record) => ({
+          admissao: record.admission_date,
+          alta: record.discharge_date || '—',
+          motivo: record.reason,
+          status: record.status,
+          veterinario: record.veterinarian || '—',
+          diagnostico: record.diagnosis || '—',
+          tratamento: record.treatment || '—',
+          observacoes: record.notes || '—',
+        })),
+      },
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <PageDialogContent className="p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack || onClose}>
+              <ArrowLeft size={16} />
+            </Button>
             <Plus className="h-5 w-5" />
             Internações - {petName}
           </DialogTitle>
@@ -151,6 +226,8 @@ export const InternacaoDialog = ({ open, onClose, petId, petName }: InternacaoDi
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Motivo da internação..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -174,6 +251,8 @@ export const InternacaoDialog = ({ open, onClose, petId, petName }: InternacaoDi
                   value={veterinarian}
                   onChange={(e) => setVeterinarian(e.target.value)}
                   placeholder="Nome do veterinário"
+                  spellCheck={true}
+                  lang="pt-BR"
                 />
               </div>
             </div>
@@ -185,6 +264,8 @@ export const InternacaoDialog = ({ open, onClose, petId, petName }: InternacaoDi
                 onChange={(e) => setDiagnosis(e.target.value)}
                 placeholder="Diagnóstico..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div>
@@ -195,6 +276,8 @@ export const InternacaoDialog = ({ open, onClose, petId, petName }: InternacaoDi
                 onChange={(e) => setTreatment(e.target.value)}
                 placeholder="Tratamento realizado..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div>
@@ -205,12 +288,20 @@ export const InternacaoDialog = ({ open, onClose, petId, petName }: InternacaoDi
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Observações gerais..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
-            <Button onClick={handleSave} disabled={loading} className="w-full">
-              <Save className="h-4 w-4 mr-2" />
-              {loading ? 'Salvando...' : 'Adicionar Internação'}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleSave} disabled={loading} className="flex-1">
+                <Save className="h-4 w-4 mr-2" />
+                {loading ? 'Salvando...' : 'Salvar Informações'}
+              </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
+            </div>
           </div>
 
           {/* Histórico */}
@@ -283,8 +374,15 @@ export const InternacaoDialog = ({ open, onClose, petId, petName }: InternacaoDi
               )}
             </div>
           </div>
+
+          <PetAdminHistorySection
+            petId={petId}
+            module="internacao"
+            title="Histórico Detalhado de Internações"
+            refreshKey={historyRefresh}
+          />
         </div>
-      </DialogContent>
+      </PageDialogContent>
     </Dialog>
   );
 };
