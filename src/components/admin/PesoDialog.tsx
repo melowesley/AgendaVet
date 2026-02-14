@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Weight, Save, Trash2 } from 'lucide-react';
+import { Weight, Save, Trash2, Edit2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { format } from 'date-fns';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface PesoDialogProps {
   open: boolean;
@@ -30,6 +31,7 @@ export const PesoDialog = ({ open, onClose, petId, petName }: PesoDialogProps) =
   const [weight, setWeight] = useState('');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [notes, setNotes] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -55,23 +57,67 @@ export const PesoDialog = ({ open, onClose, petId, petName }: PesoDialogProps) =
 
     setLoading(true);
     const { data: userData } = await supabase.auth.getUser();
-    const { error } = await supabase.from('pet_weight_records').insert({
-      pet_id: petId,
-      user_id: userData.user?.id,
-      weight: parseFloat(weight),
-      date,
-      notes: notes || null,
-    });
+    
+    if (editingId) {
+      // Editar registro existente
+      const { error } = await supabase
+        .from('pet_weight_records')
+        .update({
+          weight: parseFloat(weight),
+          date,
+          notes: notes || null,
+        })
+        .eq('id', editingId);
 
-    if (error) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      if (error) {
+        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Sucesso', description: 'Registro atualizado com sucesso!' });
+        resetForm();
+        loadRecords();
+      }
     } else {
-      toast({ title: 'Sucesso', description: 'Peso registrado com sucesso!' });
-      setWeight('');
-      setNotes('');
-      loadRecords();
+      // Criar novo registro
+      const { error } = await supabase.from('pet_weight_records').insert({
+        pet_id: petId,
+        user_id: userData.user?.id,
+        weight: parseFloat(weight),
+        date,
+        notes: notes || null,
+      });
+
+      if (error) {
+        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Sucesso', description: 'Peso registrado com sucesso!' });
+        resetForm();
+        loadRecords();
+      }
     }
     setLoading(false);
+  };
+
+  const resetForm = () => {
+    setWeight('');
+    setNotes('');
+    setDate(format(new Date(), 'yyyy-MM-dd'));
+    setEditingId(null);
+  };
+
+  const handleEdit = (record: WeightRecord) => {
+    setWeight(record.weight.toString());
+    setDate(record.date);
+    setNotes(record.notes || '');
+    setEditingId(record.id);
+  };
+
+  const calculateVariation = () => {
+    if (records.length < 2) return null;
+    const sorted = [...records].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const oldest = sorted[0].weight;
+    const newest = sorted[sorted.length - 1].weight;
+    const variation = newest - oldest;
+    return { variation, isPositive: variation > 0 };
   };
 
   const handleDelete = async (id: string) => {
@@ -95,11 +141,58 @@ export const PesoDialog = ({ open, onClose, petId, petName }: PesoDialogProps) =
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Estatísticas */}
+          {records.length > 0 && (
+            <div className="grid grid-cols-3 gap-3">
+              <Card>
+                <CardContent className="p-3">
+                  <p className="text-xs text-muted-foreground">Último Peso</p>
+                  <p className="text-lg font-bold">{records[0]?.weight} kg</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-3">
+                  <p className="text-xs text-muted-foreground">Média</p>
+                  <p className="text-lg font-bold">
+                    {(records.reduce((sum, r) => sum + r.weight, 0) / records.length).toFixed(2)} kg
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-3">
+                  <p className="text-xs text-muted-foreground">Variação</p>
+                  <div className="flex items-center gap-1">
+                    {(() => {
+                      const variation = calculateVariation();
+                      if (!variation) return <span className="text-lg font-bold">-</span>;
+                      const Icon = variation.isPositive ? TrendingUp : variation.variation === 0 ? Minus : TrendingDown;
+                      return (
+                        <>
+                          <Icon className={`h-4 w-4 ${variation.isPositive ? 'text-green-500' : variation.variation === 0 ? 'text-gray-500' : 'text-red-500'}`} />
+                          <span className={`text-lg font-bold ${variation.isPositive ? 'text-green-500' : variation.variation === 0 ? 'text-gray-500' : 'text-red-500'}`}>
+                            {variation.variation > 0 ? '+' : ''}{variation.variation.toFixed(2)} kg
+                          </span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
           {/* Formulário */}
           <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+            {editingId && (
+              <div className="flex items-center gap-2 text-sm text-primary mb-2">
+                <Edit2 className="h-4 w-4" />
+                <span>Editando registro</span>
+                <Button variant="ghost" size="sm" onClick={resetForm}>Cancelar</Button>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="weight">Peso (kg)</Label>
+                <Label htmlFor="weight">Peso (kg) *</Label>
                 <Input
                   id="weight"
                   type="number"
@@ -110,7 +203,7 @@ export const PesoDialog = ({ open, onClose, petId, petName }: PesoDialogProps) =
                 />
               </div>
               <div>
-                <Label htmlFor="date">Data</Label>
+                <Label htmlFor="date">Data *</Label>
                 <Input
                   id="date"
                   type="date"
@@ -129,10 +222,17 @@ export const PesoDialog = ({ open, onClose, petId, petName }: PesoDialogProps) =
                 rows={2}
               />
             </div>
-            <Button onClick={handleSave} disabled={loading} className="w-full">
-              <Save className="h-4 w-4 mr-2" />
-              {loading ? 'Salvando...' : 'Adicionar Registro'}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleSave} disabled={loading} className="flex-1">
+                <Save className="h-4 w-4 mr-2" />
+                {loading ? 'Salvando...' : editingId ? 'Atualizar' : 'Adicionar Registro'}
+              </Button>
+              {editingId && (
+                <Button variant="outline" onClick={resetForm}>
+                  Cancelar
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Histórico */}
@@ -144,7 +244,7 @@ export const PesoDialog = ({ open, onClose, petId, petName }: PesoDialogProps) =
               ) : (
                 records.map((record) => (
                   <div key={record.id} className="flex items-center justify-between p-3 bg-card border rounded-lg">
-                    <div>
+                    <div className="flex-1">
                       <p className="font-semibold">{record.weight} kg</p>
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(record.date), 'dd/MM/yyyy')}
@@ -153,13 +253,22 @@ export const PesoDialog = ({ open, onClose, petId, petName }: PesoDialogProps) =
                         <p className="text-sm text-muted-foreground mt-1">{record.notes}</p>
                       )}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(record.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(record)}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(record.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 ))
               )}

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { FlaskConical, Save, Trash2 } from 'lucide-react';
+import { FlaskConical, Save, Trash2, Edit2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
@@ -38,6 +38,7 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
   const [description, setDescription] = useState('');
   const [treatment, setTreatment] = useState('');
   const [notes, setNotes] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) loadRecords();
@@ -60,24 +61,49 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
     }
 
     setLoading(true);
-    const { data: userData } = await supabase.auth.getUser();
-    const { error } = await supabase.from('pet_pathologies').insert({
-      pet_id: petId,
-      user_id: userData.user?.id,
-      name,
-      diagnosis_date: diagnosisDate,
-      status,
-      description: description || null,
-      treatment: treatment || null,
-      notes: notes || null,
-    });
+    
+    if (editingId) {
+      // Editar registro existente
+      const { error } = await supabase
+        .from('pet_pathologies')
+        .update({
+          name,
+          diagnosis_date: diagnosisDate,
+          status,
+          description: description || null,
+          treatment: treatment || null,
+          notes: notes || null,
+        })
+        .eq('id', editingId);
 
-    if (error) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      if (error) {
+        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Sucesso', description: 'Patologia atualizada com sucesso!' });
+        resetForm();
+        loadRecords();
+      }
     } else {
-      toast({ title: 'Sucesso', description: 'Patologia registrada com sucesso!' });
-      resetForm();
-      loadRecords();
+      // Criar novo registro
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await supabase.from('pet_pathologies').insert({
+        pet_id: petId,
+        user_id: userData.user?.id,
+        name,
+        diagnosis_date: diagnosisDate,
+        status,
+        description: description || null,
+        treatment: treatment || null,
+        notes: notes || null,
+      });
+
+      if (error) {
+        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Sucesso', description: 'Patologia registrada com sucesso!' });
+        resetForm();
+        loadRecords();
+      }
     }
     setLoading(false);
   };
@@ -88,6 +114,18 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
     setTreatment('');
     setNotes('');
     setStatus('active');
+    setDiagnosisDate(format(new Date(), 'yyyy-MM-dd'));
+    setEditingId(null);
+  };
+
+  const handleEdit = (record: Pathology) => {
+    setName(record.name);
+    setDiagnosisDate(record.diagnosis_date);
+    setStatus(record.status);
+    setDescription(record.description || '');
+    setTreatment(record.treatment || '');
+    setNotes(record.notes || '');
+    setEditingId(record.id);
   };
 
   const handleDelete = async (id: string) => {
@@ -113,6 +151,13 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
         <div className="space-y-6">
           {/* Formulário */}
           <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+            {editingId && (
+              <div className="flex items-center gap-2 text-sm text-primary mb-2">
+                <Edit2 className="h-4 w-4" />
+                <span>Editando registro</span>
+                <Button variant="ghost" size="sm" onClick={resetForm}>Cancelar</Button>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name">Nome da Patologia *</Label>
@@ -176,10 +221,17 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
                 rows={2}
               />
             </div>
-            <Button onClick={handleSave} disabled={loading} className="w-full">
-              <Save className="h-4 w-4 mr-2" />
-              {loading ? 'Salvando...' : 'Adicionar Patologia'}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleSave} disabled={loading} className="flex-1">
+                <Save className="h-4 w-4 mr-2" />
+                {loading ? 'Salvando...' : editingId ? 'Atualizar' : 'Adicionar Patologia'}
+              </Button>
+              {editingId && (
+                <Button variant="outline" onClick={resetForm}>
+                  Cancelar
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Histórico */}
@@ -202,6 +254,13 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
                         <Badge variant={record.status === 'active' ? 'destructive' : record.status === 'controlled' ? 'default' : 'secondary'}>
                           {record.status === 'active' ? 'Ativo' : record.status === 'controlled' ? 'Controlado' : 'Resolvido'}
                         </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(record)}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Syringe, Save, Trash2, Calendar } from 'lucide-react';
+import { Syringe, Save, Trash2, Calendar, Edit2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
@@ -37,6 +37,7 @@ export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProp
   const [batchNumber, setBatchNumber] = useState('');
   const [veterinarian, setVeterinarian] = useState('');
   const [notes, setNotes] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) loadRecords();
@@ -59,24 +60,49 @@ export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProp
     }
 
     setLoading(true);
-    const { data: userData } = await supabase.auth.getUser();
-    const { error } = await supabase.from('pet_vaccines').insert({
-      pet_id: petId,
-      user_id: userData.user?.id,
-      vaccine_name: vaccineName,
-      application_date: applicationDate,
-      next_dose_date: nextDoseDate || null,
-      batch_number: batchNumber || null,
-      veterinarian: veterinarian || null,
-      notes: notes || null,
-    });
+    
+    if (editingId) {
+      // Editar registro existente
+      const { error } = await supabase
+        .from('pet_vaccines')
+        .update({
+          vaccine_name: vaccineName,
+          application_date: applicationDate,
+          next_dose_date: nextDoseDate || null,
+          batch_number: batchNumber || null,
+          veterinarian: veterinarian || null,
+          notes: notes || null,
+        })
+        .eq('id', editingId);
 
-    if (error) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      if (error) {
+        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Sucesso', description: 'Vacina atualizada com sucesso!' });
+        resetForm();
+        loadRecords();
+      }
     } else {
-      toast({ title: 'Sucesso', description: 'Vacina registrada com sucesso!' });
-      resetForm();
-      loadRecords();
+      // Criar novo registro
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await supabase.from('pet_vaccines').insert({
+        pet_id: petId,
+        user_id: userData.user?.id,
+        vaccine_name: vaccineName,
+        application_date: applicationDate,
+        next_dose_date: nextDoseDate || null,
+        batch_number: batchNumber || null,
+        veterinarian: veterinarian || null,
+        notes: notes || null,
+      });
+
+      if (error) {
+        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Sucesso', description: 'Vacina registrada com sucesso!' });
+        resetForm();
+        loadRecords();
+      }
     }
     setLoading(false);
   };
@@ -87,6 +113,18 @@ export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProp
     setBatchNumber('');
     setVeterinarian('');
     setNotes('');
+    setApplicationDate(format(new Date(), 'yyyy-MM-dd'));
+    setEditingId(null);
+  };
+
+  const handleEdit = (record: Vaccine) => {
+    setVaccineName(record.vaccine_name);
+    setApplicationDate(record.application_date);
+    setNextDoseDate(record.next_dose_date || '');
+    setBatchNumber(record.batch_number || '');
+    setVeterinarian(record.veterinarian || '');
+    setNotes(record.notes || '');
+    setEditingId(record.id);
   };
 
   const handleDelete = async (id: string) => {
@@ -112,6 +150,13 @@ export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProp
         <div className="space-y-6">
           {/* Formulário */}
           <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+            {editingId && (
+              <div className="flex items-center gap-2 text-sm text-primary mb-2">
+                <Edit2 className="h-4 w-4" />
+                <span>Editando registro</span>
+                <Button variant="ghost" size="sm" onClick={resetForm}>Cancelar</Button>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="vaccine_name">Nome da Vacina *</Label>
@@ -171,10 +216,17 @@ export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProp
                 rows={2}
               />
             </div>
-            <Button onClick={handleSave} disabled={loading} className="w-full">
-              <Save className="h-4 w-4 mr-2" />
-              {loading ? 'Salvando...' : 'Adicionar Vacina'}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleSave} disabled={loading} className="flex-1">
+                <Save className="h-4 w-4 mr-2" />
+                {loading ? 'Salvando...' : editingId ? 'Atualizar' : 'Adicionar Vacina'}
+              </Button>
+              {editingId && (
+                <Button variant="outline" onClick={resetForm}>
+                  Cancelar
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Histórico */}
@@ -221,13 +273,22 @@ export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProp
                             <p className="text-sm text-muted-foreground mt-2">{record.notes}</p>
                           )}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(record.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(record)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(record.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   );
