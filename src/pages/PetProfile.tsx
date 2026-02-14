@@ -4,15 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useToast } from '@/hooks/use-toast';
-import {
-  ArrowLeft, Stethoscope, FlaskConical, FileText, Calendar,
-  PawPrint, Weight, Syringe, ClipboardList,
-} from 'lucide-react';
+import { ArrowLeft, Calendar, PawPrint } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { motion } from 'framer-motion';
-import { RequestAppointmentDialog } from '@/components/client/RequestAppointmentDialog';
 
 interface Pet {
   id: string;
@@ -51,11 +46,9 @@ const STATUS_COLORS: Record<string, string> = {
 const PetProfile = () => {
   const { petId } = useParams<{ petId: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [pet, setPet] = useState<Pet | null>(null);
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [requestOpen, setRequestOpen] = useState(false);
 
   useEffect(() => {
     if (petId) loadPetData();
@@ -102,11 +95,6 @@ const PetProfile = () => {
     setLoading(false);
   };
 
-  const handleAppointmentRequested = () => {
-    loadPetData();
-    toast({ title: 'Solicitação enviada!', description: 'Aguarde a confirmação da clínica.' });
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -133,15 +121,6 @@ const PetProfile = () => {
     return acc;
   }, {});
 
-  const actionButtons = [
-    { label: 'Atendimento', icon: Stethoscope, color: 'bg-blue-500 hover:bg-blue-600', action: () => setRequestOpen(true) },
-    { label: 'Peso', icon: Weight, color: 'bg-amber-600 hover:bg-amber-700', action: () => toast({ title: 'Em breve', description: 'Funcionalidade disponível em breve.' }) },
-    { label: 'Exame', icon: FlaskConical, color: 'bg-rose-500 hover:bg-rose-600', action: () => toast({ title: 'Em breve', description: 'Funcionalidade disponível em breve.' }) },
-    { label: 'Documento', icon: FileText, color: 'bg-green-600 hover:bg-green-700', action: () => toast({ title: 'Em breve', description: 'Funcionalidade disponível em breve.' }) },
-    { label: 'Vacina', icon: Syringe, color: 'bg-teal-500 hover:bg-teal-600', action: () => toast({ title: 'Em breve', description: 'Funcionalidade disponível em breve.' }) },
-    { label: 'Receita', icon: ClipboardList, color: 'bg-pink-500 hover:bg-pink-600', action: () => toast({ title: 'Em breve', description: 'Funcionalidade disponível em breve.' }) },
-  ];
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -164,80 +143,52 @@ const PetProfile = () => {
       </header>
 
       <main className="container max-w-5xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Timeline - Left */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-            <h2 className="font-display font-bold text-base mb-4 flex items-center gap-2">
-              <Calendar size={18} />
-              Linha do Tempo
-            </h2>
-            <ScrollArea className="max-h-[60vh]">
-              {timeline.length === 0 ? (
-                <Card className="border-dashed">
-                  <CardContent className="py-8 text-center">
-                    <PawPrint className="mx-auto mb-2 text-muted-foreground" size={28} />
-                    <p className="text-sm text-muted-foreground">Nenhum registro ainda.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                Object.entries(grouped)
-                  .sort(([a], [b]) => Number(b) - Number(a))
-                  .map(([year, entries]) => (
-                    <div key={year} className="mb-4">
-                      <p className="text-sm font-bold text-muted-foreground mb-2">{year}</p>
-                      <div className="relative border-l-2 border-border pl-4 space-y-4">
-                        {entries.map((entry) => (
-                          <div key={entry.id} className="relative">
-                            <div className={`absolute -left-[21px] top-1 w-3 h-3 rounded-full ${STATUS_COLORS[entry.status] || 'bg-muted-foreground'}`} />
-                            <div className="bg-card border rounded-lg p-3">
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-primary">
-                                  {format(new Date(entry.date), "dd/MM", { locale: ptBR })} às {entry.time}
-                                </span>
-                                <span className={`text-xs px-2 py-0.5 rounded-full text-white ${STATUS_COLORS[entry.status] || 'bg-muted'}`}>
-                                  {STATUS_LABELS[entry.status] || entry.status}
-                                </span>
-                              </div>
-                              <p className="text-sm font-semibold mt-1">{entry.title}</p>
-                              {entry.description && (
-                                <p className="text-xs text-muted-foreground mt-0.5">{entry.description}</p>
-                              )}
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+          <h2 className="font-display font-bold text-base mb-4 flex items-center gap-2">
+            <Calendar size={18} />
+            Linha do Tempo
+          </h2>
+          <ScrollArea className="max-h-[70vh]">
+            {timeline.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="py-8 text-center">
+                  <PawPrint className="mx-auto mb-2 text-muted-foreground" size={28} />
+                  <p className="text-sm text-muted-foreground">Nenhum registro ainda.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              Object.entries(grouped)
+                .sort(([a], [b]) => Number(b) - Number(a))
+                .map(([year, entries]) => (
+                  <div key={year} className="mb-4">
+                    <p className="text-sm font-bold text-muted-foreground mb-2">{year}</p>
+                    <div className="relative border-l-2 border-border pl-4 space-y-4">
+                      {entries.map((entry) => (
+                        <div key={entry.id} className="relative">
+                          <div className={`absolute -left-[21px] top-1 w-3 h-3 rounded-full ${STATUS_COLORS[entry.status] || 'bg-muted-foreground'}`} />
+                          <div className="bg-card border rounded-lg p-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-primary">
+                                {format(new Date(entry.date), "dd/MM", { locale: ptBR })} às {entry.time}
+                              </span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full text-white ${STATUS_COLORS[entry.status] || 'bg-muted'}`}>
+                                {STATUS_LABELS[entry.status] || entry.status}
+                              </span>
                             </div>
+                            <p className="text-sm font-semibold mt-1">{entry.title}</p>
+                            {entry.description && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{entry.description}</p>
+                            )}
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ))}
                     </div>
-                  ))
-              )}
-            </ScrollArea>
-          </motion.div>
-
-          {/* Action Buttons - Right */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-            <h2 className="font-display font-bold text-base mb-4">Adicionar</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {actionButtons.map((btn) => (
-                <button
-                  key={btn.label}
-                  onClick={btn.action}
-                  className={`${btn.color} text-white rounded-xl p-5 flex flex-col items-center gap-2 transition-transform hover:scale-105 active:scale-95`}
-                >
-                  <btn.icon size={28} />
-                  <span className="text-sm font-semibold">{btn.label}</span>
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        </div>
+                  </div>
+                ))
+            )}
+          </ScrollArea>
+        </motion.div>
       </main>
-
-      <RequestAppointmentDialog
-        open={requestOpen}
-        onOpenChange={setRequestOpen}
-        petId={pet.id}
-        pets={[pet]}
-        onAppointmentRequested={handleAppointmentRequested}
-      />
     </div>
   );
 };

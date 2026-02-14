@@ -272,6 +272,47 @@ export type Database = {
         }
         Relationships: []
       }
+      pet_records: {
+        Row: {
+          id: string
+          pet_id: string
+          record_type: string
+          title: string | null
+          data: Json
+          created_at: string
+          updated_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          pet_id: string
+          record_type: string
+          title?: string | null
+          data?: Json
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          pet_id?: string
+          record_type?: string
+          title?: string | null
+          data?: Json
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_records_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pets: {
         Row: {
           age: string | null

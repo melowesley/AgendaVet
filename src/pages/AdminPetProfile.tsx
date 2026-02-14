@@ -6,12 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft, Stethoscope, FlaskConical, FileText, Calendar,
   PawPrint, Weight, Syringe, ClipboardList, Camera, MessageSquare,
-  Video, Plus, Printer, ChevronDown, ChevronUp,
+  Video, Plus, Printer,
 } from 'lucide-react';
+import { AddPetRecordDialog, type PetRecordType } from '@/components/admin/AddPetRecordDialog';
+import { NovoAtendimentoDialog } from '@/components/admin/NovoAtendimentoDialog';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { motion } from 'framer-motion';
@@ -24,6 +25,7 @@ interface Pet {
   age: string | null;
   weight: string | null;
   notes: string | null;
+  user_id: string;
 }
 
 interface OwnerProfile {
@@ -65,29 +67,30 @@ const STATUS_DOT: Record<string, string> = {
   cancelled: 'bg-red-500',
 };
 
-const ACTION_BUTTONS = [
+const ACTION_BUTTONS: { label: string; icon: typeof Stethoscope; bg: string; recordType?: PetRecordType }[] = [
   { label: 'Atendimento', icon: Stethoscope, bg: 'bg-sky-500 hover:bg-sky-600' },
-  { label: 'Peso', icon: Weight, bg: 'bg-amber-600 hover:bg-amber-700' },
-  { label: 'Patologia', icon: FlaskConical, bg: 'bg-purple-600 hover:bg-purple-700' },
-  { label: 'Documento', icon: FileText, bg: 'bg-green-600 hover:bg-green-700' },
-  { label: 'Exame', icon: FlaskConical, bg: 'bg-rose-500 hover:bg-rose-600' },
-  { label: 'Fotos', icon: Camera, bg: 'bg-teal-600 hover:bg-teal-700' },
-  { label: 'Vacina', icon: Syringe, bg: 'bg-amber-500 hover:bg-amber-600' },
-  { label: 'Receita', icon: ClipboardList, bg: 'bg-violet-500 hover:bg-violet-600' },
-  { label: 'Observações', icon: MessageSquare, bg: 'bg-gray-500 hover:bg-gray-600' },
-  { label: 'Vídeo', icon: Video, bg: 'bg-emerald-600 hover:bg-emerald-700' },
-  { label: 'Internação', icon: Plus, bg: 'bg-red-700 hover:bg-red-800' },
+  { label: 'Peso', icon: Weight, bg: 'bg-amber-600 hover:bg-amber-700', recordType: 'peso' },
+  { label: 'Patologia', icon: FlaskConical, bg: 'bg-purple-600 hover:bg-purple-700', recordType: 'patologia' },
+  { label: 'Documento', icon: FileText, bg: 'bg-green-600 hover:bg-green-700', recordType: 'documento' },
+  { label: 'Exame', icon: FlaskConical, bg: 'bg-rose-500 hover:bg-rose-600', recordType: 'exame' },
+  { label: 'Fotos', icon: Camera, bg: 'bg-teal-600 hover:bg-teal-700', recordType: 'fotos' },
+  { label: 'Vacina', icon: Syringe, bg: 'bg-amber-500 hover:bg-amber-600', recordType: 'vacina' },
+  { label: 'Receita', icon: ClipboardList, bg: 'bg-violet-500 hover:bg-violet-600', recordType: 'receita' },
+  { label: 'Observações', icon: MessageSquare, bg: 'bg-gray-500 hover:bg-gray-600', recordType: 'observacao' },
+  { label: 'Vídeo', icon: Video, bg: 'bg-emerald-600 hover:bg-emerald-700', recordType: 'video' },
+  { label: 'Internação', icon: Plus, bg: 'bg-red-700 hover:bg-red-800', recordType: 'internacao' },
 ];
 
 const AdminPetProfile = () => {
   const { petId } = useParams<{ petId: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { isAdmin, isLoading: adminLoading } = useAdminCheck();
   const [pet, setPet] = useState<Pet | null>(null);
   const [owner, setOwner] = useState<OwnerProfile | null>(null);
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [atendimentoOpen, setAtendimentoOpen] = useState(false);
+  const [recordDialogType, setRecordDialogType] = useState<PetRecordType | null>(null);
 
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
@@ -159,8 +162,12 @@ const AdminPetProfile = () => {
     setLoading(false);
   };
 
-  const handleAction = (label: string) => {
-    toast({ title: 'Em breve', description: `Funcionalidade "${label}" será implementada em breve.` });
+  const handleAction = (btn: (typeof ACTION_BUTTONS)[number]) => {
+    if (btn.label === 'Atendimento') {
+      setAtendimentoOpen(true);
+      return;
+    }
+    if (btn.recordType) setRecordDialogType(btn.recordType);
   };
 
   if (adminLoading || loading) {
@@ -298,7 +305,7 @@ const AdminPetProfile = () => {
               {ACTION_BUTTONS.map((btn) => (
                 <button
                   key={btn.label}
-                  onClick={() => handleAction(btn.label)}
+                  onClick={() => handleAction(btn)}
                   className={`${btn.bg} text-white rounded-xl p-4 flex flex-col items-center gap-2 transition-transform hover:scale-105 active:scale-95 shadow-sm`}
                 >
                   <btn.icon size={26} />
@@ -309,6 +316,25 @@ const AdminPetProfile = () => {
           </motion.div>
         </div>
       </main>
+
+      <NovoAtendimentoDialog
+        open={atendimentoOpen}
+        onClose={() => setAtendimentoOpen(false)}
+        pet={pet}
+        owner={owner}
+        onSaved={loadPetData}
+      />
+
+      {recordDialogType && (
+        <AddPetRecordDialog
+          open={!!recordDialogType}
+          onClose={() => setRecordDialogType(null)}
+          petId={pet.id}
+          petName={pet.name}
+          recordType={recordDialogType}
+          onSaved={loadPetData}
+        />
+      )}
     </div>
   );
 };
