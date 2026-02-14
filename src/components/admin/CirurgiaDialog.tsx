@@ -14,6 +14,8 @@ import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
 import { useToast } from '@/hooks/use-toast';
 import { TutorInfoSection } from './detail/TutorInfoSection';
 import { exportAppointmentPdf } from './exportAppointmentPdf';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
+import { logPetAdminHistory } from './petAdminHistory';
 
 interface CirurgiaDialogProps {
   open: boolean;
@@ -67,6 +69,7 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
   const time = request.scheduled_time || request.preferred_time;
   const [data, setData] = useState<CirurgiaData>(EMPTY_CIRURGIA);
   const [saving, setSaving] = useState(false);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   const updateField = <K extends keyof CirurgiaData>(field: K, value: CirurgiaData[K]) => {
     setData(prev => ({ ...prev, [field]: value }));
@@ -102,6 +105,22 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
     if (error) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId: request.pet.id,
+        module: 'cirurgia',
+        action: 'procedure',
+        title: 'Procedimento cirúrgico registrado',
+        details: {
+          procedimento_realizado: data.procedimento_realizado || '—',
+          tipo_anestesia: data.tipo_anestesia || '—',
+          duracao_minutos: data.duracao_minutos || '—',
+          intercorrencias: data.intercorrencias || '—',
+          retorno_previsto: data.retorno_previsto || '—',
+        },
+        sourceTable: 'appointment_requests',
+        sourceId: request.id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
       toast({ title: 'Registro cirúrgico salvo com sucesso!' });
     }
     setSaving(false);
@@ -258,6 +277,13 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
                 Exportar PDF
               </Button>
             </div>
+
+            <PetAdminHistorySection
+              petId={request.pet.id}
+              module="cirurgia"
+              title="Histórico Detalhado da Cirurgia"
+              refreshKey={historyRefresh}
+            />
           </div>
         </ScrollArea>
       </DialogContent>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Stethoscope, Scissors, RotateCcw, ClipboardCheck, Weight, 
@@ -12,16 +12,17 @@ import { ConsultaDialog } from './ConsultaDialog';
 import { AvaliacaoCirurgicaDialog } from './AvaliacaoCirurgicaDialog';
 import { CirurgiaDialog } from './CirurgiaDialog';
 import { RetornoDialog } from './RetornoDialog';
+import { PesoDialog } from './PesoDialog';
+import { PatologiaDialog } from './PatologiaDialog';
+import { DocumentoDialog } from './DocumentoDialog';
+import { ExameDialog } from './ExameDialog';
+import { FotosDialog } from './FotosDialog';
+import { VacinaDialog } from './VacinaDialog';
+import { ReceitaDialog } from './ReceitaDialog';
+import { ObservacoesDialog } from './ObservacoesDialog';
+import { VideoDialog } from './VideoDialog';
+import { InternacaoDialog } from './InternacaoDialog';
 import { format } from 'date-fns';
-
-interface AttendanceTypeDialogProps {
-  open: boolean;
-  onClose: () => void;
-  request?: AppointmentRequest;
-  petId?: string;
-  petName?: string;
-  onSelectType?: (type: string) => void;
-}
 
 const ATTENDANCE_TYPES = [
   { key: 'consulta', label: 'Consulta', icon: Stethoscope, description: 'Atendimento clínico com anamnese completa', color: 'bg-[#4A9FD8] hover:bg-[#3A8FC8]', isAttendance: true },
@@ -38,35 +39,38 @@ const ATTENDANCE_TYPES = [
   { key: 'observacoes', label: 'Observações', icon: MessageSquare, description: 'Adicionar observações', color: 'bg-[#6B7280] hover:bg-[#5B6270]', isAttendance: false },
   { key: 'video', label: 'Vídeo', icon: Video, description: 'Adicionar vídeos', color: 'bg-[#10B981] hover:bg-[#00A971]', isAttendance: false },
   { key: 'internacao', label: 'Internação', icon: Cross, description: 'Registro de internação', color: 'bg-[#B91C1C] hover:bg-[#A90C0C]', isAttendance: false },
-];
+ ] as const;
 
-export const AttendanceTypeDialog = ({ open, onClose, request, petId, petName, onSelectType }: AttendanceTypeDialogProps) => {
+export type AttendanceTypeKey = (typeof ATTENDANCE_TYPES)[number]['key'];
+
+interface AttendanceTypeDialogProps {
+  open: boolean;
+  onClose: () => void;
+  request?: AppointmentRequest;
+  petId?: string;
+  petName?: string;
+  initialType?: AttendanceTypeKey | null;
+}
+
+export const AttendanceTypeDialog = ({ open, onClose, request, petId, petName, initialType }: AttendanceTypeDialogProps) => {
   const { toast } = useToast();
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<AttendanceTypeKey | null>(null);
   const [tempRequest, setTempRequest] = useState<AppointmentRequest | null>(null);
   const [loading, setLoading] = useState(false);
+  const resolvedPetId = petId ?? request?.pet?.id;
+  const resolvedPetName = petName ?? request?.pet?.name;
 
-  const handleSelect = async (key: string) => {
-    const type = ATTENDANCE_TYPES.find(t => t.key === key);
-    
-    // Se não for um tipo de atendimento, fechar este diálogo e abrir o diálogo específico
-    if (!type?.isAttendance) {
-      if (onSelectType) {
-        onSelectType(key);
-      }
-      onClose();
-      return;
-    }
-
+  const handleSelect = useCallback(async (key: AttendanceTypeKey) => {
     // Se for um tipo de atendimento e não houver request, criar um temporário
-    if (type.isAttendance && !request && petId) {
+    const type = ATTENDANCE_TYPES.find(t => t.key === key);
+    if (type?.isAttendance && !request && resolvedPetId) {
       setLoading(true);
       try {
         // Buscar dados do pet
         const { data: petData } = await supabase
           .from('pets')
           .select('*')
-          .eq('id', petId)
+          .eq('id', resolvedPetId)
           .single();
 
         if (!petData) {
@@ -119,11 +123,15 @@ export const AttendanceTypeDialog = ({ open, onClose, request, petId, petName, o
       } finally {
         setLoading(false);
       }
-    } else if (request) {
-      // Se já tem request, apenas definir o tipo selecionado
+    } else {
       setSelectedType(key);
     }
-  };
+  }, [request, resolvedPetId, toast]);
+
+  useEffect(() => {
+    if (!open || !initialType || selectedType === initialType) return;
+    void handleSelect(initialType);
+  }, [open, initialType, selectedType, handleSelect]);
 
   const handleClose = () => {
     setSelectedType(null);
@@ -152,6 +160,37 @@ export const AttendanceTypeDialog = ({ open, onClose, request, petId, petName, o
     return <RetornoDialog open={true} onClose={handleClose} onBack={handleBack} request={currentRequest} />;
   }
 
+  // Outras funcionalidades que precisam apenas de petId e petName
+  if (selectedType === 'peso' && resolvedPetId && resolvedPetName) {
+    return <PesoDialog open={true} onClose={handleClose} onBack={handleBack} petId={resolvedPetId} petName={resolvedPetName} />;
+  }
+  if (selectedType === 'patologia' && resolvedPetId && resolvedPetName) {
+    return <PatologiaDialog open={true} onClose={handleClose} onBack={handleBack} petId={resolvedPetId} petName={resolvedPetName} />;
+  }
+  if (selectedType === 'documento' && resolvedPetId && resolvedPetName) {
+    return <DocumentoDialog open={true} onClose={handleClose} onBack={handleBack} petId={resolvedPetId} petName={resolvedPetName} />;
+  }
+  if (selectedType === 'exame' && resolvedPetId && resolvedPetName) {
+    return <ExameDialog open={true} onClose={handleClose} onBack={handleBack} petId={resolvedPetId} petName={resolvedPetName} />;
+  }
+  if (selectedType === 'fotos' && resolvedPetId && resolvedPetName) {
+    return <FotosDialog open={true} onClose={handleClose} onBack={handleBack} petId={resolvedPetId} petName={resolvedPetName} />;
+  }
+  if (selectedType === 'vacina' && resolvedPetId && resolvedPetName) {
+    return <VacinaDialog open={true} onClose={handleClose} onBack={handleBack} petId={resolvedPetId} petName={resolvedPetName} />;
+  }
+  if (selectedType === 'receita' && resolvedPetId && resolvedPetName) {
+    return <ReceitaDialog open={true} onClose={handleClose} onBack={handleBack} petId={resolvedPetId} petName={resolvedPetName} />;
+  }
+  if (selectedType === 'observacoes' && resolvedPetId && resolvedPetName) {
+    return <ObservacoesDialog open={true} onClose={handleClose} onBack={handleBack} petId={resolvedPetId} petName={resolvedPetName} />;
+  }
+  if (selectedType === 'video' && resolvedPetId && resolvedPetName) {
+    return <VideoDialog open={true} onClose={handleClose} onBack={handleBack} petId={resolvedPetId} petName={resolvedPetName} />;
+  }
+  if (selectedType === 'internacao' && resolvedPetId && resolvedPetName) {
+    return <InternacaoDialog open={true} onClose={handleClose} onBack={handleBack} petId={resolvedPetId} petName={resolvedPetName} />;
+  }
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>

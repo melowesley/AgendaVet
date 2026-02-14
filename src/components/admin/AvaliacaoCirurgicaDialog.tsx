@@ -14,6 +14,8 @@ import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
 import { useToast } from '@/hooks/use-toast';
 import { TutorInfoSection } from './detail/TutorInfoSection';
 import { exportAppointmentPdf } from './exportAppointmentPdf';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
+import { logPetAdminHistory } from './petAdminHistory';
 
 interface AvaliacaoCirurgicaDialogProps {
   open: boolean;
@@ -70,6 +72,7 @@ export const AvaliacaoCirurgicaDialog = ({ open, onClose, onBack, request }: Ava
   const time = request.scheduled_time || request.preferred_time;
   const [data, setData] = useState<AvaliacaoData>(EMPTY_AVALIACAO);
   const [saving, setSaving] = useState(false);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   const updateField = <K extends keyof AvaliacaoData>(field: K, value: AvaliacaoData[K]) => {
     setData(prev => ({ ...prev, [field]: value }));
@@ -106,6 +109,22 @@ export const AvaliacaoCirurgicaDialog = ({ open, onClose, onBack, request }: Ava
     if (error) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId: request.pet.id,
+        module: 'avaliacao_cirurgica',
+        action: 'procedure',
+        title: 'Avaliação cirúrgica registrada',
+        details: {
+          procedimento_proposto: data.procedimento_proposto || '—',
+          risco_asa: data.risco_asa || '—',
+          exames_pre_operatorios: data.exames_pre_operatorios,
+          jejum_confirmado: data.jejum_confirmado,
+          observacoes: data.observacoes || '—',
+        },
+        sourceTable: 'appointment_requests',
+        sourceId: request.id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
       toast({ title: 'Avaliação cirúrgica salva com sucesso!' });
     }
     setSaving(false);
@@ -238,6 +257,13 @@ export const AvaliacaoCirurgicaDialog = ({ open, onClose, onBack, request }: Ava
                 Exportar PDF
               </Button>
             </div>
+
+            <PetAdminHistorySection
+              petId={request.pet.id}
+              module="avaliacao_cirurgica"
+              title="Histórico Detalhado da Avaliação"
+              refreshKey={historyRefresh}
+            />
           </div>
         </ScrollArea>
       </DialogContent>

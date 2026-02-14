@@ -7,12 +7,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Save, Trash2, Download } from 'lucide-react';
+import { FileText, Save, Trash2, Download, ArrowLeft, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
+import { exportPetRecordPdf } from './exportPetRecordPdf';
+import { logPetAdminHistory } from './petAdminHistory';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
 
 interface DocumentoDialogProps {
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
   petId: string;
   petName: string;
 }
@@ -26,7 +30,7 @@ interface Document {
   date: string;
 }
 
-export const DocumentoDialog = ({ open, onClose, petId, petName }: DocumentoDialogProps) => {
+export const DocumentoDialog = ({ open, onClose, onBack, petId, petName }: DocumentoDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<Document[]>([]);
@@ -35,6 +39,7 @@ export const DocumentoDialog = ({ open, onClose, petId, petName }: DocumentoDial
   const [fileUrl, setFileUrl] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   useEffect(() => {
     if (open) loadRecords();
@@ -71,6 +76,15 @@ export const DocumentoDialog = ({ open, onClose, petId, petName }: DocumentoDial
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'documento',
+        action: 'create',
+        title: 'Documento anexado',
+        details: { titulo: title, tipo_documento: documentType || '—', data: date, arquivo: fileUrl || '—', descricao: description || '—' },
+        sourceTable: 'pet_documents',
+      });
+      setHistoryRefresh((prev) => prev + 1);
       toast({ title: 'Sucesso', description: 'Documento registrado com sucesso!' });
       resetForm();
       loadRecords();
@@ -90,16 +104,53 @@ export const DocumentoDialog = ({ open, onClose, petId, petName }: DocumentoDial
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'documento',
+        action: 'delete',
+        title: 'Documento excluído',
+        details: { registro_id: id },
+        sourceTable: 'pet_documents',
+        sourceId: id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
       toast({ title: 'Sucesso', description: 'Documento excluído' });
       loadRecords();
     }
   };
 
+  const handleExportPdf = () => {
+    exportPetRecordPdf({
+      title: 'Documentos',
+      petName,
+      sectionTitle: 'Documentos e Anexos',
+      sectionData: {
+        registro_atual: {
+          titulo: title || '—',
+          tipo_documento: documentType || '—',
+          data: date || '—',
+          url_arquivo: fileUrl || '—',
+          descricao: description || '—',
+        },
+        historico: records.map((record) => ({
+          titulo: record.title,
+          tipo_documento: record.document_type || '—',
+          data: record.date,
+          url_arquivo: record.file_url || '—',
+          descricao: record.description || '—',
+        })),
+      },
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack || onClose}>
+              <ArrowLeft size={16} />
+            </Button>
             <FileText className="h-5 w-5" />
             Documentos - {petName}
           </DialogTitle>
@@ -163,10 +214,16 @@ export const DocumentoDialog = ({ open, onClose, petId, petName }: DocumentoDial
                 rows={3}
               />
             </div>
-            <Button onClick={handleSave} disabled={loading} className="w-full">
-              <Save className="h-4 w-4 mr-2" />
-              {loading ? 'Salvando...' : 'Adicionar Documento'}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleSave} disabled={loading} className="flex-1">
+                <Save className="h-4 w-4 mr-2" />
+                {loading ? 'Salvando...' : 'Adicionar Documento'}
+              </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
+            </div>
           </div>
 
           {/* Histórico */}
@@ -217,6 +274,13 @@ export const DocumentoDialog = ({ open, onClose, petId, petName }: DocumentoDial
               )}
             </div>
           </div>
+
+          <PetAdminHistorySection
+            petId={petId}
+            module="documento"
+            title="Histórico Detalhado de Documentos"
+            refreshKey={historyRefresh}
+          />
         </div>
       </DialogContent>
     </Dialog>

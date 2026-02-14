@@ -272,6 +272,53 @@ export type Database = {
         }
         Relationships: []
       }
+      pet_admin_history: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          module: string
+          pet_id: string
+          source_id: string | null
+          source_table: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          module: string
+          pet_id: string
+          source_id?: string | null
+          source_table?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          module?: string
+          pet_id?: string
+          source_id?: string | null
+          source_table?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_admin_history_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pet_documents: {
         Row: {
           id: string

@@ -13,6 +13,8 @@ import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
 import { useToast } from '@/hooks/use-toast';
 import { TutorInfoSection } from './detail/TutorInfoSection';
 import { exportAppointmentPdf } from './exportAppointmentPdf';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
+import { logPetAdminHistory } from './petAdminHistory';
 
 interface RetornoDialogProps {
   open: boolean;
@@ -65,6 +67,7 @@ export const RetornoDialog = ({ open, onClose, onBack, request }: RetornoDialogP
   const time = request.scheduled_time || request.preferred_time;
   const [data, setData] = useState<RetornoData>(EMPTY_RETORNO);
   const [saving, setSaving] = useState(false);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   const updateField = <K extends keyof RetornoData>(field: K, value: RetornoData[K]) => {
     setData(prev => ({ ...prev, [field]: value }));
@@ -91,6 +94,21 @@ export const RetornoDialog = ({ open, onClose, onBack, request }: RetornoDialogP
     if (error) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId: request.pet.id,
+        module: 'retorno',
+        action: 'procedure',
+        title: 'Retorno registrado',
+        details: {
+          motivo_retorno: data.motivo_retorno || '—',
+          evolucao_quadro: data.evolucao_quadro || '—',
+          conduta: data.conduta || '—',
+          proximo_retorno: data.proximo_retorno || '—',
+        },
+        sourceTable: 'appointment_requests',
+        sourceId: request.id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
       toast({ title: 'Retorno salvo com sucesso!' });
     }
     setSaving(false);
@@ -245,6 +263,13 @@ export const RetornoDialog = ({ open, onClose, onBack, request }: RetornoDialogP
                 Exportar PDF
               </Button>
             </div>
+
+            <PetAdminHistorySection
+              petId={request.pet.id}
+              module="retorno"
+              title="Histórico Detalhado de Retorno"
+              refreshKey={historyRefresh}
+            />
           </div>
         </ScrollArea>
       </DialogContent>

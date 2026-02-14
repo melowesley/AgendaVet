@@ -6,12 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { FlaskConical, Save, Trash2, Download, Edit2 } from 'lucide-react';
+import { FlaskConical, Save, Trash2, Download, Edit2, ArrowLeft, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
+import { exportPetRecordPdf } from './exportPetRecordPdf';
+import { logPetAdminHistory } from './petAdminHistory';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
 
 interface ExameDialogProps {
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
   petId: string;
   petName: string;
 }
@@ -26,7 +30,7 @@ interface Exam {
   notes: string | null;
 }
 
-export const ExameDialog = ({ open, onClose, petId, petName }: ExameDialogProps) => {
+export const ExameDialog = ({ open, onClose, onBack, petId, petName }: ExameDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<Exam[]>([]);
@@ -37,6 +41,7 @@ export const ExameDialog = ({ open, onClose, petId, petName }: ExameDialogProps)
   const [fileUrl, setFileUrl] = useState('');
   const [notes, setNotes] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   useEffect(() => {
     if (open) loadRecords();
@@ -77,6 +82,16 @@ export const ExameDialog = ({ open, onClose, petId, petName }: ExameDialogProps)
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
       } else {
+        await logPetAdminHistory({
+          petId,
+          module: 'exame',
+          action: 'update',
+          title: 'Exame atualizado',
+          details: { tipo_exame: examType, data_exame: examDate, resultados: results || '—', veterinario: veterinarian || '—' },
+          sourceTable: 'pet_exams',
+          sourceId: editingId,
+        });
+        setHistoryRefresh((prev) => prev + 1);
         toast({ title: 'Sucesso', description: 'Exame atualizado com sucesso!' });
         resetForm();
         loadRecords();
@@ -98,6 +113,15 @@ export const ExameDialog = ({ open, onClose, petId, petName }: ExameDialogProps)
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
       } else {
+        await logPetAdminHistory({
+          petId,
+          module: 'exame',
+          action: 'create',
+          title: 'Novo exame registrado',
+          details: { tipo_exame: examType, data_exame: examDate, resultados: results || '—', veterinario: veterinarian || '—' },
+          sourceTable: 'pet_exams',
+        });
+        setHistoryRefresh((prev) => prev + 1);
         toast({ title: 'Sucesso', description: 'Exame registrado com sucesso!' });
         resetForm();
         loadRecords();
@@ -131,16 +155,55 @@ export const ExameDialog = ({ open, onClose, petId, petName }: ExameDialogProps)
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'exame',
+        action: 'delete',
+        title: 'Exame excluído',
+        details: { registro_id: id },
+        sourceTable: 'pet_exams',
+        sourceId: id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
       toast({ title: 'Sucesso', description: 'Exame excluído' });
       loadRecords();
     }
   };
 
+  const handleExportPdf = () => {
+    exportPetRecordPdf({
+      title: 'Exames',
+      petName,
+      sectionTitle: 'Resultados de Exames',
+      sectionData: {
+        registro_atual: {
+          tipo_exame: examType || '—',
+          data_exame: examDate || '—',
+          resultados: results || '—',
+          veterinario: veterinarian || '—',
+          arquivo: fileUrl || '—',
+          observacoes: notes || '—',
+        },
+        historico: records.map((record) => ({
+          tipo_exame: record.exam_type,
+          data_exame: record.exam_date,
+          resultados: record.results || '—',
+          veterinario: record.veterinarian || '—',
+          arquivo: record.file_url || '—',
+          observacoes: record.notes || '—',
+        })),
+      },
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack || onClose}>
+              <ArrowLeft size={16} />
+            </Button>
             <FlaskConical className="h-5 w-5" />
             Exames - {petName}
           </DialogTitle>
@@ -219,6 +282,10 @@ export const ExameDialog = ({ open, onClose, petId, petName }: ExameDialogProps)
                 <Save className="h-4 w-4 mr-2" />
                 {loading ? 'Salvando...' : editingId ? 'Atualizar' : 'Adicionar Exame'}
               </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
               {editingId && (
                 <Button variant="outline" onClick={resetForm}>
                   Cancelar
@@ -287,6 +354,13 @@ export const ExameDialog = ({ open, onClose, petId, petName }: ExameDialogProps)
               )}
             </div>
           </div>
+
+          <PetAdminHistorySection
+            petId={petId}
+            module="exame"
+            title="Histórico Detalhado de Exames"
+            refreshKey={historyRefresh}
+          />
         </div>
       </DialogContent>
     </Dialog>

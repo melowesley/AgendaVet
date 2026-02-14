@@ -14,6 +14,8 @@ import { ManejoTab } from './detail/ManejoTab';
 import { ExameFisicoTab } from './detail/ExameFisicoTab';
 import { AnamnesisData, EMPTY_ANAMNESIS } from './anamnesisTypes';
 import { exportAppointmentPdf } from './exportAppointmentPdf';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
+import { logPetAdminHistory } from './petAdminHistory';
 
 interface ConsultaDialogProps {
   open: boolean;
@@ -30,6 +32,7 @@ export const ConsultaDialog = ({ open, onClose, onBack, request }: ConsultaDialo
   const [anamnesisId, setAnamnesisId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   useEffect(() => {
     if (open && request.id) fetchAnamnesis();
@@ -140,6 +143,21 @@ export const ConsultaDialog = ({ open, onClose, onBack, request }: ConsultaDialo
         .from('appointment_requests')
         .update({ status: 'completed', admin_notes: JSON.stringify({ tipo_atendimento: 'consulta', salvo_em: new Date().toISOString() }) })
         .eq('id', request.id);
+      await logPetAdminHistory({
+        petId: request.pet.id,
+        module: 'consulta',
+        action: 'procedure',
+        title: 'Ficha de consulta salva',
+        details: {
+          atendimento: 'consulta',
+          queixa_principal: anamnesis.queixa_principal || '—',
+          medicamentos: anamnesis.medicamentos || '—',
+          salvo_em: new Date().toISOString(),
+        },
+        sourceTable: 'anamnesis',
+        sourceId: anamnesisId || request.id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
       toast({ title: 'Ficha salva com sucesso!' });
       fetchAnamnesis();
     }
@@ -223,6 +241,13 @@ export const ConsultaDialog = ({ open, onClose, onBack, request }: ConsultaDialo
                 </Button>
               </div>
             )}
+
+            <PetAdminHistorySection
+              petId={request.pet.id}
+              module="consulta"
+              title="Histórico Detalhado da Consulta"
+              refreshKey={historyRefresh}
+            />
           </div>
         </ScrollArea>
       </DialogContent>

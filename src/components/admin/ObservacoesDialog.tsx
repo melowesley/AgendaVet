@@ -7,13 +7,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { MessageSquare, Save, Trash2, Edit2 } from 'lucide-react';
+import { MessageSquare, Save, Trash2, Edit2, ArrowLeft, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { exportPetRecordPdf } from './exportPetRecordPdf';
+import { logPetAdminHistory } from './petAdminHistory';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
 
 interface ObservacoesDialogProps {
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
   petId: string;
   petName: string;
 }
@@ -26,7 +30,7 @@ interface Observation {
   category: string | null;
 }
 
-export const ObservacoesDialog = ({ open, onClose, petId, petName }: ObservacoesDialogProps) => {
+export const ObservacoesDialog = ({ open, onClose, onBack, petId, petName }: ObservacoesDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<Observation[]>([]);
@@ -35,6 +39,7 @@ export const ObservacoesDialog = ({ open, onClose, petId, petName }: Observacoes
   const [observationDate, setObservationDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [category, setCategory] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   useEffect(() => {
     if (open) loadRecords();
@@ -73,6 +78,16 @@ export const ObservacoesDialog = ({ open, onClose, petId, petName }: Observacoes
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
       } else {
+        await logPetAdminHistory({
+          petId,
+          module: 'observacoes',
+          action: 'update',
+          title: 'Observação atualizada',
+          details: { titulo: title || '—', categoria: category || '—', data: observationDate, observacao: observation },
+          sourceTable: 'pet_observations',
+          sourceId: editingId,
+        });
+        setHistoryRefresh((prev) => prev + 1);
         toast({ title: 'Sucesso', description: 'Observação atualizada com sucesso!' });
         resetForm();
         loadRecords();
@@ -92,6 +107,15 @@ export const ObservacoesDialog = ({ open, onClose, petId, petName }: Observacoes
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
       } else {
+        await logPetAdminHistory({
+          petId,
+          module: 'observacoes',
+          action: 'create',
+          title: 'Nova observação registrada',
+          details: { titulo: title || '—', categoria: category || '—', data: observationDate, observacao: observation },
+          sourceTable: 'pet_observations',
+        });
+        setHistoryRefresh((prev) => prev + 1);
         toast({ title: 'Sucesso', description: 'Observação registrada com sucesso!' });
         resetForm();
         loadRecords();
@@ -121,6 +145,16 @@ export const ObservacoesDialog = ({ open, onClose, petId, petName }: Observacoes
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'observacoes',
+        action: 'delete',
+        title: 'Observação excluída',
+        details: { registro_id: id },
+        sourceTable: 'pet_observations',
+        sourceId: id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
       toast({ title: 'Sucesso', description: 'Observação excluída' });
       loadRecords();
     }
@@ -136,11 +170,36 @@ export const ObservacoesDialog = ({ open, onClose, petId, petName }: Observacoes
     }
   };
 
+  const handleExportPdf = () => {
+    exportPetRecordPdf({
+      title: 'Observacoes',
+      petName,
+      sectionTitle: 'Historico de Observacoes',
+      sectionData: {
+        registro_atual: {
+          titulo: title || '—',
+          categoria: category || '—',
+          data: observationDate || '—',
+          observacao: observation || '—',
+        },
+        historico: records.map((record) => ({
+          titulo: record.title || '—',
+          categoria: record.category || '—',
+          data: record.observation_date,
+          observacao: record.observation,
+        })),
+      },
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack || onClose}>
+              <ArrowLeft size={16} />
+            </Button>
             <MessageSquare className="h-5 w-5" />
             Observações - {petName}
           </DialogTitle>
@@ -206,6 +265,10 @@ export const ObservacoesDialog = ({ open, onClose, petId, petName }: Observacoes
                 <Save className="h-4 w-4 mr-2" />
                 {loading ? 'Salvando...' : editingId ? 'Atualizar' : 'Adicionar Observação'}
               </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
               {editingId && (
                 <Button variant="outline" onClick={resetForm}>
                   Cancelar
@@ -262,6 +325,13 @@ export const ObservacoesDialog = ({ open, onClose, petId, petName }: Observacoes
               )}
             </div>
           </div>
+
+          <PetAdminHistorySection
+            petId={petId}
+            module="observacoes"
+            title="Histórico Detalhado de Observações"
+            refreshKey={historyRefresh}
+          />
         </div>
       </DialogContent>
     </Dialog>

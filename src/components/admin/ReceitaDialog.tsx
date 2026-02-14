@@ -6,12 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ClipboardList, Save, Trash2, Pill } from 'lucide-react';
+import { ClipboardList, Save, Trash2, Pill, ArrowLeft, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
+import { exportPetRecordPdf } from './exportPetRecordPdf';
+import { logPetAdminHistory } from './petAdminHistory';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
 
 interface ReceitaDialogProps {
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
   petId: string;
   petName: string;
 }
@@ -27,7 +31,7 @@ interface Prescription {
   notes: string | null;
 }
 
-export const ReceitaDialog = ({ open, onClose, petId, petName }: ReceitaDialogProps) => {
+export const ReceitaDialog = ({ open, onClose, onBack, petId, petName }: ReceitaDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<Prescription[]>([]);
@@ -38,6 +42,7 @@ export const ReceitaDialog = ({ open, onClose, petId, petName }: ReceitaDialogPr
   const [prescriptionDate, setPrescriptionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [veterinarian, setVeterinarian] = useState('');
   const [notes, setNotes] = useState('');
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   useEffect(() => {
     if (open) loadRecords();
@@ -76,6 +81,21 @@ export const ReceitaDialog = ({ open, onClose, petId, petName }: ReceitaDialogPr
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'receita',
+        action: 'create',
+        title: 'Receita registrada',
+        details: {
+          medicamento: medicationName,
+          dosagem: dosage || '—',
+          frequencia: frequency || '—',
+          duracao: duration || '—',
+          data_receita: prescriptionDate,
+        },
+        sourceTable: 'pet_prescriptions',
+      });
+      setHistoryRefresh((prev) => prev + 1);
       toast({ title: 'Sucesso', description: 'Receita registrada com sucesso!' });
       resetForm();
       loadRecords();
@@ -97,16 +117,57 @@ export const ReceitaDialog = ({ open, onClose, petId, petName }: ReceitaDialogPr
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'receita',
+        action: 'delete',
+        title: 'Receita excluída',
+        details: { registro_id: id },
+        sourceTable: 'pet_prescriptions',
+        sourceId: id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
       toast({ title: 'Sucesso', description: 'Receita excluída' });
       loadRecords();
     }
   };
 
+  const handleExportPdf = () => {
+    exportPetRecordPdf({
+      title: 'Receitas',
+      petName,
+      sectionTitle: 'Prescricoes',
+      sectionData: {
+        registro_atual: {
+          medicamento: medicationName || '—',
+          data_receita: prescriptionDate || '—',
+          dosagem: dosage || '—',
+          frequencia: frequency || '—',
+          duracao: duration || '—',
+          veterinario: veterinarian || '—',
+          observacoes: notes || '—',
+        },
+        historico: records.map((record) => ({
+          medicamento: record.medication_name,
+          data_receita: record.prescription_date,
+          dosagem: record.dosage || '—',
+          frequencia: record.frequency || '—',
+          duracao: record.duration || '—',
+          veterinario: record.veterinarian || '—',
+          observacoes: record.notes || '—',
+        })),
+      },
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack || onClose}>
+              <ArrowLeft size={16} />
+            </Button>
             <ClipboardList className="h-5 w-5" />
             Receitas - {petName}
           </DialogTitle>
@@ -183,10 +244,16 @@ export const ReceitaDialog = ({ open, onClose, petId, petName }: ReceitaDialogPr
                 rows={3}
               />
             </div>
-            <Button onClick={handleSave} disabled={loading} className="w-full">
-              <Save className="h-4 w-4 mr-2" />
-              {loading ? 'Salvando...' : 'Adicionar Receita'}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleSave} disabled={loading} className="flex-1">
+                <Save className="h-4 w-4 mr-2" />
+                {loading ? 'Salvando...' : 'Adicionar Receita'}
+              </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
+            </div>
           </div>
 
           {/* Histórico */}
@@ -251,6 +318,13 @@ export const ReceitaDialog = ({ open, onClose, petId, petName }: ReceitaDialogPr
               )}
             </div>
           </div>
+
+          <PetAdminHistorySection
+            petId={petId}
+            module="receita"
+            title="Histórico Detalhado de Receitas"
+            refreshKey={historyRefresh}
+          />
         </div>
       </DialogContent>
     </Dialog>

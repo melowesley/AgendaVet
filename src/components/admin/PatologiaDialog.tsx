@@ -7,13 +7,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { FlaskConical, Save, Trash2, Edit2 } from 'lucide-react';
+import { FlaskConical, Save, Trash2, Edit2, ArrowLeft, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { exportPetRecordPdf } from './exportPetRecordPdf';
+import { logPetAdminHistory } from './petAdminHistory';
+import { PetAdminHistorySection } from './PetAdminHistorySection';
 
 interface PatologiaDialogProps {
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
   petId: string;
   petName: string;
 }
@@ -28,7 +32,7 @@ interface Pathology {
   notes: string | null;
 }
 
-export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDialogProps) => {
+export const PatologiaDialog = ({ open, onClose, onBack, petId, petName }: PatologiaDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<Pathology[]>([]);
@@ -39,6 +43,7 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
   const [treatment, setTreatment] = useState('');
   const [notes, setNotes] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   useEffect(() => {
     if (open) loadRecords();
@@ -79,6 +84,16 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
       } else {
+        await logPetAdminHistory({
+          petId,
+          module: 'patologia',
+          action: 'update',
+          title: 'Patologia atualizada',
+          details: { nome: name, data_diagnostico: diagnosisDate, status, descricao: description || '—', tratamento: treatment || '—' },
+          sourceTable: 'pet_pathologies',
+          sourceId: editingId,
+        });
+        setHistoryRefresh((prev) => prev + 1);
         toast({ title: 'Sucesso', description: 'Patologia atualizada com sucesso!' });
         resetForm();
         loadRecords();
@@ -100,6 +115,15 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
       } else {
+        await logPetAdminHistory({
+          petId,
+          module: 'patologia',
+          action: 'create',
+          title: 'Nova patologia registrada',
+          details: { nome: name, data_diagnostico: diagnosisDate, status, descricao: description || '—', tratamento: treatment || '—' },
+          sourceTable: 'pet_pathologies',
+        });
+        setHistoryRefresh((prev) => prev + 1);
         toast({ title: 'Sucesso', description: 'Patologia registrada com sucesso!' });
         resetForm();
         loadRecords();
@@ -133,16 +157,55 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
+      await logPetAdminHistory({
+        petId,
+        module: 'patologia',
+        action: 'delete',
+        title: 'Patologia excluída',
+        details: { registro_id: id },
+        sourceTable: 'pet_pathologies',
+        sourceId: id,
+      });
+      setHistoryRefresh((prev) => prev + 1);
       toast({ title: 'Sucesso', description: 'Registro excluído' });
       loadRecords();
     }
   };
 
+  const handleExportPdf = () => {
+    exportPetRecordPdf({
+      title: 'Patologias',
+      petName,
+      sectionTitle: 'Dados de Patologias',
+      sectionData: {
+        registro_atual: {
+          nome: name || '—',
+          data_diagnostico: diagnosisDate || '—',
+          status: status || '—',
+          descricao: description || '—',
+          tratamento: treatment || '—',
+          observacoes: notes || '—',
+        },
+        historico: records.map((record) => ({
+          nome: record.name,
+          data_diagnostico: record.diagnosis_date,
+          status: record.status,
+          descricao: record.description || '—',
+          tratamento: record.treatment || '—',
+          observacoes: record.notes || '—',
+        })),
+      },
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack || onClose}>
+              <ArrowLeft size={16} />
+            </Button>
             <FlaskConical className="h-5 w-5" />
             Patologias - {petName}
           </DialogTitle>
@@ -226,6 +289,10 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
                 <Save className="h-4 w-4 mr-2" />
                 {loading ? 'Salvando...' : editingId ? 'Atualizar' : 'Adicionar Patologia'}
               </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
               {editingId && (
                 <Button variant="outline" onClick={resetForm}>
                   Cancelar
@@ -284,6 +351,13 @@ export const PatologiaDialog = ({ open, onClose, petId, petName }: PatologiaDial
               )}
             </div>
           </div>
+
+          <PetAdminHistorySection
+            petId={petId}
+            module="patologia"
+            title="Histórico Detalhado de Patologias"
+            refreshKey={historyRefresh}
+          />
         </div>
       </DialogContent>
     </Dialog>

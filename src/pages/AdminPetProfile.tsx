@@ -10,22 +10,12 @@ import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft, Stethoscope, FlaskConical, FileText, Calendar,
   PawPrint, Weight, Syringe, ClipboardList, Camera, MessageSquare,
-  Video, Cross, Printer, Droplet, Microscope,
+  Video, Cross, Printer, Droplet, Microscope, ClipboardCheck, Scissors,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { motion } from 'framer-motion';
-import { AttendanceTypeDialog } from '@/components/admin/AttendanceTypeDialog';
-import { PesoDialog } from '@/components/admin/PesoDialog';
-import { PatologiaDialog } from '@/components/admin/PatologiaDialog';
-import { DocumentoDialog } from '@/components/admin/DocumentoDialog';
-import { ExameDialog } from '@/components/admin/ExameDialog';
-import { FotosDialog } from '@/components/admin/FotosDialog';
-import { VacinaDialog } from '@/components/admin/VacinaDialog';
-import { ReceitaDialog } from '@/components/admin/ReceitaDialog';
-import { ObservacoesDialog } from '@/components/admin/ObservacoesDialog';
-import { VideoDialog } from '@/components/admin/VideoDialog';
-import { InternacaoDialog } from '@/components/admin/InternacaoDialog';
+import { AttendanceTypeDialog, type AttendanceTypeKey } from '@/components/admin/AttendanceTypeDialog';
 
 interface Pet {
   id: string;
@@ -76,10 +66,12 @@ const STATUS_DOT: Record<string, string> = {
   cancelled: 'bg-red-500',
 };
 
-type DialogType = 'atendimento' | 'peso' | 'patologia' | 'documento' | 'exame' | 'fotos' | 'vacina' | 'receita' | 'observacoes' | 'video' | 'internacao' | null;
+type DialogType = 'atendimento' | AttendanceTypeKey | null;
 
 const ACTION_BUTTONS = [
   { label: 'Atendimento', icon: Stethoscope, bg: 'bg-[#4A9FD8] hover:bg-[#3A8FC8]', dialogKey: 'atendimento' as DialogType },
+  { label: 'Avaliação Cirúrgica', icon: ClipboardCheck, bg: 'bg-amber-500 hover:bg-amber-600', dialogKey: 'avaliacao_cirurgica' as DialogType },
+  { label: 'Cirurgia', icon: Scissors, bg: 'bg-rose-500 hover:bg-rose-600', dialogKey: 'cirurgia' as DialogType },
   { label: 'Peso', icon: Weight, bg: 'bg-[#CC8844] hover:bg-[#BC7834]', dialogKey: 'peso' as DialogType },
   { label: 'Patologia', icon: Microscope, bg: 'bg-[#7D4E9F] hover:bg-[#6D3E8F]', dialogKey: 'patologia' as DialogType },
   { label: 'Documento', icon: FileText, bg: 'bg-[#4CAF50] hover:bg-[#3C9F40]', dialogKey: 'documento' as DialogType },
@@ -331,77 +323,13 @@ const AdminPetProfile = () => {
 
       {/* Dialogs */}
       {pet && (
-        <>
-          <AttendanceTypeDialog
-            open={activeDialog === 'atendimento'}
-            onClose={closeDialog}
-            petId={pet.id}
-            petName={pet.name}
-            onSelectType={(type) => {
-              setActiveDialog(type as DialogType);
-            }}
-          />
-          <PesoDialog
-            open={activeDialog === 'peso'}
-            onClose={closeDialog}
-            petId={pet.id}
-            petName={pet.name}
-          />
-          <PatologiaDialog
-            open={activeDialog === 'patologia'}
-            onClose={closeDialog}
-            petId={pet.id}
-            petName={pet.name}
-          />
-          <DocumentoDialog
-            open={activeDialog === 'documento'}
-            onClose={closeDialog}
-            petId={pet.id}
-            petName={pet.name}
-          />
-          <ExameDialog
-            open={activeDialog === 'exame'}
-            onClose={closeDialog}
-            petId={pet.id}
-            petName={pet.name}
-          />
-          <FotosDialog
-            open={activeDialog === 'fotos'}
-            onClose={closeDialog}
-            petId={pet.id}
-            petName={pet.name}
-          />
-          <VacinaDialog
-            open={activeDialog === 'vacina'}
-            onClose={closeDialog}
-            petId={pet.id}
-            petName={pet.name}
-          />
-          <ReceitaDialog
-            open={activeDialog === 'receita'}
-            onClose={closeDialog}
-            petId={pet.id}
-            petName={pet.name}
-          />
-          <ObservacoesDialog
-            open={activeDialog === 'observacoes'}
-            onClose={closeDialog}
-            petId={pet.id}
-            petName={pet.name}
-          />
-          <VideoDialog
-            open={activeDialog === 'video'}
-            onClose={closeDialog}
-            petId={pet.id}
-            petName={pet.name}
-          />
-          <InternacaoDialog
-            open={activeDialog === 'internacao'}
-            onClose={closeDialog}
-            petId={pet.id}
-            petName={pet.name}
-          />
-        </>
+        <AttendanceTypeDialog
+          open={activeDialog !== null}
+          onClose={closeDialog}
+          petId={pet.id}
+          petName={pet.name}
+          initialType={activeDialog && activeDialog !== 'atendimento' ? activeDialog : null}
+        />
       )}
     </div>
   );
