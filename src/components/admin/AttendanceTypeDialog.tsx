@@ -184,25 +184,25 @@ export const AttendanceTypeDialog = ({ open, onClose, request, petId, petName }:
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="sm:max-w-5xl max-h-[90vh] p-6">
-        <DialogHeader className="pb-4">
-          <DialogTitle className="text-xl">Adicionar</DialogTitle>
+      <DialogContent className="sm:max-w-3xl max-h-[85vh] p-4">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-lg">Adicionar</DialogTitle>
         </DialogHeader>
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-3 auto-rows-fr">
+          <div className="grid grid-cols-3 gap-2.5">
             {ATTENDANCE_TYPES.map((type) => (
               <button
                 key={type.key}
                 onClick={() => handleSelect(type.key)}
                 disabled={loading}
-                className={`${type.color} text-white rounded-xl p-5 flex flex-col items-center justify-center gap-2.5 transition-all hover:scale-105 active:scale-95 shadow-md hover:shadow-lg aspect-square disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`${type.color} text-white rounded-xl p-3.5 flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                <type.icon size={28} strokeWidth={2} />
-                <span className="text-xs font-semibold leading-tight text-center">{type.label}</span>
+                <type.icon size={24} strokeWidth={2} />
+                <span className="text-[11px] font-semibold leading-tight text-center">{type.label}</span>
               </button>
             ))}
           </div>
