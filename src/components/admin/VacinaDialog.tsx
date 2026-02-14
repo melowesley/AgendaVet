@@ -1,0 +1,242 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { Syringe, Save, Trash2, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
+
+interface VacinaDialogProps {
+  open: boolean;
+  onClose: () => void;
+  petId: string;
+  petName: string;
+}
+
+interface Vaccine {
+  id: string;
+  vaccine_name: string;
+  application_date: string;
+  next_dose_date: string | null;
+  batch_number: string | null;
+  veterinarian: string | null;
+  notes: string | null;
+}
+
+export const VacinaDialog = ({ open, onClose, petId, petName }: VacinaDialogProps) => {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [records, setRecords] = useState<Vaccine[]>([]);
+  const [vaccineName, setVaccineName] = useState('');
+  const [applicationDate, setApplicationDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [nextDoseDate, setNextDoseDate] = useState('');
+  const [batchNumber, setBatchNumber] = useState('');
+  const [veterinarian, setVeterinarian] = useState('');
+  const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    if (open) loadRecords();
+  }, [open, petId]);
+
+  const loadRecords = async () => {
+    const { data } = await supabase
+      .from('pet_vaccines')
+      .select('*')
+      .eq('pet_id', petId)
+      .order('application_date', { ascending: false });
+    
+    if (data) setRecords(data);
+  };
+
+  const handleSave = async () => {
+    if (!vaccineName || !applicationDate) {
+      toast({ title: 'Erro', description: 'Nome da vacina e data são obrigatórios', variant: 'destructive' });
+      return;
+    }
+
+    setLoading(true);
+    const { data: userData } = await supabase.auth.getUser();
+    const { error } = await supabase.from('pet_vaccines').insert({
+      pet_id: petId,
+      user_id: userData.user?.id,
+      vaccine_name: vaccineName,
+      application_date: applicationDate,
+      next_dose_date: nextDoseDate || null,
+      batch_number: batchNumber || null,
+      veterinarian: veterinarian || null,
+      notes: notes || null,
+    });
+
+    if (error) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Sucesso', description: 'Vacina registrada com sucesso!' });
+      resetForm();
+      loadRecords();
+    }
+    setLoading(false);
+  };
+
+  const resetForm = () => {
+    setVaccineName('');
+    setNextDoseDate('');
+    setBatchNumber('');
+    setVeterinarian('');
+    setNotes('');
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from('pet_vaccines').delete().eq('id', id);
+    if (error) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Sucesso', description: 'Vacina excluída' });
+      loadRecords();
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Syringe className="h-5 w-5" />
+            Vacinas - {petName}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Formulário */}
+          <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="vaccine_name">Nome da Vacina *</Label>
+                <Input
+                  id="vaccine_name"
+                  value={vaccineName}
+                  onChange={(e) => setVaccineName(e.target.value)}
+                  placeholder="Ex: V10, Antirrábica..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="application_date">Data de Aplicação *</Label>
+                <Input
+                  id="application_date"
+                  type="date"
+                  value={applicationDate}
+                  onChange={(e) => setApplicationDate(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="next_dose_date">Próxima Dose</Label>
+                <Input
+                  id="next_dose_date"
+                  type="date"
+                  value={nextDoseDate}
+                  onChange={(e) => setNextDoseDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="batch_number">Lote</Label>
+                <Input
+                  id="batch_number"
+                  value={batchNumber}
+                  onChange={(e) => setBatchNumber(e.target.value)}
+                  placeholder="Número do lote"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="veterinarian">Veterinário</Label>
+              <Input
+                id="veterinarian"
+                value={veterinarian}
+                onChange={(e) => setVeterinarian(e.target.value)}
+                placeholder="Nome do veterinário"
+              />
+            </div>
+            <div>
+              <Label htmlFor="notes">Observações</Label>
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Observações adicionais..."
+                rows={2}
+              />
+            </div>
+            <Button onClick={handleSave} disabled={loading} className="w-full">
+              <Save className="h-4 w-4 mr-2" />
+              {loading ? 'Salvando...' : 'Adicionar Vacina'}
+            </Button>
+          </div>
+
+          {/* Histórico */}
+          <div>
+            <h3 className="font-semibold mb-3">Histórico de Vacinação</h3>
+            <div className="space-y-2">
+              {records.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Nenhuma vacina registrada</p>
+              ) : (
+                records.map((record) => {
+                  const isNextDoseUpcoming = record.next_dose_date && new Date(record.next_dose_date) > new Date();
+                  return (
+                    <div key={record.id} className="p-3 bg-card border rounded-lg">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold">{record.vaccine_name}</h4>
+                            {record.batch_number && (
+                              <span className="text-xs px-2 py-0.5 bg-muted rounded">
+                                Lote: {record.batch_number}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Aplicada em: {format(new Date(record.application_date), 'dd/MM/yyyy')}
+                          </p>
+                          {record.next_dose_date && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Calendar className="h-3 w-3 text-muted-foreground" />
+                              <p className="text-xs text-muted-foreground">
+                                Próxima dose: {format(new Date(record.next_dose_date), 'dd/MM/yyyy')}
+                              </p>
+                              {isNextDoseUpcoming && (
+                                <Badge variant="outline" className="text-[10px] ml-1">Pendente</Badge>
+                              )}
+                            </div>
+                          )}
+                          {record.veterinarian && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Vet: {record.veterinarian}
+                            </p>
+                          )}
+                          {record.notes && (
+                            <p className="text-sm text-muted-foreground mt-2">{record.notes}</p>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(record.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};

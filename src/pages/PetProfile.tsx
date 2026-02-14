@@ -4,10 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Calendar, PawPrint } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import {
+  ArrowLeft, Stethoscope, FlaskConical, FileText, Calendar,
+  PawPrint, Weight, Syringe, ClipboardList,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { motion } from 'framer-motion';
+import { RequestAppointmentDialog } from '@/components/client/RequestAppointmentDialog';
 
 interface Pet {
   id: string;
@@ -46,9 +51,11 @@ const STATUS_COLORS: Record<string, string> = {
 const PetProfile = () => {
   const { petId } = useParams<{ petId: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [pet, setPet] = useState<Pet | null>(null);
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [requestOpen, setRequestOpen] = useState(false);
 
   useEffect(() => {
     if (petId) loadPetData();
@@ -95,6 +102,11 @@ const PetProfile = () => {
     setLoading(false);
   };
 
+  const handleAppointmentRequested = () => {
+    loadPetData();
+    toast({ title: 'Solicitação enviada!', description: 'Aguarde a confirmação da clínica.' });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -121,6 +133,7 @@ const PetProfile = () => {
     return acc;
   }, {});
 
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -143,52 +156,81 @@ const PetProfile = () => {
       </header>
 
       <main className="container max-w-5xl mx-auto px-4 py-6">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h2 className="font-display font-bold text-base mb-4 flex items-center gap-2">
-            <Calendar size={18} />
-            Linha do Tempo
-          </h2>
-          <ScrollArea className="max-h-[70vh]">
-            {timeline.length === 0 ? (
-              <Card className="border-dashed">
-                <CardContent className="py-8 text-center">
-                  <PawPrint className="mx-auto mb-2 text-muted-foreground" size={28} />
-                  <p className="text-sm text-muted-foreground">Nenhum registro ainda.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              Object.entries(grouped)
-                .sort(([a], [b]) => Number(b) - Number(a))
-                .map(([year, entries]) => (
-                  <div key={year} className="mb-4">
-                    <p className="text-sm font-bold text-muted-foreground mb-2">{year}</p>
-                    <div className="relative border-l-2 border-border pl-4 space-y-4">
-                      {entries.map((entry) => (
-                        <div key={entry.id} className="relative">
-                          <div className={`absolute -left-[21px] top-1 w-3 h-3 rounded-full ${STATUS_COLORS[entry.status] || 'bg-muted-foreground'}`} />
-                          <div className="bg-card border rounded-lg p-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-primary">
-                                {format(new Date(entry.date), "dd/MM", { locale: ptBR })} às {entry.time}
-                              </span>
-                              <span className={`text-xs px-2 py-0.5 rounded-full text-white ${STATUS_COLORS[entry.status] || 'bg-muted'}`}>
-                                {STATUS_LABELS[entry.status] || entry.status}
-                              </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Timeline - Left */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+            <h2 className="font-display font-bold text-base mb-4 flex items-center gap-2">
+              <Calendar size={18} />
+              Linha do Tempo
+            </h2>
+            <ScrollArea className="max-h-[60vh]">
+              {timeline.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="py-8 text-center">
+                    <PawPrint className="mx-auto mb-2 text-muted-foreground" size={28} />
+                    <p className="text-sm text-muted-foreground">Nenhum registro ainda.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                Object.entries(grouped)
+                  .sort(([a], [b]) => Number(b) - Number(a))
+                  .map(([year, entries]) => (
+                    <div key={year} className="mb-4">
+                      <p className="text-sm font-bold text-muted-foreground mb-2">{year}</p>
+                      <div className="relative border-l-2 border-border pl-4 space-y-4">
+                        {entries.map((entry) => (
+                          <div key={entry.id} className="relative">
+                            <div className={`absolute -left-[21px] top-1 w-3 h-3 rounded-full ${STATUS_COLORS[entry.status] || 'bg-muted-foreground'}`} />
+                            <div className="bg-card border rounded-lg p-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-primary">
+                                  {format(new Date(entry.date), "dd/MM", { locale: ptBR })} às {entry.time}
+                                </span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full text-white ${STATUS_COLORS[entry.status] || 'bg-muted'}`}>
+                                  {STATUS_LABELS[entry.status] || entry.status}
+                                </span>
+                              </div>
+                              <p className="text-sm font-semibold mt-1">{entry.title}</p>
+                              {entry.description && (
+                                <p className="text-xs text-muted-foreground mt-0.5">{entry.description}</p>
+                              )}
                             </div>
-                            <p className="text-sm font-semibold mt-1">{entry.title}</p>
-                            {entry.description && (
-                              <p className="text-xs text-muted-foreground mt-0.5">{entry.description}</p>
-                            )}
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))
-            )}
-          </ScrollArea>
-        </motion.div>
+                  ))
+              )}
+            </ScrollArea>
+          </motion.div>
+
+          {/* Action Button - Right */}
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+            <h2 className="font-display font-bold text-base mb-4">Solicitar Atendimento</h2>
+            <button
+              onClick={() => setRequestOpen(true)}
+              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl p-6 flex flex-col items-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-lg"
+            >
+              <Stethoscope size={36} />
+              <div className="text-center">
+                <span className="text-lg font-bold block">Agendar Consulta</span>
+                <span className="text-sm opacity-90">Solicite um atendimento veterinário</span>
+              </div>
+            </button>
+            <p className="text-xs text-muted-foreground text-center mt-4">
+              Os registros médicos do seu pet são gerenciados pela clínica veterinária.
+            </p>
+          </motion.div>
+        </div>
       </main>
+
+      <RequestAppointmentDialog
+        open={requestOpen}
+        onOpenChange={setRequestOpen}
+        petId={pet.id}
+        pets={[pet]}
+        onAppointmentRequested={handleAppointmentRequested}
+      />
     </div>
   );
 };
