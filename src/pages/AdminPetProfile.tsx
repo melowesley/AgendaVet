@@ -336,6 +336,7 @@ const AdminPetProfile = () => {
             open={activeDialog === 'atendimento'}
             onClose={closeDialog}
             petId={pet.id}
+            petName={pet.name}
           />
           <PesoDialog
             open={activeDialog === 'peso'}
