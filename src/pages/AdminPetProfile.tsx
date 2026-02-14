@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft, Stethoscope, FlaskConical, FileText, Calendar,
   PawPrint, Weight, Syringe, ClipboardList, Camera, MessageSquare,
-  Video, Plus, Printer,
+  Video, Cross, Printer, Droplet, Microscope,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -79,17 +79,17 @@ const STATUS_DOT: Record<string, string> = {
 type DialogType = 'atendimento' | 'peso' | 'patologia' | 'documento' | 'exame' | 'fotos' | 'vacina' | 'receita' | 'observacoes' | 'video' | 'internacao' | null;
 
 const ACTION_BUTTONS = [
-  { label: 'Atendimento', icon: Stethoscope, bg: 'bg-sky-500 hover:bg-sky-600', dialogKey: 'atendimento' as DialogType },
-  { label: 'Peso', icon: Weight, bg: 'bg-amber-600 hover:bg-amber-700', dialogKey: 'peso' as DialogType },
-  { label: 'Patologia', icon: FlaskConical, bg: 'bg-purple-600 hover:bg-purple-700', dialogKey: 'patologia' as DialogType },
-  { label: 'Documento', icon: FileText, bg: 'bg-green-600 hover:bg-green-700', dialogKey: 'documento' as DialogType },
-  { label: 'Exame', icon: FlaskConical, bg: 'bg-rose-500 hover:bg-rose-600', dialogKey: 'exame' as DialogType },
-  { label: 'Fotos', icon: Camera, bg: 'bg-teal-600 hover:bg-teal-700', dialogKey: 'fotos' as DialogType },
-  { label: 'Vacina', icon: Syringe, bg: 'bg-amber-500 hover:bg-amber-600', dialogKey: 'vacina' as DialogType },
-  { label: 'Receita', icon: ClipboardList, bg: 'bg-violet-500 hover:bg-violet-600', dialogKey: 'receita' as DialogType },
-  { label: 'Observações', icon: MessageSquare, bg: 'bg-gray-500 hover:bg-gray-600', dialogKey: 'observacoes' as DialogType },
-  { label: 'Vídeo', icon: Video, bg: 'bg-emerald-600 hover:bg-emerald-700', dialogKey: 'video' as DialogType },
-  { label: 'Internação', icon: Plus, bg: 'bg-red-700 hover:bg-red-800', dialogKey: 'internacao' as DialogType },
+  { label: 'Atendimento', icon: Stethoscope, bg: 'bg-[#4A9FD8] hover:bg-[#3A8FC8]', dialogKey: 'atendimento' as DialogType },
+  { label: 'Peso', icon: Weight, bg: 'bg-[#CC8844] hover:bg-[#BC7834]', dialogKey: 'peso' as DialogType },
+  { label: 'Patologia', icon: Microscope, bg: 'bg-[#7D4E9F] hover:bg-[#6D3E8F]', dialogKey: 'patologia' as DialogType },
+  { label: 'Documento', icon: FileText, bg: 'bg-[#4CAF50] hover:bg-[#3C9F40]', dialogKey: 'documento' as DialogType },
+  { label: 'Exame', icon: FlaskConical, bg: 'bg-[#E84855] hover:bg-[#D83845]', dialogKey: 'exame' as DialogType },
+  { label: 'Fotos', icon: Camera, bg: 'bg-[#2E7D9A] hover:bg-[#1E6D8A]', dialogKey: 'fotos' as DialogType },
+  { label: 'Vacina', icon: Droplet, bg: 'bg-[#F59E42] hover:bg-[#E58E32]', dialogKey: 'vacina' as DialogType },
+  { label: 'Receita', icon: ClipboardList, bg: 'bg-[#9C4DCC] hover:bg-[#8C3DBC]', dialogKey: 'receita' as DialogType },
+  { label: 'Observações', icon: MessageSquare, bg: 'bg-[#6B7280] hover:bg-[#5B6270]', dialogKey: 'observacoes' as DialogType },
+  { label: 'Vídeo', icon: Video, bg: 'bg-[#10B981] hover:bg-[#00A971]', dialogKey: 'video' as DialogType },
+  { label: 'Internação', icon: Cross, bg: 'bg-[#B91C1C] hover:bg-[#A90C0C]', dialogKey: 'internacao' as DialogType },
 ];
 
 const AdminPetProfile = () => {
@@ -313,15 +313,15 @@ const AdminPetProfile = () => {
           {/* Action Grid */}
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
             <h2 className="font-bold text-base mb-4">Adicionar</h2>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-4">
               {ACTION_BUTTONS.map((btn) => (
                 <button
                   key={btn.label}
                   onClick={() => handleAction(btn.dialogKey)}
-                  className={`${btn.bg} text-white rounded-xl p-4 flex flex-col items-center gap-2 transition-transform hover:scale-105 active:scale-95 shadow-sm`}
+                  className={`${btn.bg} text-white rounded-2xl p-6 flex flex-col items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-md hover:shadow-lg min-h-[120px]`}
                 >
-                  <btn.icon size={26} />
-                  <span className="text-xs font-semibold">{btn.label}</span>
+                  <btn.icon size={32} strokeWidth={2} />
+                  <span className="text-sm font-semibold leading-tight text-center">{btn.label}</span>
                 </button>
               ))}
             </div>
