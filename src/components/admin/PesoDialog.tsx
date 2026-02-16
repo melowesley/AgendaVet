@@ -277,12 +277,14 @@ export const PesoDialog = ({ open, onClose, onBack, petId, petName }: PesoDialog
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Observações adicionais..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Salvando...' : editingId ? 'Atualizar' : 'Adicionar Registro'}
+                {loading ? 'Salvando...' : 'Salvar Informações'}
               </Button>
               <Button variant="outline" onClick={handleExportPdf}>
                 <FileDown className="h-4 w-4 mr-2" />

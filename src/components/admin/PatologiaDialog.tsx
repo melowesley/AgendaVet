@@ -100,10 +100,17 @@ export const PatologiaDialog = ({ open, onClose, onBack, petId, petName }: Patol
       }
     } else {
       // Criar novo registro
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !userData.user?.id) {
+        toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.from('pet_pathologies').insert({
         pet_id: petId,
-        user_id: userData.user?.id,
+        user_id: userData.user.id,
         name,
         diagnosis_date: diagnosisDate,
         status,
@@ -114,6 +121,7 @@ export const PatologiaDialog = ({ open, onClose, onBack, petId, petName }: Patol
 
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+        setLoading(false);
       } else {
         await logPetAdminHistory({
           petId,
@@ -229,6 +237,8 @@ export const PatologiaDialog = ({ open, onClose, onBack, petId, petName }: Patol
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: Diabetes, Dermatite..."
+                  spellCheck={true}
+                  lang="pt-BR"
                 />
               </div>
               <div>
@@ -262,6 +272,8 @@ export const PatologiaDialog = ({ open, onClose, onBack, petId, petName }: Patol
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Descrição da patologia..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div>
@@ -272,6 +284,8 @@ export const PatologiaDialog = ({ open, onClose, onBack, petId, petName }: Patol
                 onChange={(e) => setTreatment(e.target.value)}
                 placeholder="Tratamento prescrito..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div>
@@ -282,12 +296,14 @@ export const PatologiaDialog = ({ open, onClose, onBack, petId, petName }: Patol
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Observações adicionais..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Salvando...' : editingId ? 'Atualizar' : 'Adicionar Patologia'}
+                {loading ? 'Salvando...' : 'Salvar Informações'}
               </Button>
               <Button variant="outline" onClick={handleExportPdf}>
                 <FileDown className="h-4 w-4 mr-2" />

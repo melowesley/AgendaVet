@@ -165,6 +165,8 @@ export const AvaliacaoCirurgicaDialog = ({ open, onClose, onBack, request }: Ava
                 placeholder="Ex: Ovariohisterectomia eletiva"
                 value={data.procedimento_proposto}
                 onChange={(e) => updateField('procedimento_proposto', e.target.value)}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -235,6 +237,8 @@ export const AvaliacaoCirurgicaDialog = ({ open, onClose, onBack, request }: Ava
             <div className="space-y-2">
               <Label className="font-semibold">Observações</Label>
               <Textarea
+                spellCheck={true}
+                lang="pt-BR"
                 placeholder="Observações adicionais sobre a avaliação..."
                 value={data.observacoes}
                 onChange={(e) => updateField('observacoes', e.target.value)}

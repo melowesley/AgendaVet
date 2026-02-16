@@ -206,6 +206,8 @@ export const RetornoDialog = ({ open, onClose, onBack, request }: RetornoDialogP
                 value={data.exame_fisico_resumido}
                 onChange={(e) => updateField('exame_fisico_resumido', e.target.value)}
                 rows={3}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -216,6 +218,8 @@ export const RetornoDialog = ({ open, onClose, onBack, request }: RetornoDialogP
                 value={data.exames_complementares}
                 onChange={(e) => updateField('exames_complementares', e.target.value)}
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -226,6 +230,8 @@ export const RetornoDialog = ({ open, onClose, onBack, request }: RetornoDialogP
                 value={data.conduta}
                 onChange={(e) => updateField('conduta', e.target.value)}
                 rows={3}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 

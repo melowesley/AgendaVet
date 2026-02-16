@@ -92,6 +92,8 @@ export const ExameFisicoTab = ({ anamnesis, onChange }: ExameFisicoTabProps) => 
           value={anamnesis.palpacao_abdominal}
           onChange={(e) => onChange('palpacao_abdominal', e.target.value)}
           rows={2}
+          spellCheck={true}
+          lang="pt-BR"
         />
       </div>
     </div>

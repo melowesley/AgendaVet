@@ -98,10 +98,17 @@ export const ExameDialog = ({ open, onClose, onBack, petId, petName }: ExameDial
       }
     } else {
       // Criar novo registro
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !userData.user?.id) {
+        toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.from('pet_exams').insert({
         pet_id: petId,
-        user_id: userData.user?.id,
+        user_id: userData.user.id,
         exam_type: examType,
         exam_date: examDate,
         results: results || null,
@@ -112,6 +119,7 @@ export const ExameDialog = ({ open, onClose, onBack, petId, petName }: ExameDial
 
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+        setLoading(false);
       } else {
         await logPetAdminHistory({
           petId,
@@ -227,6 +235,8 @@ export const ExameDialog = ({ open, onClose, onBack, petId, petName }: ExameDial
                   value={examType}
                   onChange={(e) => setExamType(e.target.value)}
                   placeholder="Ex: Hemograma, Raio-X..."
+                  spellCheck={true}
+                  lang="pt-BR"
                 />
               </div>
               <div>
@@ -246,6 +256,8 @@ export const ExameDialog = ({ open, onClose, onBack, petId, petName }: ExameDial
                 value={veterinarian}
                 onChange={(e) => setVeterinarian(e.target.value)}
                 placeholder="Nome do veterinário responsável"
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div>
@@ -256,6 +268,8 @@ export const ExameDialog = ({ open, onClose, onBack, petId, petName }: ExameDial
                 onChange={(e) => setResults(e.target.value)}
                 placeholder="Resultados do exame..."
                 rows={3}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div>
@@ -275,12 +289,14 @@ export const ExameDialog = ({ open, onClose, onBack, petId, petName }: ExameDial
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Observações adicionais..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Salvando...' : editingId ? 'Atualizar' : 'Adicionar Exame'}
+                {loading ? 'Salvando...' : 'Salvar Informações'}
               </Button>
               <Button variant="outline" onClick={handleExportPdf}>
                 <FileDown className="h-4 w-4 mr-2" />

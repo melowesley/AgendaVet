@@ -65,10 +65,17 @@ export const ReceitaDialog = ({ open, onClose, onBack, petId, petName }: Receita
     }
 
     setLoading(true);
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !userData.user?.id) {
+      toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.from('pet_prescriptions').insert({
       pet_id: petId,
-      user_id: userData.user?.id,
+      user_id: userData.user.id,
       medication_name: medicationName,
       dosage: dosage || null,
       frequency: frequency || null,
@@ -80,6 +87,7 @@ export const ReceitaDialog = ({ open, onClose, onBack, petId, petName }: Receita
 
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      setLoading(false);
     } else {
       await logPetAdminHistory({
         petId,
@@ -184,6 +192,8 @@ export const ReceitaDialog = ({ open, onClose, onBack, petId, petName }: Receita
                   value={medicationName}
                   onChange={(e) => setMedicationName(e.target.value)}
                   placeholder="Nome do medicamento"
+                  spellCheck={true}
+                  lang="pt-BR"
                 />
               </div>
               <div>
@@ -232,6 +242,8 @@ export const ReceitaDialog = ({ open, onClose, onBack, petId, petName }: Receita
                 value={veterinarian}
                 onChange={(e) => setVeterinarian(e.target.value)}
                 placeholder="Nome do veterinário"
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div>
@@ -242,12 +254,14 @@ export const ReceitaDialog = ({ open, onClose, onBack, petId, petName }: Receita
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Instruções de uso, observações..."
                 rows={3}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Salvando...' : 'Adicionar Receita'}
+                {loading ? 'Salvando...' : 'Salvar Informações'}
               </Button>
               <Button variant="outline" onClick={handleExportPdf}>
                 <FileDown className="h-4 w-4 mr-2" />

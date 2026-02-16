@@ -62,10 +62,17 @@ export const DocumentoDialog = ({ open, onClose, onBack, petId, petName }: Docum
     }
 
     setLoading(true);
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !userData.user?.id) {
+      toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.from('pet_documents').insert({
       pet_id: petId,
-      user_id: userData.user?.id,
+      user_id: userData.user.id,
       title,
       document_type: documentType || null,
       file_url: fileUrl || null,
@@ -75,6 +82,7 @@ export const DocumentoDialog = ({ open, onClose, onBack, petId, petName }: Docum
 
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      setLoading(false);
     } else {
       await logPetAdminHistory({
         petId,
@@ -167,6 +175,8 @@ export const DocumentoDialog = ({ open, onClose, onBack, petId, petName }: Docum
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Ex: Atestado de Saúde, Laudo..."
+                  spellCheck={true}
+                  lang="pt-BR"
                 />
               </div>
               <div>
@@ -212,12 +222,14 @@ export const DocumentoDialog = ({ open, onClose, onBack, petId, petName }: Docum
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Descrição do documento..."
                 rows={3}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Salvando...' : 'Adicionar Documento'}
+                {loading ? 'Salvando...' : 'Salvar Informações'}
               </Button>
               <Button variant="outline" onClick={handleExportPdf}>
                 <FileDown className="h-4 w-4 mr-2" />

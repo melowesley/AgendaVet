@@ -160,6 +160,8 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
                 placeholder="Ex: Ovariohisterectomia"
                 value={data.procedimento_realizado}
                 onChange={(e) => updateField('procedimento_realizado', e.target.value)}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -170,6 +172,8 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
                 value={data.tecnica_cirurgica}
                 onChange={(e) => updateField('tecnica_cirurgica', e.target.value)}
                 rows={3}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -205,6 +209,8 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
                 value={data.protocolo_anestesico}
                 onChange={(e) => updateField('protocolo_anestesico', e.target.value)}
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -230,6 +236,8 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
                 value={data.intercorrencias}
                 onChange={(e) => updateField('intercorrencias', e.target.value)}
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -240,6 +248,8 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
                 value={data.pos_operatorio_imediato}
                 onChange={(e) => updateField('pos_operatorio_imediato', e.target.value)}
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
 
@@ -247,6 +257,8 @@ export const CirurgiaDialog = ({ open, onClose, onBack, request }: CirurgiaDialo
               <Label className="font-semibold">Prescrição Pós-operatória</Label>
               <Textarea
                 placeholder="Medicamentos, curativos, restrições..."
+                spellCheck={true}
+                lang="pt-BR"
                 value={data.prescricao_pos_op}
                 onChange={(e) => updateField('prescricao_pos_op', e.target.value)}
                 rows={3}

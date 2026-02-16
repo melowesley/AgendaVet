@@ -94,10 +94,17 @@ export const ObservacoesDialog = ({ open, onClose, onBack, petId, petName }: Obs
       }
     } else {
       // Criar novo registro
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !userData.user?.id) {
+        toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.from('pet_observations').insert({
         pet_id: petId,
-        user_id: userData.user?.id,
+        user_id: userData.user.id,
         title: title || null,
         observation,
         observation_date: observationDate,
@@ -106,6 +113,7 @@ export const ObservacoesDialog = ({ open, onClose, onBack, petId, petName }: Obs
 
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+        setLoading(false);
       } else {
         await logPetAdminHistory({
           petId,
@@ -223,6 +231,8 @@ export const ObservacoesDialog = ({ open, onClose, onBack, petId, petName }: Obs
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Título da observação"
+                  spellCheck={true}
+                  lang="pt-BR"
                 />
               </div>
               <div>
@@ -258,12 +268,14 @@ export const ObservacoesDialog = ({ open, onClose, onBack, petId, petName }: Obs
                 onChange={(e) => setObservation(e.target.value)}
                 placeholder="Descreva a observação..."
                 rows={4}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Salvando...' : editingId ? 'Atualizar' : 'Adicionar Observação'}
+                {loading ? 'Salvando...' : 'Salvar Informações'}
               </Button>
               <Button variant="outline" onClick={handleExportPdf}>
                 <FileDown className="h-4 w-4 mr-2" />

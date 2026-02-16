@@ -62,12 +62,19 @@ export const FotosDialog = ({ open, onClose, onBack, petId, petName }: FotosDial
     }
 
     setLoading(true);
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !userData.user?.id) {
+      toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
     const tagsArray = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
     
     const { error } = await supabase.from('pet_photos').insert({
       pet_id: petId,
-      user_id: userData.user?.id,
+      user_id: userData.user.id,
       title: title || null,
       photo_url: photoUrl,
       description: description || null,
@@ -77,6 +84,7 @@ export const FotosDialog = ({ open, onClose, onBack, petId, petName }: FotosDial
 
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      setLoading(false);
     } else {
       await logPetAdminHistory({
         petId,
@@ -169,6 +177,8 @@ export const FotosDialog = ({ open, onClose, onBack, petId, petName }: FotosDial
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Ex: Consulta de rotina"
+                  spellCheck={true}
+                  lang="pt-BR"
                 />
               </div>
               <div>
@@ -198,6 +208,8 @@ export const FotosDialog = ({ open, onClose, onBack, petId, petName }: FotosDial
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Descrição da foto..."
                 rows={2}
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div>
@@ -207,12 +219,14 @@ export const FotosDialog = ({ open, onClose, onBack, petId, petName }: FotosDial
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
                 placeholder="Ex: lesão, pele, tratamento"
+                spellCheck={true}
+                lang="pt-BR"
               />
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Salvando...' : 'Adicionar Foto'}
+                {loading ? 'Salvando...' : 'Salvar Informações'}
               </Button>
               <Button variant="outline" onClick={handleExportPdf}>
                 <FileDown className="h-4 w-4 mr-2" />

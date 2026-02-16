@@ -20,6 +20,8 @@ export const AnamneseTab = ({ anamnesis, onChange }: AnamneseTabProps) => (
         onChange={(e) => onChange('queixa_principal', e.target.value)}
         rows={2}
         placeholder="Descreva a queixa principal..."
+        spellCheck={true}
+        lang="pt-BR"
       />
     </div>
 
@@ -30,6 +32,8 @@ export const AnamneseTab = ({ anamnesis, onChange }: AnamneseTabProps) => (
         onChange={(e) => onChange('medicamentos', e.target.value)}
         rows={2}
         placeholder="Medicamentos atuais..."
+        spellCheck={true}
+        lang="pt-BR"
       />
     </div>
 
@@ -77,6 +81,8 @@ export const AnamneseTab = ({ anamnesis, onChange }: AnamneseTabProps) => (
         onChange={(e) => onChange('sistema_ototegumentar_obs', e.target.value)}
         rows={2}
         placeholder="Observações do sistema oto-tegumentar..."
+        spellCheck={true}
+        lang="pt-BR"
       />
     </div>
   </div>
