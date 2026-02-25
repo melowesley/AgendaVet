@@ -1,5 +1,6 @@
 export { useOutsideClick } from "./use-outside-click";
 export { useAdminCheck } from "./useAdminCheck";
+export { useRequireSession } from "./useRequireSession";
 export { useAppointmentRequests } from "./useAppointmentRequests";
 export { usePetTimeline } from "./usePetTimeline";
 export { usePetsList } from "./usePetsList";

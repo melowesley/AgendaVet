@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { logSupabaseError } from '@/lib/supabaseLogger';
 import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { FlaskConical, Save, Trash2, Download, Edit2, ArrowLeft, FileDown } from 'lucide-react';
+import { FlaskConical, Save, Trash2, Download, Edit2, ArrowLeft, FileDown, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { exportPetRecordPdf } from './exportPetRecordPdf';
 import { logPetAdminHistory } from './petAdminHistory';
@@ -44,19 +45,45 @@ export const ExameDialog = ({ open, onClose, onBack, onSuccess, petId, petName }
   const [notes, setNotes] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [historyRefresh, setHistoryRefresh] = useState(0);
+  const [recordsLoading, setRecordsLoading] = useState(false);
+  const [recordsError, setRecordsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) loadRecords();
   }, [open, petId]);
 
   const loadRecords = async () => {
-    const { data } = await supabase
-      .from('pet_exams')
-      .select('*')
-      .eq('pet_id', petId)
-      .order('exam_date', { ascending: false });
-    
-    if (data) setRecords(data);
+    setRecordsLoading(true);
+    setRecordsError(null);
+    try {
+      const { data, error } = await supabase
+        .from('pet_exams')
+        .select('*')
+        .eq('pet_id', petId)
+        .order('exam_date', { ascending: false });
+
+      if (error) {
+        logSupabaseError('ExameDialog loadRecords', error, { petId });
+        setRecordsError(error.message);
+        toast({
+          title: 'Erro ao carregar exames',
+          description: error.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+      setRecords(data ?? []);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro inesperado ao carregar exames';
+      setRecordsError(msg);
+      toast({
+        title: 'Erro ao carregar exames',
+        description: msg,
+        variant: 'destructive',
+      });
+    } finally {
+      setRecordsLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -300,10 +327,6 @@ export const ExameDialog = ({ open, onClose, onBack, onSuccess, petId, petName }
                 <FileDown className="h-4 w-4 mr-2" />
                 Exportar PDF
               </Button>
-              <Button variant="outline" onClick={handleExportPdf}>
-                <FileDown className="h-4 w-4 mr-2" />
-                Exportar PDF
-              </Button>
               {editingId && (
                 <Button variant="outline" onClick={resetForm}>
                   Cancelar
@@ -316,7 +339,21 @@ export const ExameDialog = ({ open, onClose, onBack, onSuccess, petId, petName }
           <div>
             <h3 className="font-semibold mb-3">Histórico de Exames</h3>
             <div className="space-y-3">
-              {records.length === 0 ? (
+              {recordsLoading ? (
+                <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                  <span className="animate-spin rounded-full h-5 w-5 border-2 border-current border-t-transparent" />
+                  <span className="text-sm">Carregando exames...</span>
+                </div>
+              ) : recordsError ? (
+                <div className="flex flex-col items-center gap-2 py-8 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+                  <AlertCircle className="h-8 w-8 text-destructive" />
+                  <p className="text-sm text-destructive font-medium">Falha ao carregar exames</p>
+                  <p className="text-xs text-muted-foreground text-center">{recordsError}</p>
+                  <Button variant="outline" size="sm" onClick={loadRecords}>
+                    Tentar novamente
+                  </Button>
+                </div>
+              ) : records.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">Nenhum exame registrado</p>
               ) : (
                 records.map((record) => (
