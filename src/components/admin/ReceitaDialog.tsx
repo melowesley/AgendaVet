@@ -28,71 +28,6 @@ interface ReceitaDialogProps {
   petName: string;
 }
 
-interface Prescription {
-  id: string;
-  medication_name: string;
-  dosage: string | null;
-  frequency: string | null;
-  duration: string | null;
-  prescription_date: string;
-  veterinarian: string | null;
-  notes: string | null;
-}
-
-interface PetDetails {
-  breed: string | null;
-  age: string | null;
-  type: string;
-  user_id: string;
-}
-
-interface OwnerDetails {
-  full_name: string | null;
-  phone: string | null;
-  address: string | null;
-}
-
-interface StoredSimples {
-  __type: 'simples';
-  clinicName: string;
-  crmv: string;
-  tutorName: string;
-  tutorAddress: string;
-  tutorPhone: string;
-  petBreed: string;
-  petAge: string;
-  petSex: string;
-  prescription: string;
-}
-
-interface StoredControlado {
-  __type: 'controlado';
-  emitterName: string;
-  crmv: string;
-  emitterPhone: string;
-  emitterAddress: string;
-  emitterCity: string;
-  emitterState: string;
-  prescription: string;
-  tutorName: string;
-  tutorAddress: string;
-  petBreed: string;
-  petAge: string;
-  petSex: string;
-}
-
-const speciesLabel = (type: string) =>
-  type === 'dog' ? 'Canino' : type === 'cat' ? 'Felino' : type;
-
-const parseNotes = (notes: string | null): StoredSimples | StoredControlado | null => {
-  if (!notes) return null;
-  try {
-    return JSON.parse(notes) as StoredSimples | StoredControlado;
-  } catch {
-    return null;
-  }
-};
-
 export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName }: ReceitaDialogProps) => {
   const { toast } = useToast();
   const [receiptType, setReceiptType] = useState<ReceiptType>(null);
@@ -137,7 +72,6 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
       loadPetAndOwner();
     }
   }, [open, petId]);
-
   useEffect(() => {
     if (!open) setReceiptType(null);
   }, [open]);
@@ -230,8 +164,7 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
       });
       setHistoryRefresh((p) => p + 1);
       onSuccess?.();
-      toast({ title: 'Sucesso', description: 'Receita salva com sucesso!' });
-      loadRecords();
+      toast({ title: 'Sucesso', description: 'Receita salva com sucesso!' });      loadRecords();
     }
     setLoading(false);
   };
@@ -313,8 +246,7 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
         sourceId: id,
       });
       setHistoryRefresh((p) => p + 1);
-      onSuccess?.();
-      toast({ title: 'Sucesso', description: 'Receita excluída' });
+      onSuccess?.();      toast({ title: 'Sucesso', description: 'Receita excluída' });
       loadRecords();
     }
   };
@@ -441,8 +373,7 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
               size="icon"
               className="h-7 w-7"
               onClick={receiptType ? () => setReceiptType(null) : (onBack || onClose)}
-            >
-              <ArrowLeft size={16} />
+            >              <ArrowLeft size={16} />
             </Button>
             <ClipboardList className="h-5 w-5" />
             {receiptType === 'simples'
@@ -470,7 +401,6 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors" />
               </button>
-
               <button
                 onClick={() => setReceiptType('controlado')}
                 className="group flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-slate-200 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-200 text-center"
@@ -804,7 +734,6 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
         onClose={() => setPreviewOpen(false)}
         html={previewHtml}
         title={previewTitle}
-      />
-    </Dialog>
+      />    </Dialog>
   );
 };

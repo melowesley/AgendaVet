@@ -24,9 +24,9 @@ interface DocumentoDialogProps {
 
 interface Document {
   id: string;
-  title: string;
-  document_type: string | null;
-  file_url: string | null;
+  title: string | null;
+  document_type: string;
+  file_url: string;
   description: string | null;
   date: string;
 }
@@ -89,43 +89,11 @@ export const DocumentoDialog = ({ open, onClose, onBack, onSuccess, petId, petNa
         petId,
         module: 'documento',
         action: 'create',
-        title: 'Ficha de Documento',
-        details: { titulo: title, tipo_documento: documentType || '—', data: date, arquivo: fileUrl || '—', descricao: description || '—' },
+        title: 'Ficha de Documento',        details: { titulo: title, tipo_documento: documentType || '—', data: date, arquivo: fileUrl || '—', descricao: description || '—' },
         sourceTable: 'pet_documents',
       });
       setHistoryRefresh((prev) => prev + 1);
-      onSuccess?.();
-      toast({ title: 'Sucesso', description: 'Documento registrado com sucesso!' });
-      resetForm();
-      loadRecords();
-    }
-    setLoading(false);
-  };
-
-  const resetForm = () => {
-    setTitle('');
-    setDocumentType('');
-    setFileUrl('');
-    setDescription('');
-  };
-
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('pet_documents').delete().eq('id', id);
-    if (error) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-    } else {
-      await logPetAdminHistory({
-        petId,
-        module: 'documento',
-        action: 'delete',
-        title: 'Documento excluído',
-        details: { registro_id: id },
-        sourceTable: 'pet_documents',
-        sourceId: id,
-      });
-      setHistoryRefresh((prev) => prev + 1);
-      onSuccess?.();
-      toast({ title: 'Sucesso', description: 'Documento excluído' });
+      onSuccess?.();      toast({ title: 'Sucesso', description: 'Documento excluído' });
       loadRecords();
     }
   };
@@ -156,8 +124,7 @@ export const DocumentoDialog = ({ open, onClose, onBack, onSuccess, petId, petNa
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <PageDialogContent className="p-6">
-        <DialogHeader>
+      <PageDialogContent className="p-6">        <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack || onClose}>
               <ArrowLeft size={16} />
@@ -232,8 +199,7 @@ export const DocumentoDialog = ({ open, onClose, onBack, onSuccess, petId, petNa
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Salvando...' : 'Salvar Informações'}
-              </Button>
+                {loading ? 'Salvando...' : 'Salvar Informações'}              </Button>
               <Button variant="outline" onClick={handleExportPdf}>
                 <FileDown className="h-4 w-4 mr-2" />
                 Exportar PDF

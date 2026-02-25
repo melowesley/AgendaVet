@@ -104,17 +104,10 @@ export const PatologiaDialog = ({ open, onClose, onBack, onSuccess, petId, petNa
       }
     } else {
       // Criar novo registro
-      const { data: userData, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !userData.user?.id) {
-        toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
-        setLoading(false);
-        return;
-      }
-
+      const { data: userData } = await supabase.auth.getUser();
       const { error } = await supabase.from('pet_pathologies').insert({
         pet_id: petId,
-        user_id: userData.user.id,
+        user_id: userData.user?.id,
         name,
         diagnosis_date: diagnosisDate,
         status,
@@ -125,7 +118,6 @@ export const PatologiaDialog = ({ open, onClose, onBack, onSuccess, petId, petNa
 
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-        setLoading(false);
       } else {
         const historyDetails = generatePatologiaSummary(name, diagnosisDate, status, description, treatment);
         await logPetAdminHistory({
@@ -154,6 +146,32 @@ export const PatologiaDialog = ({ open, onClose, onBack, onSuccess, petId, petNa
     setStatus('active');
     setDiagnosisDate(format(new Date(), 'yyyy-MM-dd'));
     setEditingId(null);
+  };
+
+  const handleExportPdf = () => {
+    exportPetRecordPdf({
+      title: 'Patologias',
+      petName,
+      sectionTitle: 'Registro de Patologias',
+      sectionData: {
+        registro_atual: {
+          nome: name || '—',
+          data_diagnostico: diagnosisDate || '—',
+          status: status || '—',
+          descricao: description || '—',
+          tratamento: treatment || '—',
+          observacoes: notes || '—',
+        },
+        historico: records.map((record) => ({
+          nome: record.name,
+          data_diagnostico: record.diagnosis_date,
+          status: record.status,
+          descricao: record.description || '—',
+          tratamento: record.treatment || '—',
+          observacoes: record.notes || '—',
+        })),
+      },
+    });
   };
 
   const handleEdit = (record: Pathology) => {
@@ -185,32 +203,6 @@ export const PatologiaDialog = ({ open, onClose, onBack, onSuccess, petId, petNa
       toast({ title: 'Sucesso', description: 'Registro excluído' });
       loadRecords();
     }
-  };
-
-  const handleExportPdf = () => {
-    exportPetRecordPdf({
-      title: 'Patologias',
-      petName,
-      sectionTitle: 'Dados de Patologias',
-      sectionData: {
-        registro_atual: {
-          nome: name || '—',
-          data_diagnostico: diagnosisDate || '—',
-          status: status || '—',
-          descricao: description || '—',
-          tratamento: treatment || '—',
-          observacoes: notes || '—',
-        },
-        historico: records.map((record) => ({
-          nome: record.name,
-          data_diagnostico: record.diagnosis_date,
-          status: record.status,
-          descricao: record.description || '—',
-          tratamento: record.treatment || '—',
-          observacoes: record.notes || '—',
-        })),
-      },
-    });
   };
 
   return (
@@ -311,6 +303,10 @@ export const PatologiaDialog = ({ open, onClose, onBack, onSuccess, petId, petNa
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
                 {loading ? 'Salvando...' : 'Salvar Informações'}
+              </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
               </Button>
               <Button variant="outline" onClick={handleExportPdf}>
                 <FileDown className="h-4 w-4 mr-2" />

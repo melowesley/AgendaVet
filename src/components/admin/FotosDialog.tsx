@@ -104,13 +104,6 @@ export const FotosDialog = ({ open, onClose, onBack, onSuccess, petId, petName }
     setLoading(false);
   };
 
-  const resetForm = () => {
-    setTitle('');
-    setPhotoUrl('');
-    setDescription('');
-    setTags('');
-  };
-
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('pet_photos').delete().eq('id', id);
     if (error) {
@@ -133,6 +126,7 @@ export const FotosDialog = ({ open, onClose, onBack, onSuccess, petId, petName }
   };
 
   const handleExportPdf = () => {
+    const tagsStr = tags ? tags.split(',').map((t) => t.trim()).filter(Boolean).join(', ') : '—';
     exportPetRecordPdf({
       title: 'Fotos',
       petName,
@@ -143,7 +137,7 @@ export const FotosDialog = ({ open, onClose, onBack, onSuccess, petId, petName }
           data: date || '—',
           url_foto: photoUrl || '—',
           descricao: description || '—',
-          tags: tags || '—',
+          tags: tagsStr,
         },
         historico: records.map((record) => ({
           titulo: record.title || '—',

@@ -24,7 +24,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-
 interface Pet {
   id: string;
   name: string;
@@ -103,7 +102,6 @@ interface PetService {
   quantity: number;
   created_at: string;
 }
-
 const AdminPetProfile = () => {
   const { petId } = useParams<{ petId: string }>();
   const navigate = useNavigate();
@@ -764,8 +762,7 @@ const AdminPetProfile = () => {
           onSuccess={refetchTimeline}
           petId={pet.id}
           petName={pet.name}
-          initialType={activeDialog as AttendanceTypeKey}
-        />
+          initialType={activeDialog as AttendanceTypeKey}        />
       )}
     </div>
     </AdminLayout>

@@ -102,18 +102,10 @@ export const VacinaDialog = ({ open, onClose, onBack, onSuccess, petId, petName 
         loadRecords();
       }
     } else {
-      // Criar novo registro
-      const { data: userData, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !userData.user?.id) {
-        toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
-        setLoading(false);
-        return;
-      }
-
+      const { data: userData } = await supabase.auth.getUser();
       const { error } = await supabase.from('pet_vaccines').insert({
         pet_id: petId,
-        user_id: userData.user.id,
+        user_id: userData.user?.id,
         vaccine_name: vaccineName,
         application_date: applicationDate,
         next_dose_date: nextDoseDate || null,
@@ -124,7 +116,6 @@ export const VacinaDialog = ({ open, onClose, onBack, onSuccess, petId, petName 
 
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-        setLoading(false);
       } else {
         const historyDetails = generateVacinaSummary(vaccineName, applicationDate, nextDoseDate, batchNumber);
         await logPetAdminHistory({
@@ -190,10 +181,10 @@ export const VacinaDialog = ({ open, onClose, onBack, onSuccess, petId, petName 
     exportPetRecordPdf({
       title: 'Vacinas',
       petName,
-      sectionTitle: 'Controle Vacinal',
+      sectionTitle: 'Registro de Vacinas',
       sectionData: {
         registro_atual: {
-          nome_vacina: vaccineName || '—',
+          vacina: vaccineName || '—',
           data_aplicacao: applicationDate || '—',
           proxima_dose: nextDoseDate || '—',
           lote: batchNumber || '—',
@@ -201,7 +192,7 @@ export const VacinaDialog = ({ open, onClose, onBack, onSuccess, petId, petName 
           observacoes: notes || '—',
         },
         historico: records.map((record) => ({
-          nome_vacina: record.vaccine_name,
+          vacina: record.vaccine_name,
           data_aplicacao: record.application_date,
           proxima_dose: record.next_dose_date || '—',
           lote: record.batch_number || '—',
@@ -304,6 +295,10 @@ export const VacinaDialog = ({ open, onClose, onBack, onSuccess, petId, petName 
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
                 {loading ? 'Salvando...' : 'Salvar Informações'}
+              </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
               </Button>
               <Button variant="outline" onClick={handleExportPdf}>
                 <FileDown className="h-4 w-4 mr-2" />

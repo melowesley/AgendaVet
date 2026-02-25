@@ -22,7 +22,6 @@ import { VacinaDialog } from './VacinaDialog';
 import { ReceitaDialog } from './ReceitaDialog';
 import { ObservacoesDialog } from './ObservacoesDialog';
 import { VideoDialog } from './VideoDialog';
-import { InternacaoDialog } from './InternacaoDialog';
 import { DiagnosticoDialog } from './DiagnosticoDialog';
 import { BanhoTosaDialog } from './BanhoTosaDialog';
 import { ObitoDialog } from './ObitoDialog';

@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { format, isValid, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { History, ChevronDown, ChevronUp, Printer } from 'lucide-react';
-
 interface PetAdminHistoryRow {
   id: string;
   module: string;
@@ -377,7 +376,6 @@ export const PetAdminHistorySection = ({
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const sectionTitle = title ?? `Histórico de ${MODULE_LABELS[module] ?? module}`;
-
   useEffect(() => {
     const loadHistory = async () => {
       setLoading(true);
@@ -613,8 +611,7 @@ export const PetAdminHistorySection = ({
                   )}
                 </div>
               );
-            })}
-          </div>
+            })}          </div>
         )}
       </ScrollArea>
     </div>

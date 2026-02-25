@@ -32,7 +32,7 @@ interface Exam {
   notes: string | null;
 }
 
-export const ExameDialog = ({ open, onClose, onBack, petId, petName }: ExameDialogProps) => {
+export const ExameDialog = ({ open, onClose, onBack, onSuccess, petId, petName }: ExameDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<Exam[]>([]);
@@ -101,18 +101,10 @@ export const ExameDialog = ({ open, onClose, onBack, petId, petName }: ExameDial
         loadRecords();
       }
     } else {
-      // Criar novo registro
-      const { data: userData, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !userData.user?.id) {
-        toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
-        setLoading(false);
-        return;
-      }
-
+      const { data: userData } = await supabase.auth.getUser();
       const { error } = await supabase.from('pet_exams').insert({
         pet_id: petId,
-        user_id: userData.user.id,
+        user_id: userData.user?.id,
         exam_type: examType,
         exam_date: examDate,
         results: results || null,
@@ -123,7 +115,6 @@ export const ExameDialog = ({ open, onClose, onBack, petId, petName }: ExameDial
 
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-        setLoading(false);
       } else {
         const historyDetails = generateExameSummary(examType, examDate, results, veterinarian);
         await logPetAdminHistory({
@@ -189,22 +180,22 @@ export const ExameDialog = ({ open, onClose, onBack, petId, petName }: ExameDial
     exportPetRecordPdf({
       title: 'Exames',
       petName,
-      sectionTitle: 'Resultados de Exames',
+      sectionTitle: 'Registro de Exames',
       sectionData: {
         registro_atual: {
           tipo_exame: examType || '—',
-          data_exame: examDate || '—',
+          data: examDate || '—',
           resultados: results || '—',
           veterinario: veterinarian || '—',
-          arquivo: fileUrl || '—',
+          url_arquivo: fileUrl || '—',
           observacoes: notes || '—',
         },
         historico: records.map((record) => ({
           tipo_exame: record.exam_type,
-          data_exame: record.exam_date,
+          data: record.exam_date,
           resultados: record.results || '—',
           veterinario: record.veterinarian || '—',
-          arquivo: record.file_url || '—',
+          url_arquivo: record.file_url || '—',
           observacoes: record.notes || '—',
         })),
       },
@@ -304,6 +295,10 @@ export const ExameDialog = ({ open, onClose, onBack, petId, petName }: ExameDial
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
                 {loading ? 'Salvando...' : 'Salvar Informações'}
+              </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
               </Button>
               <Button variant="outline" onClick={handleExportPdf}>
                 <FileDown className="h-4 w-4 mr-2" />

@@ -17,45 +17,6 @@
  *  - O erro é registrado no console e retornado para que o chamador possa
  *    opcionalmente exibir um aviso ao usuário (sem bloquear a operação).
  */
-
-import { supabase } from '@/integrations/supabase/client';
-import { Json } from '@/integrations/supabase/types';
-
-interface LogPetAdminHistoryInput {
-  petId: string;
-  module: string;
-  action: string;
-  title: string;
-  details?: Json;
-  sourceTable?: string;
-  sourceId?: string;
-}
-
-/**
- * Remove campos vazios, nulos, traços e valores "não" de um objeto details
- * antes de salvar, para que o histórico exiba apenas informações significativas.
- */
-const cleanDetails = (details: Json | undefined): Json | null => {
-  if (!details || typeof details !== 'object' || Array.isArray(details)) {
-    return details ?? null;
-  }
-  const EMPTY_STRINGS = new Set(['', '—', '-', 'nao', 'não', 'n/a']);
-  const cleaned: Record<string, Json> = {};
-  for (const [key, value] of Object.entries(details as Record<string, Json>)) {
-    if (value === null || value === undefined) continue;
-    if (typeof value === 'string' && EMPTY_STRINGS.has(value.trim().toLowerCase())) continue;
-    if (Array.isArray(value) && value.length === 0) continue;
-    cleaned[key] = value;
-  }
-  return Object.keys(cleaned).length > 0 ? cleaned : null;
-};
-
-/**
- * Registra uma ação no histórico administrativo do pet.
- *
- * @returns `true` se o registro foi criado com sucesso, `false` em caso de falha.
- *          A falha é apenas logada no console — não lança exceção.
- */
 export const logPetAdminHistory = async ({
   petId,
   module,
@@ -72,15 +33,13 @@ export const logPetAdminHistory = async ({
     console.warn('[petAdminHistory] Usuário não autenticado — log ignorado.');
     return false;
   }
-
   const { error } = await supabase.from('pet_admin_history').insert({
     pet_id: petId,
     user_id: userId,
     module,
     action,
     title,
-    details: cleanDetails(details),
-    source_table: sourceTable ?? null,
+    details: cleanDetails(details),    source_table: sourceTable ?? null,
     source_id: sourceId ?? null,
   });
 
@@ -93,5 +52,4 @@ export const logPetAdminHistory = async ({
     return false;
   }
 
-  return true;
-};
+  return true;};

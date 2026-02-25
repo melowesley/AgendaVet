@@ -297,6 +297,10 @@ export const PesoDialog = ({ open, onClose, onBack, onSuccess, petId, petName }:
                 <FileDown className="h-4 w-4 mr-2" />
                 Exportar PDF
               </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
               {editingId && (
                 <Button variant="outline" onClick={resetForm}>
                   Cancelar

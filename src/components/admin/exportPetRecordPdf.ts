@@ -15,21 +15,6 @@ const escapeHtml = (unsafe: unknown): string => {
     .replace(/'/g, "&#039;");
 };
 
-const formatValue = (value: unknown): string => {
-  if (value === null || value === undefined || value === '') return '—';
-  if (Array.isArray(value)) {
-    if (value.length === 0) return '—';
-    return value.map((item) => formatValue(item)).join(', ');
-  }
-  if (typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>)
-      .filter(([, v]) => v !== null && v !== undefined && v !== '')
-      .map(([k, v]) => `${escapeHtml(k.replace(/_/g, ' '))}: ${formatValue(v)}`);
-    return entries.length ? entries.join(' | ') : '—';
-  }
-  return escapeHtml(value);
-};
-
 const buildSectionHtml = (title: string, data: unknown): string => {
   if (data === null || data === undefined) return '';
 
@@ -47,16 +32,14 @@ const buildSectionHtml = (title: string, data: unknown): string => {
 
     return `
       <div class="section">
-        <h3>${escapeHtml(title)}</h3>
-        ${rows.join('')}
+        <h3>${escapeHtml(title)}</h3>        ${rows.join('')}
       </div>
     `;
   }
 
   return `
     <div class="section">
-      <h3>${escapeHtml(title)}</h3>
-      <div class="row">
+      <h3>${escapeHtml(title)}</h3>      <div class="row">
         <span class="value">${formatValue(data)}</span>
       </div>
     </div>
@@ -68,17 +51,14 @@ export const exportPetRecordPdf = ({ title, petName, sectionTitle, sectionData }
 
   const safeTitle = escapeHtml(title);
   const safePetName = escapeHtml(petName);
-  const dateNow = new Date();
-  const dateLabel = dateNow.toLocaleDateString('pt-BR');
-  const timeLabel = dateNow.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
+  const now = new Date();
+  const dateLabel = now.toLocaleDateString('pt-BR');
+  const timeLabel = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   const htmlContent = `
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-      <head>
-        <meta charset="utf-8" />
-        <title>${safeTitle} - ${safePetName}</title>
-        <style>
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
           * { box-sizing: border-box; }
           body {
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;

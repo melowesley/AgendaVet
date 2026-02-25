@@ -145,7 +145,7 @@ export const ConsultaDialog = ({ open, onClose, onBack, onSuccess, request }: Co
         .from('appointment_requests')
         .update({ status: 'completed', admin_notes: JSON.stringify({ tipo_atendimento: 'consulta', salvo_em: new Date().toISOString() }) })
         .eq('id', request.id);
-      
+
       // Build a complete ordered summary following the form order
       const consultaSummary = generateAnamnesisSummary(anamnesis);
 

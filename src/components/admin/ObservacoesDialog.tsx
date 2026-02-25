@@ -95,18 +95,10 @@ export const ObservacoesDialog = ({ open, onClose, onBack, onSuccess, petId, pet
         loadRecords();
       }
     } else {
-      // Criar novo registro
-      const { data: userData, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !userData.user?.id) {
-        toast({ title: 'Erro', description: 'Não foi possível obter dados do usuário. Faça login novamente.', variant: 'destructive' });
-        setLoading(false);
-        return;
-      }
-
+      const { data: userData } = await supabase.auth.getUser();
       const { error } = await supabase.from('pet_observations').insert({
         pet_id: petId,
-        user_id: userData.user.id,
+        user_id: userData.user?.id,
         title: title || null,
         observation,
         observation_date: observationDate,
@@ -115,7 +107,6 @@ export const ObservacoesDialog = ({ open, onClose, onBack, onSuccess, petId, pet
 
       if (error) {
         toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-        setLoading(false);
       } else {
         await logPetAdminHistory({
           petId,
@@ -133,22 +124,6 @@ export const ObservacoesDialog = ({ open, onClose, onBack, onSuccess, petId, pet
       }
     }
     setLoading(false);
-  };
-
-  const resetForm = () => {
-    setTitle('');
-    setObservation('');
-    setCategory('');
-    setObservationDate(format(new Date(), 'yyyy-MM-dd'));
-    setEditingId(null);
-  };
-
-  const handleEdit = (record: Observation) => {
-    setTitle(record.title || '');
-    setObservation(record.observation);
-    setObservationDate(record.observation_date);
-    setCategory(record.category || '');
-    setEditingId(record.id);
   };
 
   const handleDelete = async (id: string) => {
@@ -280,6 +255,10 @@ export const ObservacoesDialog = ({ open, onClose, onBack, onSuccess, petId, pet
               <Button onClick={handleSave} disabled={loading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
                 {loading ? 'Salvando...' : 'Salvar Informações'}
+              </Button>
+              <Button variant="outline" onClick={handleExportPdf}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
               </Button>
               <Button variant="outline" onClick={handleExportPdf}>
                 <FileDown className="h-4 w-4 mr-2" />
