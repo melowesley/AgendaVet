@@ -7,11 +7,24 @@ import { Mail, Lock, PawPrint, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
+const REMEMBER_ADMIN_EMAIL_KEY = 'agendavet_admin_remembered_email';
+
 const AdminAuth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const [rememberEmail, setRememberEmail] = useState(false);
+
+  const savedEmail = localStorage.getItem(REMEMBER_ADMIN_EMAIL_KEY) ?? '';
+
+  const [loginData, setLoginData] = useState({
+    email: savedEmail,
+    password: '',
+  });
+
+  useEffect(() => {
+    if (savedEmail) setRememberEmail(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let mounted = true;
@@ -77,6 +90,13 @@ const AdminAuth = () => {
         return;
       }
 
+      // Salva ou remove o email conforme a preferência
+      if (rememberEmail) {
+        localStorage.setItem(REMEMBER_ADMIN_EMAIL_KEY, loginData.email);
+      } else {
+        localStorage.removeItem(REMEMBER_ADMIN_EMAIL_KEY);
+      }
+
       toast({ title: 'Login realizado!', description: 'Bem-vindo ao painel administrativo.' });
       navigate('/admin');
     } catch (error: unknown) {
@@ -99,8 +119,8 @@ const AdminAuth = () => {
   return (
     <div className="h-full flex overflow-hidden font-sans">
 
-      {/* Left panel — teal brand */}
-      <div className="hidden md:flex flex-col items-center justify-center w-1/2 bg-teal-600 text-white p-12 gap-8">
+      {/* Left panel — esconde em landscape mobile via CSS */}
+      <div className="auth-brand-panel hidden md:flex flex-col items-center justify-center w-1/2 bg-teal-600 text-white p-12 gap-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -139,13 +159,13 @@ const AdminAuth = () => {
         </motion.div>
       </div>
 
-      {/* Right panel — login form; rolagem só aqui se precisar */}
-      <div className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center bg-gray-50 p-8">
+      {/* Right panel — rola em landscape mobile */}
+      <div className="auth-scroll-panel flex-1 min-h-0 overflow-y-auto flex items-center justify-center bg-gray-50 p-6 sm:p-8">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-sm"
+          className="w-full max-w-sm py-4"
         >
           {/* Mobile logo */}
           <div className="flex md:hidden flex-col items-center mb-8">
@@ -155,7 +175,7 @@ const AdminAuth = () => {
             <h1 className="font-black text-2xl text-teal-700">AgendaVet</h1>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="bg-teal-100 rounded-xl p-2.5">
                 <Shield className="text-teal-600" size={22} />
@@ -180,6 +200,7 @@ const AdminAuth = () => {
                     className="pl-9 h-10 border-gray-200 focus:border-teal-400 focus:ring-teal-400"
                     value={loginData.email}
                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                    autoComplete="email"
                     required
                   />
                 </div>
@@ -198,10 +219,45 @@ const AdminAuth = () => {
                     className="pl-9 h-10 border-gray-200 focus:border-teal-400 focus:ring-teal-400"
                     value={loginData.password}
                     onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                    autoComplete="current-password"
                     required
                   />
                 </div>
               </div>
+
+              {/* ── Lembrar email ─────────────────────────── */}
+              <label
+                htmlFor="admin-remember-email"
+                className="flex items-center gap-2.5 cursor-pointer select-none group"
+              >
+                <div className="relative flex items-center">
+                  <input
+                    id="admin-remember-email"
+                    type="checkbox"
+                    checked={rememberEmail}
+                    onChange={(e) => setRememberEmail(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div
+                    className={[
+                      "w-4 h-4 rounded border-2 flex items-center justify-center transition-all",
+                      rememberEmail
+                        ? "bg-teal-600 border-teal-600"
+                        : "bg-white border-gray-300 group-hover:border-teal-400",
+                    ].join(" ")}
+                  >
+                    {rememberEmail && (
+                      <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 8" fill="none">
+                        <path d="M1 4l3 3 5-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <span className="text-sm text-gray-600 group-hover:text-gray-800 transition-colors">
+                  Lembrar meu email
+                </span>
+              </label>
+              {/* ────────────────────────────────────────────── */}
 
               <button
                 type="submit"

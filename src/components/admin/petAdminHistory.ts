@@ -17,6 +17,28 @@
  *  - O erro é registrado no console e retornado para que o chamador possa
  *    opcionalmente exibir um aviso ao usuário (sem bloquear a operação).
  */
+import { supabase } from '@/integrations/supabase/client';
+
+export interface LogPetAdminHistoryInput {
+  petId: string;
+  module: string;
+  action: string;
+  title: string;
+  details?: Record<string, unknown> | null;
+  sourceTable?: string | null;
+  sourceId?: string | null;
+}
+
+/**
+ * Remove valores undefined/null profundamente para não poluir o JSONB.
+ */
+const cleanDetails = (details?: Record<string, unknown> | null): Record<string, unknown> => {
+  if (!details) return {};
+  return Object.fromEntries(
+    Object.entries(details).filter(([, v]) => v !== undefined && v !== null && v !== '')
+  );
+};
+
 export const logPetAdminHistory = async ({
   petId,
   module,
@@ -33,13 +55,15 @@ export const logPetAdminHistory = async ({
     console.warn('[petAdminHistory] Usuário não autenticado — log ignorado.');
     return false;
   }
+
   const { error } = await supabase.from('pet_admin_history').insert({
     pet_id: petId,
     user_id: userId,
     module,
     action,
     title,
-    details: cleanDetails(details),    source_table: sourceTable ?? null,
+    details: cleanDetails(details),
+    source_table: sourceTable ?? null,
     source_id: sourceId ?? null,
   });
 
@@ -52,4 +76,5 @@ export const logPetAdminHistory = async ({
     return false;
   }
 
-  return true;};
+  return true;
+};

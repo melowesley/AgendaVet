@@ -12,12 +12,94 @@ import {
 import { format } from 'date-fns';
 import { logPetAdminHistory } from './petAdminHistory';
 import { PetAdminHistorySection } from './PetAdminHistorySection';
-import { generateReceitaSummary } from '@/utils/procedureSummaries';
 import { buildReceitaSimplesPdfHtml, buildReceitaControladaPdfHtml } from './exportReceitaPdf';
 import { RichTextEditor } from './RichTextEditor';
 import { ReceitaPreviewDialog } from './ReceitaPreviewDialog';
 
 type ReceiptType = null | 'simples' | 'controlado';
+
+// ── Interfaces de dados ────────────────────────────────────────────────────────
+
+interface Prescription {
+  id: string;
+  pet_id: string;
+  user_id: string;
+  medication_name: string;
+  dosage: string | null;
+  frequency: string | null;
+  duration: string | null;
+  prescription_date: string;
+  veterinarian: string | null;
+  notes: string | null;
+  created_at?: string;
+}
+
+interface PetDetails {
+  breed: string | null;
+  age: string | null;
+  type: string;
+  user_id: string;
+}
+
+interface StoredSimples {
+  __type: 'simples';
+  clinicName: string;
+  crmv: string;
+  tutorName: string;
+  tutorAddress: string;
+  tutorPhone: string;
+  petBreed: string;
+  petAge: string;
+  petSex: string;
+  prescription: string;
+}
+
+interface StoredControlado {
+  __type: 'controlado';
+  emitterName: string;
+  crmv: string;
+  emitterPhone: string;
+  emitterAddress: string;
+  emitterCity: string;
+  emitterState: string;
+  prescription: string;
+  tutorName: string;
+  tutorAddress: string;
+  petBreed: string;
+  petAge: string;
+  petSex: string;
+}
+
+type StoredReceipt = StoredSimples | StoredControlado;
+
+// ── Funções auxiliares ─────────────────────────────────────────────────────────
+
+/** Converte o campo `notes` (JSON string) em objeto tipado */
+const parseNotes = (notes: string | null): StoredReceipt | null => {
+  if (!notes) return null;
+  try {
+    const parsed = JSON.parse(notes) as StoredReceipt;
+    if (parsed.__type === 'simples' || parsed.__type === 'controlado') return parsed;
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+/** Retorna o nome legível da espécie a partir do campo `type` do banco */
+const speciesLabel = (type: string): string => {
+  const map: Record<string, string> = {
+    dog: 'Canino',
+    cat: 'Felino',
+    bird: 'Ave',
+    rabbit: 'Coelho',
+    hamster: 'Hamster',
+    fish: 'Peixe',
+    reptile: 'Réptil',
+    other: 'Outro',
+  };
+  return map[type] ?? type ?? '';
+};
 
 interface ReceitaDialogProps {
   open: boolean;
@@ -164,7 +246,7 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
       });
       setHistoryRefresh((p) => p + 1);
       onSuccess?.();
-      toast({ title: 'Sucesso', description: 'Receita salva com sucesso!' });      loadRecords();
+      toast({ title: 'Sucesso', description: 'Receita salva com sucesso!' }); loadRecords();
     }
     setLoading(false);
   };
@@ -246,7 +328,7 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
         sourceId: id,
       });
       setHistoryRefresh((p) => p + 1);
-      onSuccess?.();      toast({ title: 'Sucesso', description: 'Receita excluída' });
+      onSuccess?.(); toast({ title: 'Sucesso', description: 'Receita excluída' });
       loadRecords();
     }
   };
@@ -379,8 +461,8 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
             {receiptType === 'simples'
               ? `Receituário Simples — ${petName}`
               : receiptType === 'controlado'
-              ? `Receituário Controlado — ${petName}`
-              : `Receitas — ${petName}`}
+                ? `Receituário Controlado — ${petName}`
+                : `Receitas — ${petName}`}
           </DialogTitle>
         </DialogHeader>
 
@@ -443,11 +525,10 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
                                 <p className="text-xs text-muted-foreground">
                                   {format(new Date(record.prescription_date), 'dd/MM/yyyy')}
                                 </p>
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                                  typeLabel === 'Controlado'
-                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
-                                    : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
-                                }`}>
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${typeLabel === 'Controlado'
+                                  ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
+                                  }`}>
                                   {typeLabel}
                                 </span>
                               </div>
@@ -513,7 +594,7 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
             {/* Dados da Clínica / Veterinário */}
             <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg space-y-3">
               <h3 className="text-sm font-bold text-blue-800 dark:text-blue-400 uppercase tracking-wide">Dados da Clínica / Veterinário</h3>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label>Nome da Clínica / Hospital</Label>
                   <Input value={clinicName} onChange={(e) => setClinicName(e.target.value)} placeholder="AgendaVet" spellCheck={false} />
@@ -546,7 +627,7 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
                 <Label>Endereço do Tutor</Label>
                 <Input value={tutorAddress} onChange={(e) => setTutorAddress(e.target.value)} placeholder="Rua, Nº, Bairro, Cidade" spellCheck={false} />
               </div>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <Label>Animal</Label>
                   <Input value={petName} readOnly className="bg-muted" />
@@ -588,7 +669,7 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
                   minHeight="140px"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
                 <div>
                   <Label>Data da Receita *</Label>
                   <Input type="date" value={prescriptionDate} onChange={(e) => setPrescriptionDate(e.target.value)} />
@@ -618,7 +699,7 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
               <h3 className="text-sm font-bold text-red-800 dark:text-red-400 uppercase tracking-wide">
                 Identificação do Emitente
               </h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
                 <div>
                   <Label>Nome do Veterinário *</Label>
                   <Input value={emitterName} onChange={(e) => setEmitterName(e.target.value)} placeholder="Nome completo do veterinário" spellCheck={false} />
@@ -628,7 +709,7 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
                   <Input value={crmv} onChange={(e) => setCrmv(e.target.value)} placeholder="Ex: 12345/SP" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
                 <div>
                   <Label>Telefone</Label>
                   <Input value={emitterPhone} onChange={(e) => setEmitterPhone(e.target.value)} placeholder="(00) 00000-0000" />
@@ -653,7 +734,7 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
             {/* Dados do Paciente */}
             <div className="p-4 bg-muted/50 border rounded-lg space-y-3">
               <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Dados do Paciente</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
                 <div>
                   <Label>Tutor (Proprietário)</Label>
                   <Input value={tutorName} onChange={(e) => setTutorName(e.target.value)} placeholder="Nome do tutor" spellCheck={false} />
@@ -663,7 +744,7 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
                   <Input value={tutorAddress} onChange={(e) => setTutorAddress(e.target.value)} placeholder="Endereço completo" spellCheck={false} />
                 </div>
               </div>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <Label>Animal</Label>
                   <Input value={petName} readOnly className="bg-muted" />
@@ -681,7 +762,7 @@ export const ReceitaDialog = ({ open, onClose, onBack, onSuccess, petId, petName
                   <Input value={petAge} onChange={(e) => setPetAge(e.target.value)} placeholder="Ex: 3 anos" />
                 </div>
               </div>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <Label>Sexo</Label>
                   <select value={petSex} onChange={(e) => setPetSex(e.target.value)} className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm">

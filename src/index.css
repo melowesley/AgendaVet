@@ -13,7 +13,8 @@
 }
 
 /* Página sem rolagem: apenas áreas internas (main, etc.) rolam */
-html, body {
+html,
+body {
   height: 100%;
   overflow: hidden;
   overflow-x: hidden;
@@ -46,7 +47,8 @@ html, body {
     --popover-foreground: 222 47% 11%;
 
     /* ── Primary — Teal veterinário ──────────────────────── */
-    --primary: 173 80% 36%;        /* teal-600  #0d9488 */
+    --primary: 173 80% 36%;
+    /* teal-600  #0d9488 */
     --primary-foreground: 0 0% 100%;
 
     /* ── Secondary — Teal claro ───────────────────────────── */
@@ -58,17 +60,21 @@ html, body {
     --muted-foreground: 220 9% 46%;
 
     /* ── Accent — Âmbar quente ───────────────────────────── */
-    --accent: 38 92% 50%;          /* amber-600  #D97706 */
+    --accent: 38 92% 50%;
+    /* amber-600  #D97706 */
     --accent-foreground: 0 0% 100%;
 
     /* ── Semânticas ──────────────────────────────────────── */
-    --destructive: 0 72% 51%;      /* red-600    #DC2626 */
+    --destructive: 0 72% 51%;
+    /* red-600    #DC2626 */
     --destructive-foreground: 0 0% 100%;
 
-    --success: 160 84% 39%;        /* emerald-600 #059669 */
+    --success: 160 84% 39%;
+    /* emerald-600 #059669 */
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;         /* amber-600  #D97706 */
+    --warning: 38 92% 50%;
+    /* amber-600  #D97706 */
     --warning-foreground: 0 0% 100%;
 
     /* ── Bordas / Inputs ─────────────────────────────────── */
@@ -90,13 +96,13 @@ html, body {
 
     /* ── Gradientes ──────────────────────────────────────── */
     --gradient-primary: linear-gradient(135deg, hsl(173 80% 36%), hsl(180 72% 42%));
-    --gradient-accent:  linear-gradient(135deg, hsl(38 92% 50%),  hsl(32 95% 44%));
-    --gradient-hero:    linear-gradient(135deg, hsl(173 80% 36%) 0%, hsl(180 72% 44%) 50%, hsl(160 84% 39%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(38 92% 50%), hsl(32 95% 44%));
+    --gradient-hero: linear-gradient(135deg, hsl(173 80% 36%) 0%, hsl(180 72% 44%) 50%, hsl(160 84% 39%) 100%);
 
     /* ── Sombras ─────────────────────────────────────────── */
-    --shadow-sm:   0 1px 2px 0 hsl(173 60% 18% / 0.05);
-    --shadow-md:   0 4px 6px -1px hsl(173 60% 18% / 0.08), 0 2px 4px -2px hsl(173 60% 18% / 0.05);
-    --shadow-lg:   0 10px 15px -3px hsl(173 60% 18% / 0.08), 0 4px 6px -4px hsl(173 60% 18% / 0.05);
+    --shadow-sm: 0 1px 2px 0 hsl(173 60% 18% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(173 60% 18% / 0.08), 0 2px 4px -2px hsl(173 60% 18% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(173 60% 18% / 0.08), 0 4px 6px -4px hsl(173 60% 18% / 0.05);
     --shadow-card: 0 4px 20px -4px hsl(173 80% 36% / 0.15);
   }
 
@@ -110,7 +116,8 @@ html, body {
     --popover: 222 47% 10%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 173 70% 48%;        /* teal-400  (mais claro no dark) */
+    --primary: 173 70% 48%;
+    /* teal-400  (mais claro no dark) */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 217 33% 17%;
@@ -145,8 +152,8 @@ html, body {
     --sidebar-ring: 173 70% 48%;
 
     --gradient-primary: linear-gradient(135deg, hsl(173 70% 48%), hsl(180 65% 54%));
-    --gradient-accent:  linear-gradient(135deg, hsl(38 92% 55%),  hsl(32 95% 48%));
-    --gradient-hero:    linear-gradient(135deg, hsl(173 70% 48%) 0%, hsl(180 65% 52%) 50%, hsl(160 80% 44%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(38 92% 55%), hsl(32 95% 48%));
+    --gradient-hero: linear-gradient(135deg, hsl(173 70% 48%) 0%, hsl(180 65% 52%) 50%, hsl(160 80% 44%) 100%);
 
     --shadow-card: 0 4px 20px -4px hsl(173 70% 48% / 0.20);
   }
@@ -164,7 +171,12 @@ html, body {
     font-size: clamp(14px, 1.5vw, 16px);
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'Nunito', sans-serif;
   }
 
@@ -192,7 +204,9 @@ html, body {
   }
 
   /* Inputs responsivos */
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     font-size: clamp(0.875rem, 1.5vw, 1rem);
     padding: clamp(0.5rem, 1vw, 0.75rem);
   }
@@ -202,17 +216,97 @@ html, body {
   .gradient-primary {
     background: var(--gradient-primary);
   }
-  
+
   .gradient-accent {
     background: var(--gradient-accent);
   }
-  
+
   .gradient-hero {
     background: var(--gradient-hero);
   }
-  
+
   .shadow-card {
     box-shadow: var(--shadow-card);
+  }
+}
+
+/* ── Auth layout — controle responsivo do painel de branding ──────────────────
+ *
+ * O Tailwind md: usa apenas largura (≥768px). Em celular landscape a largura
+ * pode passar de 768px mas ainda é mobile. Por isso usamos CSS puro que checa
+ * LARGURA E ALTURA ao mesmo tempo.
+ *
+ * Regra:
+ *  • Painel de branding (.auth-brand-panel): hidden por padrão (via Tailwind
+ *    `hidden` no JSX). Só aparece quando a tela for ≥768px de largura E ≥560px
+ *    de altura — ou seja, um tablet em portrait ou desktop real.
+ *  • Mini-logo mobile (.auth-mobile-logo): visível por padrão. Some nas mesmas
+ *    condições acima.
+ *  • Painel do formulário (.auth-scroll-panel): sempre ocupa o espaço restante
+ *    com rolagem vertical quando necessário.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/* Padrão mobile (portrait E landscape): branding oculto */
+.auth-brand-panel {
+  display: none !important;
+}
+
+/* Mini-logo aparece por padrão em mobile */
+.auth-mobile-logo {
+  display: flex;
+}
+
+/* Painel do formulário: tela cheia altura dinâmica, rola internamente */
+.auth-scroll-panel {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  align-items: flex-start;
+  /* começa do topo para rolar graciosamente */
+  justify-content: center;
+  /* safe-area automático via env() */
+  padding-top: max(1.5rem, env(safe-area-inset-top));
+  padding-right: max(1.5rem, env(safe-area-inset-right));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  padding-left: max(1.5rem, env(safe-area-inset-left));
+}
+
+/* Em telas "desktop real" (≥768px wide E ≥560px tall): mostra branding */
+@media screen and (min-width: 768px) and (min-height: 560px) {
+  .auth-brand-panel {
+    display: flex !important;
+  }
+
+  .auth-mobile-logo {
+    display: none;
+  }
+
+  /* Formula padrão no desktop: centraliza verticalmente */
+  .auth-scroll-panel {
+    align-items: center;
+    padding-top: 1.5rem;
+    padding-right: 2rem;
+    padding-bottom: 1.5rem;
+    padding-left: 2rem;
+  }
+}
+
+/* Em landscape + tela baixa (celular deitado): body e root rolam */
+@media screen and (orientation: landscape) and (max-height: 559px) {
+
+  html,
+  body {
+    overflow-y: auto;
+    height: auto;
+    min-height: 100%;
+  }
+
+  #root {
+    overflow: visible;
+    height: auto;
+    min-height: 100svh;
   }
 }
 
@@ -225,13 +319,50 @@ html, body {
 }
 
 /* ── Rich Text Editor content styles ────────────────────── */
-.rich-editor b, .rich-editor strong { font-weight: 700; }
-.rich-editor i, .rich-editor em     { font-style: italic; }
-.rich-editor u                      { text-decoration: underline; }
-.rich-editor s                      { text-decoration: line-through; }
-.rich-editor sub                    { vertical-align: sub; font-size: 0.75em; }
-.rich-editor sup                    { vertical-align: super; font-size: 0.75em; }
-.rich-editor ul                     { list-style: disc; padding-left: 1.25rem; margin: 4px 0; }
-.rich-editor ol                     { list-style: decimal; padding-left: 1.25rem; margin: 4px 0; }
-.rich-editor p                      { margin: 2px 0; }
-.rich-editor div                    { margin: 2px 0; }
+.rich-editor b,
+.rich-editor strong {
+  font-weight: 700;
+}
+
+.rich-editor i,
+.rich-editor em {
+  font-style: italic;
+}
+
+.rich-editor u {
+  text-decoration: underline;
+}
+
+.rich-editor s {
+  text-decoration: line-through;
+}
+
+.rich-editor sub {
+  vertical-align: sub;
+  font-size: 0.75em;
+}
+
+.rich-editor sup {
+  vertical-align: super;
+  font-size: 0.75em;
+}
+
+.rich-editor ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 4px 0;
+}
+
+.rich-editor ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+  margin: 4px 0;
+}
+
+.rich-editor p {
+  margin: 2px 0;
+}
+
+.rich-editor div {
+  margin: 2px 0;
+}
