@@ -1,116 +1,138 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const serverDb = {
-  pets: [] as Array<{
-    id: string;
-    user_id: string;
-    name: string;
-    type: string;
-    breed: string | null;
-    age: string | null;
-    weight: string | null;
-    notes: string | null;
-    created_at: string;
-    updated_at: string;
-  }>,
-  appointments: [] as Array<{
-    id: string;
-    user_id: string;
-    pet_id: string;
-    preferred_date: string;
-    preferred_time: string;
-    reason: string;
-    notes: string | null;
-    status: string;
-    created_at: string;
-    updated_at: string;
-  }>,
-};
-
-function createSelectChain(table: 'pets' | 'appointment_requests') {
-  const filters = new Map<string, unknown>();
-  const chain = {
-    eq(column: string, value: unknown) {
-      filters.set(column, value);
-      return chain;
-    },
-    order(column: string, opts?: { ascending?: boolean }) {
-      const asc = opts?.ascending ?? true;
-      const source =
-        table === 'pets' ? [...serverDb.pets] : [...serverDb.appointments];
-
-      const filtered = source.filter((row) =>
-        [...filters.entries()].every(([col, value]) => (row as Record<string, unknown>)[col] === value),
-      );
-
-      filtered.sort((a, b) => {
-        const aValue = new Date((a as Record<string, string>)[column] ?? '').getTime();
-        const bValue = new Date((b as Record<string, string>)[column] ?? '').getTime();
-        return asc ? aValue - bValue : bValue - aValue;
-      });
-
-      if (table === 'appointment_requests') {
-        const rows = filtered.map((appointment) => {
-          const pet = serverDb.pets.find((p) => p.id === appointment.pet_id);
-          return {
-            ...appointment,
-            pets: pet
-              ? {
-                  id: pet.id,
-                  name: pet.name,
-                  type: pet.type,
-                  breed: pet.breed,
-                }
-              : null,
-          };
-        });
-        return Promise.resolve({ data: rows, error: null });
-      }
-
-      return Promise.resolve({ data: filtered, error: null });
-    },
+const mocked = vi.hoisted(() => {
+  const serverDb = {
+    pets: [] as Array<{
+      id: string;
+      user_id: string;
+      name: string;
+      type: string;
+      breed: string | null;
+      age: string | null;
+      weight: string | null;
+      notes: string | null;
+      created_at: string;
+      updated_at: string;
+    }>,
+    appointments: [] as Array<{
+      id: string;
+      user_id: string;
+      pet_id: string;
+      preferred_date: string;
+      preferred_time: string;
+      reason: string;
+      notes: string | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }>,
   };
 
-  return chain;
-}
+  function createSelectChain(table: 'pets' | 'appointment_requests') {
+    const filters = new Map<string, unknown>();
+    const chain = {
+      eq(column: string, value: unknown) {
+        filters.set(column, value);
+        return chain;
+      },
+      order(column: string, opts?: { ascending?: boolean }) {
+        const asc = opts?.ascending ?? true;
+        const source =
+          table === 'pets' ? [...serverDb.pets] : [...serverDb.appointments];
 
-const supabase = {
-  from: vi.fn((table: string) => {
-    if (table === 'pets') {
-      return {
-        insert: vi.fn(async (payload: Record<string, unknown>) => {
-          const row = payload as (typeof serverDb.pets)[number];
-          if (serverDb.pets.some((pet) => pet.id === row.id)) {
-            return { error: { code: '23505', message: 'duplicate key value violates unique constraint' } };
-          }
-          serverDb.pets.push(row);
-          return { error: null };
-        }),
-        select: vi.fn(() => createSelectChain('pets')),
-      };
-    }
+        const filtered = source.filter((row) =>
+          [...filters.entries()].every(
+            ([col, value]) => (row as Record<string, unknown>)[col] === value,
+          ),
+        );
 
-    if (table === 'appointment_requests') {
-      return {
-        insert: vi.fn(async (payload: Record<string, unknown>) => {
-          const row = payload as (typeof serverDb.appointments)[number];
-          if (serverDb.appointments.some((appointment) => appointment.id === row.id)) {
-            return { error: { code: '23505', message: 'duplicate key value violates unique constraint' } };
-          }
-          serverDb.appointments.push(row);
-          return { error: null };
-        }),
-        select: vi.fn(() => createSelectChain('appointment_requests')),
-      };
-    }
+        filtered.sort((a, b) => {
+          const aValue = new Date(
+            (a as Record<string, string>)[column] ?? '',
+          ).getTime();
+          const bValue = new Date(
+            (b as Record<string, string>)[column] ?? '',
+          ).getTime();
+          return asc ? aValue - bValue : bValue - aValue;
+        });
 
-    throw new Error(`Tabela não mockada: ${table}`);
-  }),
-};
+        if (table === 'appointment_requests') {
+          const rows = filtered.map((appointment) => {
+            const pet = serverDb.pets.find((p) => p.id === appointment.pet_id);
+            return {
+              ...appointment,
+              pets: pet
+                ? {
+                    id: pet.id,
+                    name: pet.name,
+                    type: pet.type,
+                    breed: pet.breed,
+                  }
+                : null,
+            };
+          });
+          return Promise.resolve({ data: rows, error: null });
+        }
 
-vi.mock('@/integrations/supabase/client', () => ({
-  supabase,
-}));
+        return Promise.resolve({ data: filtered, error: null });
+      },
+    };
+
+    return chain;
+  }
+
+  const supabase = {
+    from: vi.fn((table: string) => {
+      if (table === 'pets') {
+        return {
+          insert: vi.fn(async (payload: Record<string, unknown>) => {
+            const row = payload as (typeof serverDb.pets)[number];
+            if (serverDb.pets.some((pet) => pet.id === row.id)) {
+              return {
+                error: {
+                  code: '23505',
+                  message: 'duplicate key value violates unique constraint',
+                },
+              };
+            }
+            serverDb.pets.push(row);
+            return { error: null };
+          }),
+          select: vi.fn(() => createSelectChain('pets')),
+        };
+      }
+
+      if (table === 'appointment_requests') {
+        return {
+          insert: vi.fn(async (payload: Record<string, unknown>) => {
+            const row = payload as (typeof serverDb.appointments)[number];
+            if (
+              serverDb.appointments.some(
+                (appointment) => appointment.id === row.id,
+              )
+            ) {
+              return {
+                error: {
+                  code: '23505',
+                  message: 'duplicate key value violates unique constraint',
+                },
+              };
+            }
+            serverDb.appointments.push(row);
+            return { error: null };
+          }),
+          select: vi.fn(() => createSelectChain('appointment_requests')),
+        };
+      }
+
+      throw new Error(`Tabela não mockada: ${table}`);
+    }),
+  };
+
+  return { serverDb, supabase };
+});
+
+vi.mock('@/integrations/supabase/client', () => ({ supabase: mocked.supabase }));
 
 import {
   createAppointmentLocalFirst,
@@ -122,6 +144,7 @@ import { resetLocalFirstStateForTests } from '@/lib/local-first/state';
 import { clearMemoryFallbackForTests } from '@/lib/local-first/storage';
 
 let onlineSpy: ReturnType<typeof vi.spyOn> | null = null;
+const serverDb = mocked.serverDb;
 
 function setOnline(value: boolean): void {
   onlineSpy?.mockRestore();
