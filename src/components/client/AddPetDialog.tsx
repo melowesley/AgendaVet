@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { createPetLocalFirst } from '@/lib/local-first/sync';
 
 interface Pet {
   id: string;
@@ -28,15 +28,17 @@ interface Pet {
   age: string | null;
   weight: string | null;
   notes: string | null;
+  sync_state?: 'synced' | 'pending' | 'failed';
 }
 
 interface AddPetDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onPetAdded: (pet: Pet) => void;
+  userId: string;
 }
 
-export function AddPetDialog({ open, onOpenChange, onPetAdded }: AddPetDialogProps) {
+export function AddPetDialog({ open, onOpenChange, onPetAdded, userId }: AddPetDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -53,29 +55,18 @@ export function AddPetDialog({ open, onOpenChange, onPetAdded }: AddPetDialogPro
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('Usuário não autenticado');
-      }
+      if (!userId) throw new Error('Usuário não autenticado');
 
-      const { data, error } = await supabase
-        .from('pets')
-        .insert({
-          user_id: user.id,
-          name: formData.name.trim(),
-          type: formData.type,
-          breed: formData.breed.trim() || null,
-          age: formData.age.trim() || null,
-          weight: formData.weight.trim() || null,
-          notes: formData.notes.trim() || null,
-        })
-        .select()
-        .single();
+      const { pet } = await createPetLocalFirst(userId, {
+        name: formData.name.trim(),
+        type: formData.type,
+        breed: formData.breed.trim() || null,
+        age: formData.age.trim() || null,
+        weight: formData.weight.trim() || null,
+        notes: formData.notes.trim() || null,
+      });
 
-      if (error) throw error;
-
-      onPetAdded(data);
+      onPetAdded(pet);
       onOpenChange(false);
       
       // Reset form

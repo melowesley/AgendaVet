@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { isNetworkOnline, syncClientPortalData } from '@/lib/local-first/sync';
 
 interface AuthState {
   user: User | null;
@@ -38,6 +39,9 @@ export function initializeAuth(): () => void {
     const user = session?.user ?? null;
     const isAdmin = user ? await checkAdminRole(user.id) : false;
     useAuthStore.setState({ user, isAdmin, isLoading: false });
+    if (user && isNetworkOnline()) {
+      void syncClientPortalData(user.id).catch(() => undefined);
+    }
   });
 
   const {
@@ -46,6 +50,9 @@ export function initializeAuth(): () => void {
     const user = session?.user ?? null;
     const isAdmin = user ? await checkAdminRole(user.id) : false;
     useAuthStore.setState({ user, isAdmin, isLoading: false });
+    if (user && isNetworkOnline()) {
+      void syncClientPortalData(user.id).catch(() => undefined);
+    }
   });
 
   return () => subscription.unsubscribe();

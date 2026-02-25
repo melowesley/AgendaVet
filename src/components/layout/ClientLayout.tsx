@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PawPrint, Calendar, ClipboardList, LogOut, Home, Bell, Settings } from "lucide-react";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -15,6 +16,7 @@ const CLIENT_TABS = [
 
 export const ClientLayout = ({ children, userName }: ClientLayoutProps) => {
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -54,6 +56,11 @@ export const ClientLayout = ({ children, userName }: ClientLayoutProps) => {
 
           {/* Right actions */}
           <div className="flex items-center gap-0.5 shrink-0">
+            {!isOnline && (
+              <div className="hidden sm:flex items-center px-2 py-1 mr-1 rounded-md bg-amber-500 text-[10px] font-semibold text-amber-950">
+                Offline
+              </div>
+            )}
             <button className="flex flex-col items-center gap-0.5 hover:bg-teal-500 px-2 py-1.5 rounded-lg transition-colors min-w-[50px]">
               <Bell size={17} />
               <span className="text-[9px] font-medium">Avisos</span>
@@ -89,6 +96,12 @@ export const ClientLayout = ({ children, userName }: ClientLayoutProps) => {
           ))}
         </nav>
       </header>
+
+      {!isOnline && (
+        <div className="bg-amber-500 text-amber-950 text-center text-xs font-medium py-1 px-3">
+          Sem conexão: exibindo dados locais e salvando pendências para sincronizar depois.
+        </div>
+      )}
 
       {/* ── Main content ────────────────────────────────────────────────── */}
       <main className="flex-1 min-h-0 overflow-auto p-4">

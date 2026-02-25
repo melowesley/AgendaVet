@@ -12,6 +12,13 @@ import { RequestAppointmentDialog } from '@/components/client/RequestAppointment
 import { AppointmentRequestCard } from '@/components/client/AppointmentRequestCard';
 import { ClientLayout } from '@/components/layout/ClientLayout';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import {
+  getClientPortalSnapshot,
+  isNetworkOnline,
+  markQueueForRetry,
+  syncClientPortalData,
+} from '@/lib/local-first/sync';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 interface Pet {
   id: string;
@@ -21,6 +28,7 @@ interface Pet {
   age: string | null;
   weight: string | null;
   notes: string | null;
+  sync_state?: 'synced' | 'pending' | 'failed';
 }
 
 interface AppointmentRequest {
@@ -32,75 +40,64 @@ interface AppointmentRequest {
   notes: string | null;
   status: string;
   created_at: string;
+  sync_state?: 'synced' | 'pending' | 'failed';
   pets?: Pet;
 }
 
 const ClientPortal = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isOnline = useOnlineStatus();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [pets, setPets] = useState<Pet[]>([]);
   const [appointments, setAppointments] = useState<AppointmentRequest[]>([]);
+  const [pendingOperations, setPendingOperations] = useState(0);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [addPetOpen, setAddPetOpen] = useState(false);
   const [requestAppointmentOpen, setRequestAppointmentOpen] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
+  const refreshLocalSnapshot = useCallback(async (userId: string) => {
+    const snapshot = await getClientPortalSnapshot(userId);
+    setPets(snapshot.pets);
+    setAppointments(snapshot.appointments);
+    setPendingOperations(snapshot.pendingOperations);
+    setLastSyncedAt(snapshot.lastSyncedAt);
+  }, []);
 
-      const [petsResult, appointmentsResult] = await Promise.all([
-        supabase
-          .from('pets')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('appointment_requests')
-          .select('*, pets(*)')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false }),
-      ]);
+  const runSync = useCallback(
+    async (userId: string, silent = false) => {
+      if (!isNetworkOnline()) return;
 
-      if (petsResult.error) {
-        console.error('Error loading pets:', petsResult.error);
-        toast({
-          title: 'Erro ao carregar pets',
-          description: petsResult.error.message,
-          variant: 'destructive',
-        });
-      } else {
-        setPets(petsResult.data || []);
-      }
+      setIsSyncing(true);
+      try {
+        await syncClientPortalData(userId);
+        await refreshLocalSnapshot(userId);
 
-      if (appointmentsResult.error) {
-        console.error('Error loading appointments:', appointmentsResult.error);
-        toast({
-          title: 'Erro ao carregar solicitações',
-          description: appointmentsResult.error.message,
-          variant: 'destructive',
-        });
-      } else {
-        setAppointments(appointmentsResult.data || []);
+        if (!silent) {
+          toast({
+            title: 'Sincronização concluída',
+            description: 'Dados locais e Supabase estão alinhados.',
+          });
+        }
+      } catch (error) {
+        if (!silent) {
+          const message =
+            error instanceof Error ? error.message : 'Falha ao sincronizar dados.';
+          toast({
+            title: 'Erro na sincronização',
+            description: message,
+            variant: 'destructive',
+          });
+        }
+      } finally {
+        setIsSyncing(false);
       }
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao carregar os dados. Tente novamente.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [navigate, toast]);
+    },
+    [refreshLocalSnapshot, toast],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -116,7 +113,9 @@ const ClientPortal = () => {
       }
 
       setUser(session.user);
-      await loadData();
+      await refreshLocalSnapshot(session.user.id);
+      await runSync(session.user.id, true);
+      setLoading(false);
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -127,7 +126,8 @@ const ClientPortal = () => {
       } else {
         setUser(session.user);
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          loadData();
+          refreshLocalSnapshot(session.user.id);
+          runSync(session.user.id, true);
         }
       }
     });
@@ -138,27 +138,84 @@ const ClientPortal = () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate, loadData]);
+  }, [navigate, refreshLocalSnapshot, runSync]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const handleReconnect = async () => {
+      toast({
+        title: 'Conexão restabelecida',
+        description: 'Tentando sincronizar pendências...',
+      });
+      await runSync(user.id, true);
+    };
+
+    window.addEventListener('online', handleReconnect);
+    return () => window.removeEventListener('online', handleReconnect);
+  }, [user, runSync, toast]);
 
   const handlePetAdded = (newPet: Pet) => {
-    setPets((prev) => [newPet, ...prev]);
-    toast({
-      title: 'Pet cadastrado!',
-      description: `${newPet.name} foi adicionado com sucesso.`,
-    });
+    setPets((prev) => [newPet, ...prev.filter((item) => item.id !== newPet.id)]);
+    if (newPet.sync_state === 'synced') {
+      toast({
+        title: 'Pet cadastrado!',
+        description: `${newPet.name} foi adicionado e sincronizado.`,
+      });
+    } else {
+      toast({
+        title: 'Pet salvo offline',
+        description: `${newPet.name} foi salvo localmente e será sincronizado ao reconectar.`,
+      });
+    }
+
+    if (user) {
+      refreshLocalSnapshot(user.id);
+    }
   };
 
   const handleAppointmentRequested = (newAppointment: AppointmentRequest) => {
-    setAppointments((prev) => [newAppointment, ...prev]);
-    toast({
-      title: 'Solicitação enviada!',
-      description: 'Aguarde a confirmação da clínica.',
-    });
+    setAppointments((prev) => [
+      newAppointment,
+      ...prev.filter((item) => item.id !== newAppointment.id),
+    ]);
+
+    if (newAppointment.sync_state === 'synced') {
+      toast({
+        title: 'Solicitação enviada!',
+        description: 'A solicitação foi sincronizada com a clínica.',
+      });
+    } else {
+      toast({
+        title: 'Solicitação salva offline',
+        description: 'A solicitação será sincronizada quando houver conexão.',
+      });
+    }
+
+    if (user) {
+      refreshLocalSnapshot(user.id);
+    }
   };
 
   const openRequestAppointment = (petId: string) => {
     setSelectedPetId(petId);
     setRequestAppointmentOpen(true);
+  };
+
+  const handleRetrySync = async () => {
+    if (!user) return;
+
+    if (!isNetworkOnline()) {
+      toast({
+        title: 'Sem conexão',
+        description: 'Conecte-se à internet para sincronizar as pendências.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    await markQueueForRetry(user.id);
+    await runSync(user.id);
   };
 
   if (loading) {
@@ -185,6 +242,30 @@ const ClientPortal = () => {
   return (
     <ClientLayout>
       <div className="container max-w-4xl mx-auto">
+        <Card className="mb-4 border-dashed">
+          <CardContent className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="text-sm">
+              <p className="font-medium text-foreground">
+                {isOnline ? 'Online' : 'Offline'} • Pendências de sync: {pendingOperations}
+              </p>
+              <p className="text-muted-foreground text-xs">
+                {lastSyncedAt
+                  ? `Última sincronização: ${new Date(lastSyncedAt).toLocaleString('pt-BR')}`
+                  : 'Ainda não houve sincronização completa.'}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleRetrySync}
+              disabled={isSyncing}
+            >
+              {isSyncing ? 'Sincronizando...' : 'Sincronizar agora'}
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Pets Section */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
@@ -290,6 +371,7 @@ const ClientPortal = () => {
         open={addPetOpen}
         onOpenChange={setAddPetOpen}
         onPetAdded={handlePetAdded}
+        userId={user.id}
       />
 
       <RequestAppointmentDialog
@@ -298,6 +380,7 @@ const ClientPortal = () => {
         petId={selectedPetId}
         pets={pets}
         onAppointmentRequested={handleAppointmentRequested}
+        userId={user.id}
       />
       </div>
     </ClientLayout>

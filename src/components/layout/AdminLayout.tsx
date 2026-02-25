@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { AttendanceTypeSidebarProvider } from "@/contexts/AttendanceTypeSidebarContext";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 // ---------------------------------------------------------------------------
 // Nav tabs config (mantido para compatibilidade)
@@ -40,6 +41,7 @@ const NAV_ITEMS = [
 function AdminLayoutInner({ children }: AdminLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const isOnline = useOnlineStatus();
   const [searchParams] = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isPetProfilePage = location.pathname.startsWith("/admin/pet/");
@@ -139,6 +141,11 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
             <h1 className="text-lg sm:text-xl font-bold text-slate-800 truncate">AgendaVet</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            {!isOnline && (
+              <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-800">
+                Offline
+              </span>
+            )}
             <div className="hidden sm:flex items-center gap-2 text-sm text-slate-600">
               <span>Novidades</span>
               <span className="text-slate-400">|</span>
@@ -152,6 +159,12 @@ function AdminLayoutInner({ children }: AdminLayoutProps) {
           </div>
         </div>
       </header>
+
+      {!isOnline && (
+        <div className="bg-amber-100 text-amber-800 text-center text-xs font-medium py-1 px-3">
+          Sem conexão: visualizando dados locais em cache.
+        </div>
+      )}
 
       {/* ── Mobile menu (Sheet) ────────────────────────────────────────────── */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>

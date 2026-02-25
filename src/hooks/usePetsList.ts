@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { getResourceCache, setResourceCache } from '@/lib/local-first/state';
+import { isNetworkOnline } from '@/lib/local-first/sync';
 
 export interface PetListItem {
   id: string;
@@ -27,77 +29,92 @@ export interface PetPrescriptionSummary {
 }
 
 async function fetchPetsList(): Promise<PetListItem[]> {
-  const { data: petsData, error: petsError } = await supabase
-    .from('pets')
-    .select('*')
-    .order('name', { ascending: true });
+  const cacheKey = 'admin:pets-list';
+  const cached = await getResourceCache<PetListItem[]>(cacheKey);
 
-  if (petsError || !petsData) throw petsError ?? new Error('Falha ao buscar pets');
-
-  const userIds = [...new Set(petsData.map((p) => p.user_id))];
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('user_id, full_name, phone')
-    .in('user_id', userIds);
-
-  const profileMap = new Map(
-    (profiles || []).map((p) => [p.user_id, { full_name: p.full_name, phone: p.phone }]),
-  );
-
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const { data: prescriptions } = await supabase
-    .from('pet_prescriptions')
-    .select('id, pet_id, medication_name, prescription_date, veterinarian')
-    .gte('prescription_date', thirtyDaysAgo.toISOString().split('T')[0])
-    .order('prescription_date', { ascending: false });
-
-  const prescMap = new Map<string, PetPrescriptionSummary[]>();
-  if (prescriptions) {
-    for (const p of prescriptions) {
-      const existing = prescMap.get(p.pet_id) || [];
-      existing.push({
-        id: p.id,
-        medication_name: p.medication_name,
-        prescription_date: p.prescription_date,
-        veterinarian: p.veterinarian,
-      });
-      prescMap.set(p.pet_id, existing);
-    }
+  if (!isNetworkOnline() && cached) {
+    return cached.data;
   }
 
-  const { data: hospitalizations } = await supabase
-    .from('pet_hospitalizations')
-    .select('pet_id, status, reason, notes')
-    .in('status', ['internado', 'ativo', 'admitted']);
+  try {
+    const { data: petsData, error: petsError } = await supabase
+      .from('pets')
+      .select('*')
+      .order('name', { ascending: true });
 
-  const hospMap = new Map<string, { status: string; location: string | null }>();
-  if (hospitalizations) {
-    for (const h of hospitalizations) {
-      hospMap.set(h.pet_id, { status: h.status, location: h.notes ?? null });
+    if (petsError || !petsData) throw petsError ?? new Error('Falha ao buscar pets');
+
+    const userIds = [...new Set(petsData.map((p) => p.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, full_name, phone')
+      .in('user_id', userIds);
+
+    const profileMap = new Map(
+      (profiles || []).map((p) => [p.user_id, { full_name: p.full_name, phone: p.phone }]),
+    );
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const { data: prescriptions } = await supabase
+      .from('pet_prescriptions')
+      .select('id, pet_id, medication_name, prescription_date, veterinarian')
+      .gte('prescription_date', thirtyDaysAgo.toISOString().split('T')[0])
+      .order('prescription_date', { ascending: false });
+
+    const prescMap = new Map<string, PetPrescriptionSummary[]>();
+    if (prescriptions) {
+      for (const p of prescriptions) {
+        const existing = prescMap.get(p.pet_id) || [];
+        existing.push({
+          id: p.id,
+          medication_name: p.medication_name,
+          prescription_date: p.prescription_date,
+          veterinarian: p.veterinarian,
+        });
+        prescMap.set(p.pet_id, existing);
+      }
     }
-  }
 
-  return petsData.map((pet) => {
-    const profile = profileMap.get(pet.user_id);
-    const hosp = hospMap.get(pet.id);
-    return {
-      id: pet.id,
-      name: pet.name,
-      type: pet.type,
-      breed: pet.breed,
-      age: pet.age,
-      weight: pet.weight,
-      notes: pet.notes,
-      user_id: pet.user_id,
-      created_at: pet.created_at,
-      owner_name: profile?.full_name || null,
-      owner_phone: profile?.phone || null,
-      prescriptions: prescMap.get(pet.id) || [],
-      hospitalization_status: hosp?.status || null,
-      hospitalization_location: hosp?.location || null,
-    };
-  });
+    const { data: hospitalizations } = await supabase
+      .from('pet_hospitalizations')
+      .select('pet_id, status, reason, notes')
+      .in('status', ['internado', 'ativo', 'admitted']);
+
+    const hospMap = new Map<string, { status: string; location: string | null }>();
+    if (hospitalizations) {
+      for (const h of hospitalizations) {
+        hospMap.set(h.pet_id, { status: h.status, location: h.notes ?? null });
+      }
+    }
+
+    const result = petsData.map((pet) => {
+      const profile = profileMap.get(pet.user_id);
+      const hosp = hospMap.get(pet.id);
+      return {
+        id: pet.id,
+        name: pet.name,
+        type: pet.type,
+        breed: pet.breed,
+        age: pet.age,
+        weight: pet.weight,
+        notes: pet.notes,
+        user_id: pet.user_id,
+        created_at: pet.created_at,
+        owner_name: profile?.full_name || null,
+        owner_phone: profile?.phone || null,
+        prescriptions: prescMap.get(pet.id) || [],
+        hospitalization_status: hosp?.status || null,
+        hospitalization_location: hosp?.location || null,
+      };
+    });
+
+    await setResourceCache(cacheKey, result);
+    return result;
+  } catch (error) {
+    if (cached) return cached.data;
+    throw error;
+  }
 }
 
 export const usePetsList = () => {

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +19,7 @@ import {
 import { Calendar, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { createAppointmentLocalFirst } from '@/lib/local-first/sync';
 
 interface Pet {
   id: string;
@@ -40,6 +40,7 @@ interface AppointmentRequest {
   notes: string | null;
   status: string;
   created_at: string;
+  sync_state?: 'synced' | 'pending' | 'failed';
   pets?: Pet;
 }
 
@@ -49,6 +50,7 @@ interface RequestAppointmentDialogProps {
   petId: string | null;
   pets: Pet[];
   onAppointmentRequested: (appointment: AppointmentRequest) => void;
+  userId: string;
 }
 
 export function RequestAppointmentDialog({
@@ -57,6 +59,7 @@ export function RequestAppointmentDialog({
   petId,
   pets,
   onAppointmentRequested,
+  userId,
 }: RequestAppointmentDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -79,28 +82,17 @@ export function RequestAppointmentDialog({
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('Usuário não autenticado');
-      }
+      if (!userId) throw new Error('Usuário não autenticado');
 
-      const { data, error } = await supabase
-        .from('appointment_requests')
-        .insert({
-          user_id: user.id,
-          pet_id: formData.petId,
-          preferred_date: formData.date,
-          preferred_time: formData.time,
-          reason: formData.reason.trim(),
-          notes: formData.notes.trim() || null,
-        })
-        .select('*, pets(*)')
-        .single();
+      const { appointment } = await createAppointmentLocalFirst(userId, {
+        pet_id: formData.petId,
+        preferred_date: formData.date,
+        preferred_time: formData.time,
+        reason: formData.reason.trim(),
+        notes: formData.notes.trim() || null,
+      });
 
-      if (error) throw error;
-
-      onAppointmentRequested(data);
+      onAppointmentRequested(appointment);
       onOpenChange(false);
       
       toast({

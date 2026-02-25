@@ -20,6 +20,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { getResourceCache, setResourceCache } from '@/lib/local-first/state';
+import { isNetworkOnline } from '@/lib/local-first/sync';
 
 export interface TimelineEntry {
   id: string;
@@ -73,7 +75,15 @@ export const getModuleLabel = (module: string): string =>
   MODULE_LABELS[module] || module;
 
 async function fetchPetTimeline(petId: string): Promise<TimelineEntry[]> {
-  const entries: TimelineEntry[] = [];
+  const cacheKey = `admin:pet-timeline:${petId}`;
+  const cached = await getResourceCache<TimelineEntry[]>(cacheKey);
+
+  if (!isNetworkOnline() && cached) {
+    return cached.data;
+  }
+
+  try {
+    const entries: TimelineEntry[] = [];
 
   // ─── 1. Histórico administrativo (fonte principal) ─────────────────────────
   const { data: historyData } = await supabase
@@ -369,14 +379,19 @@ async function fetchPetTimeline(petId: string): Promise<TimelineEntry[]> {
     }
   }
 
-  // ─── Ordenar por data + hora descendente ───────────────────────────────────
-  entries.sort((a, b) => {
-    const dateA = new Date(`${a.date}T${a.time || '00:00'}`);
-    const dateB = new Date(`${b.date}T${b.time || '00:00'}`);
-    return dateB.getTime() - dateA.getTime();
-  });
+    // ─── Ordenar por data + hora descendente ───────────────────────────────────
+    entries.sort((a, b) => {
+      const dateA = new Date(`${a.date}T${a.time || '00:00'}`);
+      const dateB = new Date(`${b.date}T${b.time || '00:00'}`);
+      return dateB.getTime() - dateA.getTime();
+    });
 
-  return entries;
+    await setResourceCache(cacheKey, entries);
+    return entries;
+  } catch (error) {
+    if (cached) return cached.data;
+    throw error;
+  }
 }
 
 export const usePetTimeline = (petId: string | undefined) => {

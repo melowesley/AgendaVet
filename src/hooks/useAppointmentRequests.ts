@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { getResourceCache, setResourceCache } from '@/lib/local-first/state';
+import { isNetworkOnline } from '@/lib/local-first/sync';
 
 export interface AppointmentRequest {
   id: string;
@@ -28,33 +30,48 @@ export interface AppointmentRequest {
 }
 
 async function fetchAppointmentRequests(): Promise<AppointmentRequest[]> {
-  const { data, error } = await supabase
-    .from('appointment_requests')
-    .select(`
-      *,
-      pet:pets(id, name, type, breed)
-    `)
-    .order('created_at', { ascending: false });
+  const cacheKey = 'admin:appointment-requests';
+  const cached = await getResourceCache<AppointmentRequest[]>(cacheKey);
 
-  if (error) throw error;
+  if (!isNetworkOnline() && cached) {
+    return cached.data;
+  }
 
-  const typedData = (data || []) as { user_id: string }[];
-  const userIds = [...new Set(typedData.map((r) => r.user_id))];
+  try {
+    const { data, error } = await supabase
+      .from('appointment_requests')
+      .select(`
+        *,
+        pet:pets(id, name, type, breed)
+      `)
+      .order('created_at', { ascending: false });
 
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('user_id, full_name, phone')
-    .in('user_id', userIds);
+    if (error) throw error;
 
-  type ProfileRow = { user_id: string; full_name: string | null; phone: string | null };
-  const profileMap = new Map<string, { full_name: string | null; phone: string | null }>(
-    ((profiles || []) as ProfileRow[]).map((p) => [p.user_id, { full_name: p.full_name, phone: p.phone }]),
-  );
+    const typedData = (data || []) as { user_id: string }[];
+    const userIds = [...new Set(typedData.map((r) => r.user_id))];
 
-  return (data || []).map((r) => ({
-    ...(r as AppointmentRequest),
-    profile: profileMap.get((r as AppointmentRequest).user_id) || { full_name: null, phone: null },
-  }));
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, full_name, phone')
+      .in('user_id', userIds);
+
+    type ProfileRow = { user_id: string; full_name: string | null; phone: string | null };
+    const profileMap = new Map<string, { full_name: string | null; phone: string | null }>(
+      ((profiles || []) as ProfileRow[]).map((p) => [p.user_id, { full_name: p.full_name, phone: p.phone }]),
+    );
+
+    const result = (data || []).map((r) => ({
+      ...(r as AppointmentRequest),
+      profile: profileMap.get((r as AppointmentRequest).user_id) || { full_name: null, phone: null },
+    }));
+
+    await setResourceCache(cacheKey, result);
+    return result;
+  } catch (error) {
+    if (cached) return cached.data;
+    throw error;
+  }
 }
 
 export const useAppointmentRequests = () => {

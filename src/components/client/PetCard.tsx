@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Calendar, Eye } from 'lucide-react';
 
 interface Pet {
@@ -11,6 +12,7 @@ interface Pet {
   age: string | null;
   weight: string | null;
   notes: string | null;
+  sync_state?: 'synced' | 'pending' | 'failed';
 }
 
 interface PetCardProps {
@@ -32,6 +34,7 @@ export function PetCard({ pet, onRequestAppointment }: PetCardProps) {
   const navigate = useNavigate();
   const emoji = petTypeEmojis[pet.type] || '🐾';
   const label = petTypeLabels[pet.type] || 'Pet';
+  const pendingSync = pet.sync_state === 'pending' || pet.sync_state === 'failed';
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -41,9 +44,19 @@ export function PetCard({ pet, onRequestAppointment }: PetCardProps) {
             {emoji}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-display font-semibold text-foreground truncate">
-              {pet.name}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-display font-semibold text-foreground truncate">
+                {pet.name}
+              </h3>
+              {pendingSync && (
+                <Badge
+                  variant={pet.sync_state === 'failed' ? 'destructive' : 'secondary'}
+                  className="shrink-0"
+                >
+                  {pet.sync_state === 'failed' ? 'Falha no sync' : 'Pend. sync'}
+                </Badge>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground">
               {label}
               {pet.breed && ` • ${pet.breed}`}

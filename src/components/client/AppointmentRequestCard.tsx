@@ -20,6 +20,7 @@ interface AppointmentRequest {
   notes: string | null;
   status: string;
   created_at: string;
+  sync_state?: 'synced' | 'pending' | 'failed';
   pets?: Pet;
 }
 
@@ -37,6 +38,7 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
 export function AppointmentRequestCard({ appointment }: AppointmentRequestCardProps) {
   const status = statusConfig[appointment.status] || statusConfig.pending;
   const pet = appointment.pets;
+  const hasPendingSync = appointment.sync_state === 'pending' || appointment.sync_state === 'failed';
 
   const formattedDate = format(parseISO(appointment.preferred_date), "dd 'de' MMMM", { locale: ptBR });
 
@@ -50,6 +52,11 @@ export function AppointmentRequestCard({ appointment }: AppointmentRequestCardPr
                 {pet?.name || 'Pet'}
               </h3>
               <Badge variant={status.variant}>{status.label}</Badge>
+              {hasPendingSync && (
+                <Badge variant={appointment.sync_state === 'failed' ? 'destructive' : 'outline'}>
+                  {appointment.sync_state === 'failed' ? 'Falha no sync' : 'Pend. sync'}
+                </Badge>
+              )}
             </div>
             
             <p className="text-sm text-muted-foreground mb-3">
