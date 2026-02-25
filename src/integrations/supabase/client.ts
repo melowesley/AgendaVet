@@ -2,8 +2,11 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://cahlaalebcwqgbbavrsf.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhaGxhYWxlYmN3cWdiYmF2cnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyOTk2OTIsImV4cCI6MjA4Njg3NTY5Mn0.LkKMoexNfjdMF35DMpwMjvXtMwNg_5WRdKSoPEv29qE';
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || '').trim() || 'https://cahlaalebcwqgbbavrsf.supabase.co';
+const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim() || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhaGxhYWxlYmN3cWdiYmF2cnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyOTk2OTIsImV4cCI6MjA4Njg3NTY5Mn0.LkKMoexNfjdMF35DMpwMjvXtMwNg_5WRdKSoPEv29qE';
+
+console.log('SUPABASE_URL:', SUPABASE_URL);
+console.log('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? 'SET' : 'MISSING');
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
