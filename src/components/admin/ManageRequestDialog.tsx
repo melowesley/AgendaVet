@@ -10,7 +10,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useScheduleOptimizer } from '@/hooks/useScheduleOptimizer';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Sparkles, Loader2, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Sparkles, Loader2, AlertCircle, CheckCircle2, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
+import { AppointmentStatus, APPOINTMENT_STATUS } from '@/types/appointment';
+import { isValidTransition, getNextPossibleActions } from '@/modules/appointments/appointmentFlow.service';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Service {
   id: string;
@@ -51,13 +54,17 @@ export const ManageRequestDialog = ({ request, open, onClose }: ManageRequestDia
   const [services, setServices] = useState<Service[]>([]);
   const [showOptimizer, setShowOptimizer] = useState(false);
   const [formData, setFormData] = useState({
-    status: request.status,
+    status: request.status as AppointmentStatus,
     scheduled_date: request.scheduled_date || request.preferred_date,
     scheduled_time: request.scheduled_time || request.preferred_time,
     veterinarian: request.veterinarian || '',
     admin_notes: request.admin_notes || '',
     service_id: request.service_id || ''
   });
+
+  const currentStatus = request.status as AppointmentStatus;
+  const isInvalidTransition = formData.status !== currentStatus && !isValidTransition(currentStatus, formData.status);
+  const nextActions = getNextPossibleActions(currentStatus);
 
   // Hook de encaixe inteligente — integra o scheduleOptimizer com o Supabase
   const {
@@ -78,7 +85,7 @@ export const ManageRequestDialog = ({ request, open, onClose }: ManageRequestDia
       .select('id, name, price')
       .eq('active', true)
       .order('name');
-    
+
     if (data) {
       setServices(data);
     }
@@ -132,7 +139,7 @@ export const ManageRequestDialog = ({ request, open, onClose }: ManageRequestDia
 
   const handleSubmit = async () => {
     setLoading(true);
-    
+
     const { error } = await supabase
       .from('appointment_requests')
       .update({
@@ -182,19 +189,34 @@ export const ManageRequestDialog = ({ request, open, onClose }: ManageRequestDia
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
-                <SelectTrigger>
+            <div className="space-y-2 col-span-2">
+              <Label>Status do Atendimento</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData({ ...formData, status: value as AppointmentStatus })}
+              >
+                <SelectTrigger className={isInvalidTransition ? "border-amber-500 bg-amber-50" : ""}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="confirmed">Confirmado</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                  <SelectItem value="completed">Concluído</SelectItem>
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Status Atual: {currentStatus}</div>
+                  {Object.entries(APPOINTMENT_STATUS).map(([key, value]) => (
+                    <SelectItem key={value} value={value}>
+                      {value.charAt(0).toUpperCase() + value.slice(1).replace('_', ' ')}
+                      {nextActions.includes(value) && " (Recomendado)"}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+
+              {isInvalidTransition && (
+                <Alert className="bg-amber-50 border-amber-200 py-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-xs text-amber-800">
+                    Esta transição de status não é o fluxo padrão recomendado.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -328,13 +350,12 @@ export const ManageRequestDialog = ({ request, open, onClose }: ManageRequestDia
                                   </span>
                                   {/* Badge de score */}
                                   <span
-                                    className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                                      s.efficiencyScore >= 80
-                                        ? 'bg-green-100 text-green-700'
-                                        : s.efficiencyScore >= 50
-                                          ? 'bg-yellow-100 text-yellow-700'
-                                          : 'bg-red-100 text-red-700'
-                                    }`}
+                                    className={`text-xs px-1.5 py-0.5 rounded font-medium ${s.efficiencyScore >= 80
+                                      ? 'bg-green-100 text-green-700'
+                                      : s.efficiencyScore >= 50
+                                        ? 'bg-yellow-100 text-yellow-700'
+                                        : 'bg-red-100 text-red-700'
+                                      }`}
                                   >
                                     Score: {s.efficiencyScore}
                                   </span>

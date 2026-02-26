@@ -7,10 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Eye, Check, X, Search, History } from 'lucide-react';
+import { Sparkles, Eye, Check, X, Search, History } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ManageRequestDialog } from './ManageRequestDialog';
 import { PetHistoryDialog } from './PetHistoryDialog';
+import { StatusBadge } from '@/components/StatusBadge';
+import { AppointmentStatus, APPOINTMENT_STATUS } from '@/types/appointment';
 
 interface AppointmentRequest {
   id: string;
@@ -115,13 +117,17 @@ export const AppointmentRequestsTable = ({ onUpdate }: AppointmentRequestsTableP
   };
 
   const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = { pending: 'Pendente', confirmed: 'Confirmado', cancelled: 'Cancelado', completed: 'Concluído' };
-    return labels[status] || status;
-  };
-
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = { pending: 'secondary', confirmed: 'default', cancelled: 'destructive', completed: 'outline' };
-    return variants[status] || 'secondary';
+    switch (status) {
+      case APPOINTMENT_STATUS.PENDING: return 'Pendente';
+      case APPOINTMENT_STATUS.CONFIRMED: return 'Confirmado';
+      case APPOINTMENT_STATUS.REMINDER_SENT: return 'Lembrete Enviado';
+      case APPOINTMENT_STATUS.CHECKED_IN: return 'Check-in';
+      case APPOINTMENT_STATUS.IN_PROGRESS: return 'Em Atendimento';
+      case APPOINTMENT_STATUS.COMPLETED: return 'Concluído';
+      case APPOINTMENT_STATUS.CANCELLED: return 'Cancelado';
+      case APPOINTMENT_STATUS.NO_SHOW: return 'Não Compareceu';
+      default: return status;
+    }
   };
 
   const handleManage = (request: AppointmentRequest) => {
@@ -163,10 +169,11 @@ export const AppointmentRequestsTable = ({ onUpdate }: AppointmentRequestsTableP
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="pending">Pendente</SelectItem>
-            <SelectItem value="confirmed">Confirmado</SelectItem>
-            <SelectItem value="completed">Concluído</SelectItem>
-            <SelectItem value="cancelled">Cancelado</SelectItem>
+            {Object.entries(APPOINTMENT_STATUS).map(([key, value]) => (
+              <SelectItem key={value} value={value}>
+                {getStatusLabel(value)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -211,9 +218,7 @@ export const AppointmentRequestsTable = ({ onUpdate }: AppointmentRequestsTableP
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStatusVariant(request.status)}>
-                      {getStatusLabel(request.status)}
-                    </Badge>
+                    <StatusBadge status={request.status as AppointmentStatus} />
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">

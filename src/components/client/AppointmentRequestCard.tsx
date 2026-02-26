@@ -1,15 +1,9 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
-interface Pet {
-  id: string;
-  name: string;
-  type: string;
-  breed: string | null;
-}
+import { StatusBadge } from '@/components/StatusBadge';
+import { AppointmentStatus } from '@/types/appointment';
 
 interface AppointmentRequest {
   id: string;
@@ -20,22 +14,19 @@ interface AppointmentRequest {
   notes: string | null;
   status: string;
   created_at: string;
-  pets?: Pet;
+  pets?: {
+    id: string;
+    name: string;
+    type: string;
+    breed: string | null;
+  };
 }
 
 interface AppointmentRequestCardProps {
   appointment: AppointmentRequest;
 }
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  pending: { label: 'Pendente', variant: 'secondary' },
-  confirmed: { label: 'Confirmada', variant: 'default' },
-  cancelled: { label: 'Cancelada', variant: 'destructive' },
-  completed: { label: 'Concluída', variant: 'outline' },
-};
-
 export function AppointmentRequestCard({ appointment }: AppointmentRequestCardProps) {
-  const status = statusConfig[appointment.status] || statusConfig.pending;
   const pet = appointment.pets;
 
   const formattedDate = format(parseISO(appointment.preferred_date), "dd 'de' MMMM", { locale: ptBR });
@@ -49,9 +40,9 @@ export function AppointmentRequestCard({ appointment }: AppointmentRequestCardPr
               <h3 className="font-display font-semibold text-foreground">
                 {pet?.name || 'Pet'}
               </h3>
-              <Badge variant={status.variant}>{status.label}</Badge>
+              <StatusBadge status={appointment.status as AppointmentStatus} />
             </div>
-            
+
             <p className="text-sm text-muted-foreground mb-3">
               {appointment.reason}
             </p>

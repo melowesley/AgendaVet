@@ -26,10 +26,8 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- ─── 3. Função has_role (CORRIGIDA — usa TEXT para evitar erro de operador) ───
--- Remove versões antigas com qualquer assinatura
-DROP FUNCTION IF EXISTS public.has_role(UUID, public.app_role);
-DROP FUNCTION IF EXISTS public.has_role(UUID, TEXT);
-
+-- NOTA: Não usamos DROP FUNCTION aqui porque as políticas dependem dela.
+-- O PostgreSQL permite CREATE OR REPLACE se a assinatura for compatível.
 CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role TEXT)
 RETURNS BOOLEAN
 LANGUAGE sql STABLE SECURITY DEFINER
@@ -78,6 +76,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS address TEXT;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Políticas de profiles (seguras contra coluna ausente)
@@ -109,9 +108,17 @@ EXCEPTION WHEN OTHERS THEN NULL; END $$;
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
-  INSERT INTO public.profiles (user_id, full_name)
-  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'full_name', ''))
-  ON CONFLICT (user_id) DO NOTHING;
+  INSERT INTO public.profiles (user_id, full_name, phone, address)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+    NEW.raw_user_meta_data->>'phone',
+    NEW.raw_user_meta_data->>'address'
+  )
+  ON CONFLICT (user_id) DO UPDATE SET
+    full_name = COALESCE(EXCLUDED.full_name, profiles.full_name),
+    phone     = COALESCE(EXCLUDED.phone, profiles.phone),
+    address   = COALESCE(EXCLUDED.address, profiles.address);
   RETURN NEW;
 END;
 $$;

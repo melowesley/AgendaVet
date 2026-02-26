@@ -35,16 +35,26 @@ const CHART_COLORS = [
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'hsl(40, 95%, 55%)',
-  confirmed: 'hsl(168, 55%, 42%)',
+  confirmed: 'hsl(210, 80%, 50%)',
+  reminder_sent: 'hsl(240, 60%, 60%)',
+  checked_in: 'hsl(180, 70%, 50%)',
+  in_progress: 'hsl(260, 60%, 55%)',
   completed: 'hsl(145, 60%, 42%)',
+  return_scheduled: 'hsl(280, 70%, 60%)',
   cancelled: 'hsl(0, 72%, 55%)',
+  no_show: 'hsl(210, 10%, 40%)',
 };
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pendente',
   confirmed: 'Confirmado',
+  reminder_sent: 'Lembrete Enviado',
+  checked_in: 'Check-in',
+  in_progress: 'Em Atendimento',
   completed: 'Concluído',
+  return_scheduled: 'Retorno Agendado',
   cancelled: 'Cancelado',
+  no_show: 'Não Compareceu',
 };
 
 type Period = '7d' | '30d' | '90d' | '6m' | '12m';
