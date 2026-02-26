@@ -53,9 +53,9 @@ export function AddPetDialog({ open, onOpenChange, onPetAdded }: AddPetDialogPro
     setLoading(true);
 
     try {
-      const { data, error: authError } = await supabase.auth.getUser();
+      const { data: authData, error: authError } = await supabase.auth.getUser();
       
-      if (authError || !data.user) {
+      if (authError || !authData.user) {
         await supabase.auth.signOut();
         throw new Error('Usuário não autenticado');
       }
@@ -63,7 +63,7 @@ export function AddPetDialog({ open, onOpenChange, onPetAdded }: AddPetDialogPro
       const { data, error } = await supabase
         .from('pets')
         .insert({
-          user_id: data.user.id,
+          user_id: authData.user.id,
           name: formData.name.trim(),
           type: formData.type,
           breed: formData.breed.trim() || null,
