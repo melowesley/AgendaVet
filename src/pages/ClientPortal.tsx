@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -111,7 +111,7 @@ const ClientPortal = () => {
       if (!mounted) return;
 
       if (!session) {
-        navigate('/auth');
+        navigate('/auth', { replace: true });
         return;
       }
 
@@ -123,7 +123,7 @@ const ClientPortal = () => {
       if (!mounted) return;
 
       if (!session) {
-        navigate('/auth');
+        navigate('/auth', { replace: true });
       } else {
         setUser(session.user);
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
@@ -173,13 +173,7 @@ const ClientPortal = () => {
   }
 
   if (!user) {
-    return (
-      <div className="h-full bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">Redirecionando para login...</p>
-        </div>
-      </div>
-    );
+    return <Navigate to="/auth" replace />;
   }
 
   return (

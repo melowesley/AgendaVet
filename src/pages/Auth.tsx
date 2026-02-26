@@ -62,10 +62,17 @@ const Auth = () => {
 
       toast({ title: 'Login realizado com sucesso!', description: 'Bem-vindo(a) de volta!' });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Ocorreu um erro inesperado';
+      let message = 'Ocorreu um erro inesperado';
+      if (error instanceof Error) {
+        message = error.message;
+        if (message === 'Invalid login credentials') message = 'Email ou senha incorretos';
+        else if (message.includes('fetch') || message.includes('network') || message.includes('Failed to fetch')) {
+          message = 'Sem conexão ou servidor demorou. Confira a internet e tente de novo.';
+        }
+      }
       toast({
         title: 'Erro ao fazer login',
-        description: message === 'Invalid login credentials' ? 'Email ou senha incorretos' : message,
+        description: message,
         variant: 'destructive',
       });
     } finally {

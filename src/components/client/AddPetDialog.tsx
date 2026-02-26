@@ -88,8 +88,15 @@ export function AddPetDialog({ open, onOpenChange, onPetAdded }: AddPetDialogPro
         notes: '',
       });
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Ocorreu um erro inesperado';
+      let message = 'Ocorreu um erro inesperado';
+      if (error instanceof Error) {
+        message = error.message;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        message = String((error as { message: unknown }).message);
+      }
+      if (message.includes('permission denied') || message.includes('row-level security')) {
+        message = 'Sem permissão. Faça login novamente e tente de novo.';
+      }
       toast({
         title: 'Erro ao cadastrar pet',
         description: message,
