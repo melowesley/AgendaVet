@@ -32,7 +32,7 @@ interface Hospitalization {
   veterinarian: string | null;
   diagnosis: string | null;
   treatment: string | null;
-  daily_notes: any;
+  daily_notes: Record<string, unknown> | null;
   notes: string | null;
 }
 

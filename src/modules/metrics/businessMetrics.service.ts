@@ -9,6 +9,20 @@ export interface BusinessMetrics {
     completedAppointments: number;
 }
 
+type ServiceRow = { price: number | null };
+type AppointmentMetricsRow = {
+  id: string;
+  status: string | null;
+  service_id: string | null;
+  services: ServiceRow | ServiceRow[] | null;
+};
+
+function getServicePrice(services: AppointmentMetricsRow['services']): number {
+  if (!services) return 0;
+  if (Array.isArray(services)) return typeof services[0]?.price === 'number' ? services[0].price : 0;
+  return typeof services.price === 'number' ? services.price : 0;
+}
+
 /**
  * Calcula métricas de desempenho do negócio para um determinado período.
  */
@@ -26,14 +40,14 @@ export const fetchBusinessMetrics = async (startDate: Date, endDate: Date): Prom
 
     if (error) throw error;
 
-    const total = appointments.length;
-    const completed = appointments.filter(a => a.status === 'completed');
-    const cancelled = appointments.filter(a => a.status === 'cancelled' || a.status === 'no_show');
+    const rows = (appointments ?? []) as AppointmentMetricsRow[];
+    const total = rows.length;
+    const completed = rows.filter((a) => a.status === 'completed');
+    const cancelled = rows.filter((a) => a.status === 'cancelled' || a.status === 'no_show');
 
     // Cálculo de receita (baseado em snapshots de preços ou serviço atual)
     const totalRevenue = completed.reduce((sum, a) => {
-        const servicePrice = (a.services as any)?.price || 0;
-        return sum + servicePrice;
+        return sum + getServicePrice(a.services);
     }, 0);
 
     const averageTicket = completed.length > 0 ? totalRevenue / completed.length : 0;
@@ -43,7 +57,7 @@ export const fetchBusinessMetrics = async (startDate: Date, endDate: Date): Prom
     // Assumindo 8 horas por dia, 2 slots por hora = 16 slots/dia
     const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
     const theoreticalCapacity = daysDiff * 16;
-    const occupancyRate = total > 0 ? (appointments.filter(a => a.status !== 'cancelled').length / theoreticalCapacity) * 100 : 0;
+    const occupancyRate = total > 0 ? (rows.filter((a) => a.status !== 'cancelled').length / theoreticalCapacity) * 100 : 0;
 
     return {
         totalRevenue,

@@ -55,7 +55,7 @@ export const AdminAddPetDialog = ({ open, onOpenChange, onSuccess }: AdminAddPet
       if (!userData.user?.id) throw new Error('Não autenticado');
 
       // Verifica se já existe um usuário com esse email (para vincular)
-      let ownerId = userData.user.id; // fallback: usa user_id do admin
+      const ownerId = userData.user.id; // fallback: usa user_id do admin
       if (form.tutor_email.trim()) {
         const { data: profiles } = await supabase
           .from('profiles')

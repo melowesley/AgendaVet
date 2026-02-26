@@ -93,7 +93,7 @@ const ClientPortal = () => {
     } finally {
       setLoading(false);
     }
-  }, [navigate, toast]);
+  }, [toast]);
 
   useEffect(() => {
     let mounted = true;
