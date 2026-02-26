@@ -99,8 +99,7 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ['**/*.{js,css,html,ico,svg}'],
       },
       devOptions: {
-        // Ativa o SW em desenvolvimento para testar offline
-        enabled: mode === 'development',
+        enabled: false,
         type: 'module',
       },
     }),
