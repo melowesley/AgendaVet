@@ -270,8 +270,21 @@ CREATE POLICY "Admins can manage audit logs"
   ON public.audit_logs FOR ALL
   USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- ── 8. VERIFICAÇÃO FINAL ──────────────────────────────────────────────────────
--- Confirmar que o admin tem role correta (substitua o UUID se necessário)
+-- ── 8. PERMISSÕES (GRANTS) — ESSENCIAL ──────────────────────────────────────
+-- Sem estes GRANTs, o Supabase retorna "permission denied" mesmo com RLS ok.
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+
+GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
+GRANT SELECT ON public.services TO anon;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT ALL ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT ALL ON SEQUENCES TO authenticated;
+
+-- ── 9. VERIFICAÇÃO FINAL ──────────────────────────────────────────────────────
 SELECT
   u.email,
   ur.role,

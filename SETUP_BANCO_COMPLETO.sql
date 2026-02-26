@@ -672,6 +672,22 @@ DROP POLICY IF EXISTS "Admins can insert audit logs" ON public.audit_logs;
 CREATE POLICY "Admins can insert audit logs" ON public.audit_logs FOR INSERT
   WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 12. PERMISSÕES (GRANTS) — ESSENCIAL PARA O FUNCIONAMENTO
+-- Sem estes GRANTs, o Supabase retorna "permission denied" mesmo com RLS ok.
+-- ─────────────────────────────────────────────────────────────────────────────
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+
+GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
+GRANT SELECT ON public.services TO anon;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT ALL ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT ALL ON SEQUENCES TO authenticated;
+
 -- =============================================================================
 -- FIM DO SETUP
 -- Após rodar este script:
