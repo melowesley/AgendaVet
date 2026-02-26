@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Mail, Lock, User, Phone, MapPin, PawPrint } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
+import { getErrorMessage, isLikelyNetworkError } from '@/utils/errorMessage';
 
 const REMEMBER_EMAIL_KEY = 'agendavet_remembered_email';
 
@@ -62,10 +63,18 @@ const Auth = () => {
 
       toast({ title: 'Login realizado com sucesso!', description: 'Bem-vindo(a) de volta!' });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Ocorreu um erro inesperado';
+      const message = getErrorMessage(error);
+      const isNetwork = isLikelyNetworkError(error);
+      console.error('Erro no login do cliente:', error);
       toast({
         title: 'Erro ao fazer login',
-        description: message === 'Invalid login credentials' ? 'Email ou senha incorretos' : message,
+        description: message === 'Invalid login credentials'
+          ? 'Email ou senha incorretos'
+          : message === 'Email not confirmed'
+            ? 'Confirme seu email antes de entrar.'
+            : isNetwork
+              ? 'Sem conexão com o servidor. Confira a internet e tente novamente.'
+              : message,
         variant: 'destructive',
       });
     } finally {
@@ -95,16 +104,23 @@ const Auth = () => {
       });
       if (error) throw error;
       if (signUpData.user) {
-        await supabase.from('profiles').upsert({
+        const { error: profileError } = await supabase.from('profiles').upsert({
           user_id: signUpData.user.id,
           full_name: signupData.fullName,
           phone: signupData.phone,
           address: signupData.address || null,
         }, { onConflict: 'user_id' });
+
+        // Em projetos com confirmação por email, o usuário pode não ter sessão ativa aqui.
+        // Nesse caso o trigger do banco ainda cria/atualiza o perfil, então não bloqueamos o cadastro.
+        if (profileError) {
+          console.warn('Não foi possível salvar perfil imediatamente após signup:', profileError);
+        }
       }
       toast({ title: 'Cadastro realizado!', description: 'Verifique seu email para confirmar sua conta.' });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Ocorreu um erro inesperado';
+      const message = getErrorMessage(error);
+      console.error('Erro no cadastro do cliente:', error);
       toast({ title: 'Erro ao cadastrar', description: message, variant: 'destructive' });
     } finally {
       setLoading(false);

@@ -20,6 +20,7 @@ import {
 import { Calendar, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { getErrorMessage } from '@/utils/errorMessage';
 
 interface Pet {
   id: string;
@@ -117,8 +118,8 @@ export function RequestAppointmentDialog({
         notes: '',
       });
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Ocorreu um erro inesperado';
+      const message = getErrorMessage(error);
+      console.error('Erro ao solicitar consulta:', error);
       toast({
         title: 'Erro ao solicitar consulta',
         description: message,

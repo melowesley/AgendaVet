@@ -12,6 +12,7 @@ import { RequestAppointmentDialog } from '@/components/client/RequestAppointment
 import { AppointmentRequestCard } from '@/components/client/AppointmentRequestCard';
 import { ClientLayout } from '@/components/layout/ClientLayout';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { getErrorMessage } from '@/utils/errorMessage';
 
 interface Pet {
   id: string;
@@ -46,26 +47,19 @@ const ClientPortal = () => {
   const [requestAppointmentOpen, setRequestAppointmentOpen] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (userId: string) => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-
       const [petsResult, appointmentsResult] = await Promise.all([
         supabase
           .from('pets')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .order('created_at', { ascending: false }),
         supabase
           .from('appointment_requests')
           .select('*, pets(*)')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .order('created_at', { ascending: false }),
       ]);
 
@@ -73,7 +67,7 @@ const ClientPortal = () => {
         console.error('Error loading pets:', petsResult.error);
         toast({
           title: 'Erro ao carregar pets',
-          description: petsResult.error.message,
+          description: getErrorMessage(petsResult.error),
           variant: 'destructive',
         });
       } else {
@@ -84,7 +78,7 @@ const ClientPortal = () => {
         console.error('Error loading appointments:', appointmentsResult.error);
         toast({
           title: 'Erro ao carregar solicitações',
-          description: appointmentsResult.error.message,
+          description: getErrorMessage(appointmentsResult.error),
           variant: 'destructive',
         });
       } else {
@@ -94,40 +88,49 @@ const ClientPortal = () => {
       console.error('Error loading data:', error);
       toast({
         title: 'Erro',
-        description: 'Ocorreu um erro ao carregar os dados. Tente novamente.',
+        description: getErrorMessage(error, 'Ocorreu um erro ao carregar os dados. Tente novamente.'),
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
-  }, [navigate, toast]);
+  }, [toast]);
 
   useEffect(() => {
     let mounted = true;
 
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
+      setLoading(true);
+      const { data: { user }, error } = await supabase.auth.getUser();
+
       if (!mounted) return;
 
-      if (!session) {
-        navigate('/auth');
+      if (error || !user) {
+        setUser(null);
+        setPets([]);
+        setAppointments([]);
+        setLoading(false);
+        navigate('/auth', { replace: true });
         return;
       }
 
-      setUser(session.user);
-      await loadData();
+      setUser(user);
+      await loadData(user.id);
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
 
-      if (!session) {
-        navigate('/auth');
+      if (!session?.user) {
+        setUser(null);
+        setPets([]);
+        setAppointments([]);
+        setLoading(false);
+        navigate('/auth', { replace: true });
       } else {
         setUser(session.user);
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          loadData();
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          loadData(session.user.id);
         }
       }
     });

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorMessage } from '@/utils/errorMessage';
 
 interface Pet {
   id: string;
@@ -88,8 +89,8 @@ export function AddPetDialog({ open, onOpenChange, onPetAdded }: AddPetDialogPro
         notes: '',
       });
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Ocorreu um erro inesperado';
+      const message = getErrorMessage(error);
+      console.error('Erro ao cadastrar pet:', error);
       toast({
         title: 'Erro ao cadastrar pet',
         description: message,

@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Mail, Lock, PawPrint, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
+import { getErrorMessage, isLikelyNetworkError } from '@/utils/errorMessage';
 
 const REMEMBER_ADMIN_EMAIL_KEY = 'agendavet_admin_remembered_email';
 
@@ -59,19 +60,24 @@ const AdminAuth = () => {
     e.preventDefault();
     setLoading(true);
 
-    const timeoutMs = 25_000;
-
     try {
-      const signInPromise = supabase.auth.signInWithPassword({
+      const doSignIn = () => supabase.auth.signInWithPassword({
         email: loginData.email,
         password: loginData.password,
       });
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Tempo esgotado. Verifique sua internet e tente de novo.')), timeoutMs)
-      );
-      const { data: authData, error } = await Promise.race([signInPromise, timeoutPromise]) as Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>;
+
+      let signInResult = await doSignIn();
+      if (signInResult.error && isLikelyNetworkError(signInResult.error)) {
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        signInResult = await doSignIn();
+      }
+
+      const { data: authData, error } = signInResult;
 
       if (error) throw error;
+      if (!authData.user) {
+        throw new Error('Sessão inválida após o login.');
+      }
 
       const { data: roleData } = await supabase
         .from('user_roles')
@@ -100,12 +106,15 @@ const AdminAuth = () => {
       toast({ title: 'Login realizado!', description: 'Bem-vindo ao painel administrativo.' });
       navigate('/admin');
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Ocorreu um erro inesperado';
-      const isNetwork = /fetch|network|timeout|tempo esgotado/i.test(message);
+      const message = getErrorMessage(error);
+      const isNetwork = isLikelyNetworkError(error);
+      console.error('Erro no login admin:', error);
       toast({
         title: 'Erro ao fazer login',
         description: message === 'Invalid login credentials'
           ? 'Email ou senha incorretos'
+          : message === 'Email not confirmed'
+            ? 'Confirme seu email antes de entrar.'
           : isNetwork
             ? 'Sem conexão ou servidor demorou. Confira a internet e tente de novo.'
             : message,
