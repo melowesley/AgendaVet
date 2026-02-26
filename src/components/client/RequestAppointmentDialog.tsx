@@ -79,16 +79,17 @@ export function RequestAppointmentDialog({
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: authData, error: authError } = await supabase.auth.getUser();
       
-      if (!user) {
+      if (authError || !authData.user) {
+        await supabase.auth.signOut();
         throw new Error('Usuário não autenticado');
       }
 
       const { data, error } = await supabase
         .from('appointment_requests')
         .insert({
-          user_id: user.id,
+          user_id: authData.user.id,
           pet_id: formData.petId,
           preferred_date: formData.date,
           preferred_time: formData.time,

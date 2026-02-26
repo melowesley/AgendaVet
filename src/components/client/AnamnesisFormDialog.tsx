@@ -78,13 +78,16 @@ export function AnamnesisFormDialog({
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Não autenticado');
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData.user) {
+        await supabase.auth.signOut();
+        throw new Error('Não autenticado');
+      }
 
       const { error } = await supabase.from('anamnesis').insert({
         appointment_request_id: appointmentRequestId,
         pet_id: petId,
-        user_id: user.id,
+        user_id: authData.user.id,
         cor: form.cor || null,
         sexo: form.sexo || null,
         nascimento: form.nascimento || null,

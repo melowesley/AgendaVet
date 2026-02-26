@@ -30,13 +30,17 @@ const AdminAuth = () => {
     let mounted = true;
 
     const checkSessionAndRedirect = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!mounted || !session) return;
+      const { data, error } = await supabase.auth.getUser();
+      if (!mounted) return;
+      if (error || !data.user) {
+        await supabase.auth.signOut();
+        return;
+      }
 
       const { data } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', session.user.id)
+        .eq('user_id', data.user.id)
         .eq('role', 'admin')
         .maybeSingle();
 

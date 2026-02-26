@@ -46,26 +46,19 @@ const ClientPortal = () => {
   const [requestAppointmentOpen, setRequestAppointmentOpen] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (userId: string) => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-
       const [petsResult, appointmentsResult] = await Promise.all([
         supabase
           .from('pets')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .order('created_at', { ascending: false }),
         supabase
           .from('appointment_requests')
           .select('*, pets(*)')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .order('created_at', { ascending: false }),
       ]);
 
@@ -106,28 +99,38 @@ const ClientPortal = () => {
     let mounted = true;
 
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
+      const { data, error } = await supabase.auth.getUser();
       if (!mounted) return;
 
-      if (!session) {
-        navigate('/auth');
+      if (error || !data.user) {
+        await supabase.auth.signOut();
+        navigate('/auth', { replace: true });
         return;
       }
 
-      setUser(session.user);
-      await loadData();
+      setUser(data.user);
+      await loadData(data.user.id);
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
 
       if (!session) {
-        navigate('/auth');
+        setUser(null);
+        navigate('/auth', { replace: true });
       } else {
         setUser(session.user);
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          loadData();
+          supabase.auth.getUser().then(({ data, error }) => {
+            if (!mounted) return;
+            if (error || !data.user) {
+              supabase.auth.signOut().finally(() => {
+                if (mounted) navigate('/auth', { replace: true });
+              });
+              return;
+            }
+            loadData(data.user.id);
+          });
         }
       }
     });

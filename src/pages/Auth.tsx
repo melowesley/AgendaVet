@@ -34,13 +34,31 @@ const Auth = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (session) navigate('/cliente');
+    let mounted = true;
+
+    const redirectIfAuthenticated = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (!mounted) return;
+
+      if (error) {
+        await supabase.auth.signOut();
+        return;
+      }
+
+      if (data.user) navigate('/cliente', { replace: true });
+    };
+
+    redirectIfAuthenticated();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      if (session) redirectIfAuthenticated();
     });
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate('/cliente');
-    });
-    return () => subscription.unsubscribe();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
