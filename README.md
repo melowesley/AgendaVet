@@ -7,6 +7,7 @@ Sistema veterinário para gestão de fichas clínicas, histórico de procediment
 ## Sumário
 
 - [Visão Geral](#visão-geral)
+- [Fluxo Completo (Tutor → Pet → Consulta → Veterinário)](#fluxo-completo)
 - [Stack Tecnológica](#stack-tecnológica)
 - [Arquitetura do Projeto](#arquitetura-do-projeto)
 - [Fluxo de Atendimento (Admin)](#fluxo-de-atendimento-admin)
@@ -29,6 +30,12 @@ O AgendaVet é uma aplicação web/PWA para clínicas veterinárias. Possui:
 - **Portal do Cliente** — tutores podem visualizar o histórico do seu pet
 - **Timeline Unificada** — todos os registros exibidos em ordem cronológica em uma única tela
 - **PWA** — instalável como app no celular, com cache offline para as principais telas
+
+---
+
+## Fluxo Completo
+
+Para instruções detalhadas de como o fluxo procede — desde o login do tutor, cadastro de pet, agendamento de consulta, até o atendimento pelo veterinário — consulte **[FLUXO.md](./FLUXO.md)**.
 
 ---
 
