@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { PetCard } from '@/components/client/PetCard';
 import { RequestAppointmentDialog } from '@/components/client/RequestAppointmentDialog';
 import { AppointmentRequestCard } from '@/components/client/AppointmentRequestCard';
 import { ClientLayout } from '@/components/layout/ClientLayout';
+import { useAuthStore } from '@/store/useAuthStore';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface Pet {
@@ -38,34 +39,31 @@ interface AppointmentRequest {
 const ClientPortal = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, isLoading: authLoading } = useAuthStore();
+  const [loading, setLoading] = useState(false);
   const [pets, setPets] = useState<Pet[]>([]);
   const [appointments, setAppointments] = useState<AppointmentRequest[]>([]);
   const [addPetOpen, setAddPetOpen] = useState(false);
   const [requestAppointmentOpen, setRequestAppointmentOpen] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
+  // Garante que os dados sejam buscados apenas UMA vez por sessão,
+  // mesmo que TOKEN_REFRESHED acione re-renders no Android
+  const dataLoaded = useRef(false);
+
+  const loadData = useCallback(async (userId: string) => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-
       const [petsResult, appointmentsResult] = await Promise.all([
         supabase
           .from('pets')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .order('created_at', { ascending: false }),
         supabase
           .from('appointment_requests')
           .select('*, pets(*)')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .order('created_at', { ascending: false }),
       ]);
 
@@ -100,45 +98,24 @@ const ClientPortal = () => {
     } finally {
       setLoading(false);
     }
-  }, [navigate, toast]);
+  }, [toast]);
 
+  // Efeito 1: Apenas trata o redirecionamento de autenticação.
+  // Roda somente quando o estado de loading termina — nunca em loop.
   useEffect(() => {
-    let mounted = true;
+    if (authLoading) return;
+    if (!user) {
+      navigate('/auth', { replace: true });
+    }
+  }, [authLoading, user, navigate]);
 
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!mounted) return;
-
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-
-      setUser(session.user);
-      await loadData();
-    };
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!mounted) return;
-
-      if (!session) {
-        navigate('/auth');
-      } else {
-        setUser(session.user);
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          loadData();
-        }
-      }
-    });
-
-    checkAuth();
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [navigate, loadData]);
+  // Efeito 2: Carrega os dados apenas UMA vez quando o usuário está autenticado.
+  // O ref dataLoaded garante que TOKEN_REFRESHED não dispare nova busca.
+  useEffect(() => {
+    if (authLoading || !user || dataLoaded.current) return;
+    dataLoaded.current = true;
+    loadData(user.id);
+  }, [authLoading, user, loadData]);
 
   const handlePetAdded = (newPet: Pet) => {
     setPets((prev) => [newPet, ...prev]);
@@ -286,19 +263,19 @@ const ClientPortal = () => {
         </motion.section>
 
         {/* Dialogs */}
-      <AddPetDialog
-        open={addPetOpen}
-        onOpenChange={setAddPetOpen}
-        onPetAdded={handlePetAdded}
-      />
+        <AddPetDialog
+          open={addPetOpen}
+          onOpenChange={setAddPetOpen}
+          onPetAdded={handlePetAdded}
+        />
 
-      <RequestAppointmentDialog
-        open={requestAppointmentOpen}
-        onOpenChange={setRequestAppointmentOpen}
-        petId={selectedPetId}
-        pets={pets}
-        onAppointmentRequested={handleAppointmentRequested}
-      />
+        <RequestAppointmentDialog
+          open={requestAppointmentOpen}
+          onOpenChange={setRequestAppointmentOpen}
+          petId={selectedPetId}
+          pets={pets}
+          onAppointmentRequested={handleAppointmentRequested}
+        />
       </div>
     </ClientLayout>
   );

@@ -25,6 +25,7 @@ import { VideoDialog } from './VideoDialog';
 import { DiagnosticoDialog } from './DiagnosticoDialog';
 import { BanhoTosaDialog } from './BanhoTosaDialog';
 import { ObitoDialog } from './ObitoDialog';
+import { InternacaoDialog } from './InternacaoDialog';
 import { format } from 'date-fns';
 
 export const ATTENDANCE_TYPES = [

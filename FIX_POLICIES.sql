@@ -1,281 +1,228 @@
 -- =============================================================================
--- FIX_POLICIES.sql — Recria TODAS as políticas de RLS corretamente
--- Execute no SQL Editor do Supabase (cahlaalebcwqgbbavrsf)
--- Garante que admin possa inserir/ler/excluir em todas as tabelas
--- e que cliente só veja seus próprios dados.
+-- FIX_POLICIES.sql — Arquitetura de Segurança Definitiva (AgendaVet)
+-- =============================================================================
+-- Este script limpa TODAS as policies antigas e recria uma estrutura profissional,
+-- baseada estritamente no papel (admin) vs (user), garantindo a integridade
+-- clínica dos dados e acesso "blindado".
 -- =============================================================================
 
--- ── 1. Garantir função has_role correta ───────────────────────────────────────
-DROP FUNCTION IF EXISTS public.has_role(UUID, public.app_role) CASCADE;
-DROP FUNCTION IF EXISTS public.has_role(UUID, TEXT) CASCADE;
-
-CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role TEXT)
-RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+-- 0. Função utilitária para checar permissão de admin:
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.user_roles
-    WHERE user_id = _user_id AND role::TEXT = _role
+    WHERE user_id = auth.uid()
+      AND role::TEXT = 'admin'
   )
 $$;
 
--- ── 1b. ADICIONAR user_id NA TABELA PETS (estava faltando) ──────────────────
-ALTER TABLE public.pets
-  ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+-- 1. Limpar TODAS as policies antigas nas tabelas do sistema para um "Clean Slate"
+DO $$ 
+DECLARE
+  pol record;
+BEGIN
+  FOR pol IN 
+    SELECT policyname, tablename 
+    FROM pg_policies 
+    WHERE schemaname = 'public' 
+      AND tablename IN (
+        'user_roles', 'profiles', 'pets', 'services', 
+        'appointment_requests', 'anamnesis', 'pet_admin_history', 
+        'pet_weight_records', 'pet_pathologies', 'pet_documents', 
+        'pet_exams', 'pet_photos', 'pet_vaccines', 'pet_prescriptions', 
+        'pet_observations', 'pet_videos', 'pet_hospitalizations', 
+        'mortes', 'audit_logs'
+      )
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', pol.policyname, pol.tablename);
+  END LOOP;
+END $$;
 
--- Preencher user_id dos pets existentes com o user_id do primeiro admin
--- (pets cadastrados antes desta correção ficarão vinculados ao admin)
-UPDATE public.pets
-SET user_id = (
-  SELECT user_id FROM public.user_roles
-  WHERE role::TEXT = 'admin'
-  LIMIT 1
-)
-WHERE user_id IS NULL;
 
--- ── 2. PETS ───────────────────────────────────────────────────────────────────
-ALTER TABLE public.pets ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Users can view their own pets"   ON public.pets;
-DROP POLICY IF EXISTS "Users can insert their own pets" ON public.pets;
-DROP POLICY IF EXISTS "Users can update their own pets" ON public.pets;
-DROP POLICY IF EXISTS "Users can delete their own pets" ON public.pets;
-DROP POLICY IF EXISTS "Admins can view all pets"        ON public.pets;
-DROP POLICY IF EXISTS "Admins can manage all pets"      ON public.pets;
-
-CREATE POLICY "Users can view their own pets"
-  ON public.pets FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert their own pets"
-  ON public.pets FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their own pets"
-  ON public.pets FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete their own pets"
-  ON public.pets FOR DELETE USING (auth.uid() = user_id);
-CREATE POLICY "Admins can manage all pets"
-  ON public.pets FOR ALL
-  USING   (public.has_role(auth.uid(), 'admin'))
-  WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- ── 3. APPOINTMENT_REQUESTS ───────────────────────────────────────────────────
-ALTER TABLE public.appointment_requests ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Users can view their own appointment requests"   ON public.appointment_requests;
-DROP POLICY IF EXISTS "Users can insert their own appointment requests" ON public.appointment_requests;
-DROP POLICY IF EXISTS "Users can update their own appointment requests" ON public.appointment_requests;
-DROP POLICY IF EXISTS "Admins can view all appointment requests"        ON public.appointment_requests;
-DROP POLICY IF EXISTS "Admins can update all appointment requests"      ON public.appointment_requests;
-DROP POLICY IF EXISTS "Admins can insert appointment requests"          ON public.appointment_requests;
-DROP POLICY IF EXISTS "Admins can manage all appointment requests"      ON public.appointment_requests;
-
-CREATE POLICY "Users can view their own appointment requests"
-  ON public.appointment_requests FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert their own appointment requests"
-  ON public.appointment_requests FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their own appointment requests"
-  ON public.appointment_requests FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Admins can manage all appointment requests"
-  ON public.appointment_requests FOR ALL
-  USING   (public.has_role(auth.uid(), 'admin'))
-  WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- ── 4. PROFILES ───────────────────────────────────────────────────────────────
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Users can view their own profile"  ON public.profiles;
-DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
-DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
-DROP POLICY IF EXISTS "Admins can view all profiles"       ON public.profiles;
-DROP POLICY IF EXISTS "Admins can manage all profiles"     ON public.profiles;
-
-CREATE POLICY "Users can view their own profile"
-  ON public.profiles FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert their own profile"
-  ON public.profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their own profile"
-  ON public.profiles FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Admins can manage all profiles"
-  ON public.profiles FOR ALL
-  USING   (public.has_role(auth.uid(), 'admin'))
-  WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- ── 5. USER_ROLES ─────────────────────────────────────────────────────────────
+-- =============================================================================
+-- 1️⃣ USER_ROLES (Base da Autorização)
+-- =============================================================================
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Users can view their own roles" ON public.user_roles;
-DROP POLICY IF EXISTS "Admins can view all roles"      ON public.user_roles;
-DROP POLICY IF EXISTS "Admins can manage roles"        ON public.user_roles;
 
-CREATE POLICY "Users can view their own roles"
-  ON public.user_roles FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Admins can manage roles"
-  ON public.user_roles FOR ALL
-  USING   (public.has_role(auth.uid(), 'admin'))
-  WITH CHECK (public.has_role(auth.uid(), 'admin'));
+-- Usuário apenas lê a própria linha
+CREATE POLICY "Users read own role"
+ON public.user_roles FOR SELECT
+USING (user_id = auth.uid());
 
--- ── 6. PET_ADMIN_HISTORY ──────────────────────────────────────────────────────
+-- Admin lê todas
+CREATE POLICY "Admin read all roles"
+ON public.user_roles FOR SELECT
+USING (public.is_admin());
+
+-- (Não há política de INSERT/UPDATE/DELETE. Edição de papéis deve ser via console/SQL)
+
+
+-- =============================================================================
+-- 2️⃣ PROFILES (Perfis)
+-- =============================================================================
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admin full access profiles"
+ON public.profiles FOR ALL
+USING (public.is_admin());
+
+CREATE POLICY "Users read own profile"
+ON public.profiles FOR SELECT
+USING (user_id = auth.uid());
+
+CREATE POLICY "Users update own profile"
+ON public.profiles FOR UPDATE
+USING (user_id = auth.uid());
+
+-- (Trigger de criaçao do usuário cuidará do INSERT)
+
+
+-- =============================================================================
+-- 3️⃣ PETS (Animais / Pacientes)
+-- =============================================================================
+ALTER TABLE public.pets ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admin full access pets"
+ON public.pets FOR ALL
+USING (public.is_admin());
+
+CREATE POLICY "User read own pets"
+ON public.pets FOR SELECT
+USING (user_id = auth.uid());
+
+CREATE POLICY "User insert own pets"
+ON public.pets FOR INSERT
+WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "User update own pets"
+ON public.pets FOR UPDATE
+USING (user_id = auth.uid());
+
+
+-- =============================================================================
+-- 4️⃣ SERVICES (Catálogo de Serviços)
+-- =============================================================================
+ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admin full access services"
+ON public.services FOR ALL
+USING (public.is_admin());
+
+CREATE POLICY "Anyone read active services"
+ON public.services FOR SELECT
+USING (active = true);
+
+
+-- =============================================================================
+-- 5️⃣ APPOINTMENT_REQUESTS (Agenda e Solicitações)
+-- =============================================================================
+ALTER TABLE public.appointment_requests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admin full access appointment_requests"
+ON public.appointment_requests FOR ALL
+USING (public.is_admin());
+
+CREATE POLICY "User read own appointment_requests"
+ON public.appointment_requests FOR SELECT
+USING (user_id = auth.uid());
+
+CREATE POLICY "User insert own appointment_requests"
+ON public.appointment_requests FOR INSERT
+WITH CHECK (user_id = auth.uid());
+
+-- Usuário pode talvez cancelar se o status for pending, mas centralizamos num UPDATE próprio
+CREATE POLICY "User update own appointment_requests"
+ON public.appointment_requests FOR UPDATE
+USING (user_id = auth.uid());
+
+
+-- =============================================================================
+-- 6️⃣ PET_ADMIN_HISTORY (CRÍTICA - Histórico de Auditoria Clínica)
+-- =============================================================================
+-- Nunca deve ser pública. O tutor não tem conhecimento direto do histórico interno do painel admin.
 ALTER TABLE public.pet_admin_history ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can manage pet admin history" ON public.pet_admin_history;
-DROP POLICY IF EXISTS "Users can view their pet history"    ON public.pet_admin_history;
 
-CREATE POLICY "Admins can manage pet admin history"
-  ON public.pet_admin_history FOR ALL
-  USING   (public.has_role(auth.uid(), 'admin'))
-  WITH CHECK (public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Users can view their pet history"
-  ON public.pet_admin_history FOR SELECT
-  USING (pet_id IN (SELECT id FROM pets WHERE user_id = auth.uid()));
+CREATE POLICY "Admin only history access"
+ON public.pet_admin_history FOR ALL
+USING (public.is_admin());
 
--- ── 7. TODAS AS TABELAS DE REGISTROS VETERINÁRIOS ────────────────────────────
--- (peso, patologia, documento, exame, fotos, vacinas, receita, observações,
---  vídeos, internação, mortes)
+-- (Nenhuma policy para o usuário comum / tutor)
 
--- PET_WEIGHT_RECORDS
-ALTER TABLE public.pet_weight_records ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can manage weight records"        ON public.pet_weight_records;
-DROP POLICY IF EXISTS "Users can view their pet weight records" ON public.pet_weight_records;
-CREATE POLICY "Admins can manage weight records"
-  ON public.pet_weight_records FOR ALL
-  USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Users can view their pet weight records"
-  ON public.pet_weight_records FOR SELECT
-  USING (pet_id IN (SELECT id FROM pets WHERE user_id = auth.uid()));
 
--- PET_PATHOLOGIES
-ALTER TABLE public.pet_pathologies ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can manage pathologies"        ON public.pet_pathologies;
-DROP POLICY IF EXISTS "Users can view their pet pathologies" ON public.pet_pathologies;
-CREATE POLICY "Admins can manage pathologies"
-  ON public.pet_pathologies FOR ALL
-  USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Users can view their pet pathologies"
-  ON public.pet_pathologies FOR SELECT
-  USING (pet_id IN (SELECT id FROM pets WHERE user_id = auth.uid()));
+-- =============================================================================
+-- 7️⃣ ANAMNESIS E REGISTROS CLÍNICOS PESADOS ESTRITAMENTE MÉDICOS
+-- =============================================================================
+-- Tutor SÓ PODE LER os seus, Administrador pode TUDO
+-- Aplicaremos o padrão em lote.
 
--- PET_DOCUMENTS
-ALTER TABLE public.pet_documents ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can manage documents"        ON public.pet_documents;
-DROP POLICY IF EXISTS "Users can view their pet documents" ON public.pet_documents;
-CREATE POLICY "Admins can manage documents"
-  ON public.pet_documents FOR ALL
-  USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Users can view their pet documents"
-  ON public.pet_documents FOR SELECT
-  USING (pet_id IN (SELECT id FROM pets WHERE user_id = auth.uid()));
+DO $$ 
+DECLARE
+  t text;
+BEGIN
+  FOR t IN SELECT unnest(ARRAY[
+    'anamnesis', 'pet_hospitalizations', 'pet_pathologies', 
+    'pet_prescriptions', 'mortes'
+  ])
+  LOOP
+    -- Ativa RLS
+    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', t);
+    
+    -- Admin: ALL
+    EXECUTE format('CREATE POLICY "Admin full access %I" ON public.%I FOR ALL USING (public.is_admin());', t, t);
+    
+    -- Tutor: SELECT (via junção com a tabela pets)
+    IF t = 'anamnesis' THEN
+        EXECUTE format('CREATE POLICY "User read own %I" ON public.%I FOR SELECT USING (user_id = auth.uid());', t, t);
+    ELSE
+        -- Na maioria a FK é 'pet_id', e usamos ela para cruzar com 'pets' e chegar ao 'user_id' do tutor
+        EXECUTE format('
+            CREATE POLICY "User read own %I" ON public.%I FOR SELECT 
+            USING (
+               pet_id IN (SELECT id FROM public.pets WHERE user_id = auth.uid()) 
+            );', t, t);
+    END IF;
+  END LOOP;
+END $$;
 
--- PET_EXAMS
-ALTER TABLE public.pet_exams ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can manage exams"        ON public.pet_exams;
-DROP POLICY IF EXISTS "Users can view their pet exams" ON public.pet_exams;
-CREATE POLICY "Admins can manage exams"
-  ON public.pet_exams FOR ALL
-  USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Users can view their pet exams"
-  ON public.pet_exams FOR SELECT
-  USING (pet_id IN (SELECT id FROM pets WHERE user_id = auth.uid()));
 
--- PET_PHOTOS
-ALTER TABLE public.pet_photos ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can manage photos"        ON public.pet_photos;
-DROP POLICY IF EXISTS "Users can view their pet photos" ON public.pet_photos;
-CREATE POLICY "Admins can manage photos"
-  ON public.pet_photos FOR ALL
-  USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Users can view their pet photos"
-  ON public.pet_photos FOR SELECT
-  USING (pet_id IN (SELECT id FROM pets WHERE user_id = auth.uid()));
+-- =============================================================================
+-- 8️⃣ DEMAIS REGISTROS DO PACIENTE (Peso, Vacinas, Fotos, Exames, Obs, Vídeos)
+-- =============================================================================
+DO $$ 
+DECLARE
+  t text;
+BEGIN
+  FOR t IN SELECT unnest(ARRAY[
+    'pet_weight_records', 'pet_documents', 'pet_exams', 
+    'pet_photos', 'pet_vaccines', 'pet_observations', 'pet_videos'   
+  ])
+  LOOP
+    -- Ativa RLS
+    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', t);
+    
+    -- Admin: ALL
+    EXECUTE format('CREATE POLICY "Admin full access %I" ON public.%I FOR ALL USING (public.is_admin());', t, t);
+    
+    -- Tutor: SELECT
+    EXECUTE format('
+        CREATE POLICY "User read own %I" ON public.%I FOR SELECT 
+        USING (pet_id IN (SELECT id FROM public.pets WHERE user_id = auth.uid()));', t, t);
+  END LOOP;
+END $$;
 
--- PET_VACCINES
-ALTER TABLE public.pet_vaccines ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can manage vaccines"        ON public.pet_vaccines;
-DROP POLICY IF EXISTS "Users can view their pet vaccines" ON public.pet_vaccines;
-CREATE POLICY "Admins can manage vaccines"
-  ON public.pet_vaccines FOR ALL
-  USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Users can view their pet vaccines"
-  ON public.pet_vaccines FOR SELECT
-  USING (pet_id IN (SELECT id FROM pets WHERE user_id = auth.uid()));
 
--- PET_PRESCRIPTIONS
-ALTER TABLE public.pet_prescriptions ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can manage prescriptions"        ON public.pet_prescriptions;
-DROP POLICY IF EXISTS "Users can view their pet prescriptions" ON public.pet_prescriptions;
-CREATE POLICY "Admins can manage prescriptions"
-  ON public.pet_prescriptions FOR ALL
-  USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Users can view their pet prescriptions"
-  ON public.pet_prescriptions FOR SELECT
-  USING (pet_id IN (SELECT id FROM pets WHERE user_id = auth.uid()));
-
--- PET_OBSERVATIONS
-ALTER TABLE public.pet_observations ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can manage observations"        ON public.pet_observations;
-DROP POLICY IF EXISTS "Users can view their pet observations" ON public.pet_observations;
-CREATE POLICY "Admins can manage observations"
-  ON public.pet_observations FOR ALL
-  USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Users can view their pet observations"
-  ON public.pet_observations FOR SELECT
-  USING (pet_id IN (SELECT id FROM pets WHERE user_id = auth.uid()));
-
--- PET_VIDEOS
-ALTER TABLE public.pet_videos ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can manage videos"        ON public.pet_videos;
-DROP POLICY IF EXISTS "Users can view their pet videos" ON public.pet_videos;
-CREATE POLICY "Admins can manage videos"
-  ON public.pet_videos FOR ALL
-  USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Users can view their pet videos"
-  ON public.pet_videos FOR SELECT
-  USING (pet_id IN (SELECT id FROM pets WHERE user_id = auth.uid()));
-
--- PET_HOSPITALIZATIONS
-ALTER TABLE public.pet_hospitalizations ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can manage hospitalizations"        ON public.pet_hospitalizations;
-DROP POLICY IF EXISTS "Users can view their pet hospitalizations" ON public.pet_hospitalizations;
-CREATE POLICY "Admins can manage hospitalizations"
-  ON public.pet_hospitalizations FOR ALL
-  USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Users can view their pet hospitalizations"
-  ON public.pet_hospitalizations FOR SELECT
-  USING (pet_id IN (SELECT id FROM pets WHERE user_id = auth.uid()));
-
--- MORTES (ÓBITO)
-ALTER TABLE public.mortes ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can manage mortes"        ON public.mortes;
-DROP POLICY IF EXISTS "Users can view their pet mortes" ON public.mortes;
-CREATE POLICY "Admins can manage mortes"
-  ON public.mortes FOR ALL
-  USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Users can view their pet mortes"
-  ON public.mortes FOR SELECT
-  USING (pet_id IN (SELECT id FROM pets WHERE user_id = auth.uid()));
-
--- ANAMNESIS
-ALTER TABLE public.anamnesis ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can view all anamnesis"   ON public.anamnesis;
-DROP POLICY IF EXISTS "Admins can update all anamnesis" ON public.anamnesis;
-DROP POLICY IF EXISTS "Admins can insert anamnesis"     ON public.anamnesis;
-DROP POLICY IF EXISTS "Admins can manage all anamnesis" ON public.anamnesis;
-DROP POLICY IF EXISTS "Users can insert their own anamnesis" ON public.anamnesis;
-DROP POLICY IF EXISTS "Users can view their own anamnesis"   ON public.anamnesis;
-DROP POLICY IF EXISTS "Users can update their own anamnesis" ON public.anamnesis;
-CREATE POLICY "Admins can manage all anamnesis"
-  ON public.anamnesis FOR ALL
-  USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Users can view their own anamnesis"
-  ON public.anamnesis FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert their own anamnesis"
-  ON public.anamnesis FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- AUDIT_LOGS
+-- =============================================================================
+-- 9️⃣ AUDIT_LOGS (Apenas Admin)
+-- =============================================================================
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can view all audit logs"  ON public.audit_logs;
-DROP POLICY IF EXISTS "Admins can insert audit logs"    ON public.audit_logs;
-DROP POLICY IF EXISTS "Admins can manage audit logs"    ON public.audit_logs;
-CREATE POLICY "Admins can manage audit logs"
-  ON public.audit_logs FOR ALL
-  USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
--- ── 8. VERIFICAÇÃO FINAL ──────────────────────────────────────────────────────
--- Confirmar que o admin tem role correta (substitua o UUID se necessário)
-SELECT
-  u.email,
-  ur.role,
-  public.has_role(u.id, 'admin') AS is_admin_check
-FROM auth.users u
-LEFT JOIN public.user_roles ur ON ur.user_id = u.id
-ORDER BY u.created_at DESC;
+CREATE POLICY "Admin only audit_logs access"
+ON public.audit_logs FOR ALL
+USING (public.is_admin());
+
+-- =============================================================================
+-- ✔️ SCRIPT CONCLUÍDO
+-- As permissões estão profissionais e o paciente não poderá adulterar o sistema.
+-- =============================================================================
