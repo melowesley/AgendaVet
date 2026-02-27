@@ -39,7 +39,9 @@ export const AdminAddPetDialog = ({ open, onOpenChange, onSuccess }: AdminAddPet
   const update = (field: string, value: string) =>
     setForm(prev => ({ ...prev, [field]: value }));
 
-  const handleSave = async () => {
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
     if (!form.name.trim()) {
       toast({ title: 'Campo obrigatório', description: 'Nome do paciente é obrigatório.', variant: 'destructive' });
       return;
@@ -54,22 +56,10 @@ export const AdminAddPetDialog = ({ open, onOpenChange, onSuccess }: AdminAddPet
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user?.id) throw new Error('Não autenticado');
 
-      // Verifica se já existe um usuário com esse email (para vincular)
-      let ownerId = userData.user.id; // fallback: usa user_id do admin
-      if (form.tutor_email.trim()) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .ilike('user_id', '%')
-          .limit(1);
-        // Tenta buscar usuário pelo email via auth (somente admins podem fazer isso via edge functions)
-        // Por ora usa admin's user_id como owner e armazena info do tutor nos campos extras
-      }
-
-      // Combina nome e sobrenome
+      const ownerId = userData.user.id;
       const tutorFullName = [form.tutor_name.trim(), form.tutor_lastname.trim()].filter(Boolean).join(' ') || form.tutor_name.trim();
 
-      const payload: Record<string, string | null> = {
+      const payload: any = {
         user_id: ownerId,
         name: form.name.trim(),
         type: form.type,
@@ -94,9 +84,9 @@ export const AdminAddPetDialog = ({ open, onOpenChange, onSuccess }: AdminAddPet
       setForm({ name: '', type: 'dog', breed: '', age: '', weight: '', color: '', sex: '', notes: '', tutor_name: '', tutor_lastname: '', tutor_phone: '', tutor_email: '', tutor_address: '' });
       onOpenChange(false);
       onSuccess();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro desconhecido';
-      toast({ title: 'Erro ao cadastrar', description: msg, variant: 'destructive' });
+    } catch (err: any) {
+      console.error('Error saving pet:', err);
+      toast({ title: 'Erro ao cadastrar', description: err.message || 'Erro desconhecido', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -115,7 +105,7 @@ export const AdminAddPetDialog = ({ open, onOpenChange, onSuccess }: AdminAddPet
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <form onSubmit={handleSave} className="space-y-6">
           {/* ── DADOS DO ANIMAL ───────────────────────────────────── */}
           <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
             <h3 className="font-semibold text-sm flex items-center gap-2">
@@ -225,11 +215,11 @@ export const AdminAddPetDialog = ({ open, onOpenChange, onSuccess }: AdminAddPet
             </div>
           </div>
 
-          <Button onClick={handleSave} disabled={loading} className="w-full">
+          <Button type="submit" disabled={loading} className="w-full">
             <Save className="h-4 w-4 mr-2" />
             {loading ? 'Cadastrando...' : 'Cadastrar Paciente'}
           </Button>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

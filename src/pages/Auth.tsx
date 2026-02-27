@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
@@ -7,17 +7,13 @@ import { Mail, Lock, User, Phone, MapPin, PawPrint } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
-const REMEMBER_EMAIL_KEY = 'agendavet_remembered_email';
-
-const Auth = () => {
+export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [rememberEmail, setRememberEmail] = useState(false);
-
-  // Carrega email salvo ao iniciar
-  const savedEmail = localStorage.getItem(REMEMBER_EMAIL_KEY) ?? '';
+  const savedEmail = localStorage.getItem('agendavet_remembered_email') ?? '';
 
   const [loginData, setLoginData] = useState({
     email: savedEmail,
@@ -28,44 +24,90 @@ const Auth = () => {
     fullName: '', phone: '', address: '',
   });
 
-  // Se havia email salvo, ativa a opção automaticamente
+  // -------------------------------------------------
+  // 1️⃣  Ref para garantir que o redirecionamento aconteça apenas UMA vez
+  // -------------------------------------------------
+  const redirected = useRef(false);
+
+  // -------------------------------------------------
+  // 2️⃣  Checa a sessão *uma única vez* ao montar
+  // -------------------------------------------------
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && !redirected.current) {
+        redirected.current = true;
+        navigate('/cliente', { replace: true });
+      }
+    });
+  }, [navigate]);
+
+  // -------------------------------------------------
+  // 3️⃣  Escuta apenas o evento SIGNED_IN (ignora TOKEN_REFRESHED, etc.)
+  // -------------------------------------------------
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event !== 'SIGNED_IN') return;
+        if (session && !redirected.current) {
+          redirected.current = true;
+          navigate('/cliente', { replace: true });
+        }
+      }
+    );
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  // -------------------------------------------------
+  // 4️⃣  Ativa "lembrar email" se já havia um salvo
+  // -------------------------------------------------
   useEffect(() => {
     if (savedEmail) setRememberEmail(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (session) navigate('/cliente');
-    });
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate('/cliente');
-    });
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
+  // -------------------------------------------------
+  // Login
+  // -------------------------------------------------
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validação de segurança para detectar se as variáveis de ambiente sumiram no build
+    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      console.error("ERRO CRÍTICO: Variáveis do Supabase não encontradas no build!");
+      toast({
+        title: "Erro de Configuração",
+        description: "As chaves do servidor não foram carregadas. Rebuild o app.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email: loginData.email,
         password: loginData.password,
       });
-      if (error) throw error;
 
-      // Salva ou remove o email conforme a preferência
-      if (rememberEmail) {
-        localStorage.setItem(REMEMBER_EMAIL_KEY, loginData.email);
-      } else {
-        localStorage.removeItem(REMEMBER_EMAIL_KEY);
+      if (error) {
+        console.error("Supabase Login Error:", error);
+        throw error;
       }
 
-      toast({ title: 'Login realizado com sucesso!', description: 'Bem-vindo(a) de volta!' });
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Ocorreu um erro inesperado';
+      if (rememberEmail) {
+        localStorage.setItem('agendavet_remembered_email', loginData.email);
+      } else {
+        localStorage.removeItem('agendavet_remembered_email');
+      }
+
+      toast({ title: 'Login realizado!', description: 'Bem-vindo(a) de volta!' });
+    } catch (err: any) {
+      console.error("Full Login Exception:", err);
+      const message = err?.message || 'Ocorreu um erro inesperado';
+
+      // No Android, se falhar o fetch, err.message costuma ser "Failed to fetch"
       toast({
         title: 'Erro ao fazer login',
-        description: message === 'Invalid login credentials' ? 'Email ou senha incorretos' : message,
+        description: message === 'Invalid login credentials' ? 'Email ou senha incorretos' : `Erro técnico: ${message}`,
         variant: 'destructive',
       });
     } finally {
@@ -73,6 +115,9 @@ const Auth = () => {
     }
   };
 
+  // -------------------------------------------------
+  // Cadastro
+  // -------------------------------------------------
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (signupData.password !== signupData.confirmPassword) {
@@ -103,18 +148,21 @@ const Auth = () => {
         }, { onConflict: 'user_id' });
       }
       toast({ title: 'Cadastro realizado!', description: 'Verifique seu email para confirmar sua conta.' });
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Ocorreu um erro inesperado';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Ocorreu um erro inesperado';
       toast({ title: 'Erro ao cadastrar', description: message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
+  // -------------------------------------------------
+  // JSX
+  // -------------------------------------------------
   return (
     <div className="h-[100dvh] flex overflow-hidden font-sans">
 
-      {/* Left panel — CSS controla visibilidade: só aparece em desktop real (≥768px wide E ≥560px tall) */}
+      {/* Painel esquerdo — apenas desktop */}
       <div className="auth-brand-panel flex-col items-center justify-center w-2/5 bg-teal-600 text-white p-10 gap-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -126,7 +174,7 @@ const Auth = () => {
               src="/agendavet-logo.png"
               alt="AgendaVet"
               className="w-20 h-20 object-contain"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
           </div>
           <div>
@@ -137,7 +185,7 @@ const Auth = () => {
             Agende consultas, acompanhe a saúde dos seus pets e acesse prontuários digitais com facilidade.
           </p>
           <div className="w-full max-w-xs space-y-2 text-sm">
-            {["Agendamento online 24h", "Histórico completo do pet", "Acompanhamento de vacinas", "Acesso a receitas digitais"].map(item => (
+            {['Agendamento online 24h', 'Histórico completo do pet', 'Acompanhamento de vacinas', 'Acesso a receitas digitais'].map(item => (
               <div key={item} className="flex items-center gap-2 bg-teal-500/40 rounded-lg px-3 py-2">
                 <PawPrint size={12} className="text-teal-300 shrink-0" />
                 <span className="text-teal-100">{item}</span>
@@ -147,14 +195,14 @@ const Auth = () => {
         </motion.div>
       </div>
 
-      {/* Right panel — rola em landscape mobile */}
+      {/* Painel direito — rola em landscape mobile */}
       <div className="auth-scroll-panel flex-1 min-h-0 overflow-y-auto flex items-center justify-center bg-gray-50 p-6">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           className="w-full max-w-md py-4"
         >
-          {/* Mini-logo mobile — CSS controla: visível em mobile, oculto em desktop */}
+          {/* Mini-logo mobile */}
           <div className="auth-mobile-logo flex-col items-center mb-6">
             <div className="bg-teal-600 rounded-2xl p-3 mb-2">
               <PawPrint className="text-white" size={36} />
@@ -166,24 +214,25 @@ const Auth = () => {
             <h2 className="font-bold text-gray-800 text-xl mb-1">Acesse sua conta</h2>
             <p className="text-sm text-gray-500 mb-6">Entre ou crie uma conta para agendar consultas</p>
 
-            {/* Tab selector */}
+            {/* Abas Login / Cadastro */}
             <div className="flex rounded-xl bg-gray-100 p-1 mb-6">
               {(['login', 'signup'] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={[
-                    "flex-1 py-2 text-sm font-semibold rounded-lg transition-all",
+                    'flex-1 py-2 text-sm font-semibold rounded-lg transition-all',
                     activeTab === tab
-                      ? "bg-teal-600 text-white shadow-sm"
-                      : "text-gray-500 hover:text-gray-700",
-                  ].join(" ")}
+                      ? 'bg-teal-600 text-white shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700',
+                  ].join(' ')}
                 >
                   {tab === 'login' ? 'Entrar' : 'Cadastrar'}
                 </button>
               ))}
             </div>
 
+            {/* ── LOGIN ── */}
             {activeTab === 'login' && (
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-1.5">
@@ -200,6 +249,7 @@ const Auth = () => {
                     />
                   </div>
                 </div>
+
                 <div className="space-y-1.5">
                   <Label htmlFor="login-password" className="text-sm font-semibold text-gray-700">Senha</Label>
                   <div className="relative">
@@ -215,28 +265,19 @@ const Auth = () => {
                   </div>
                 </div>
 
-                {/* ── Lembrar email ─────────────────────────── */}
-                <label
-                  htmlFor="remember-email"
-                  className="flex items-center gap-2.5 cursor-pointer select-none group"
-                >
+                {/* Checkbox lembrar email */}
+                <label htmlFor="remember-email" className="flex items-center gap-2.5 cursor-pointer select-none group">
                   <div className="relative flex items-center">
                     <input
-                      id="remember-email"
-                      type="checkbox"
+                      id="remember-email" type="checkbox"
                       checked={rememberEmail}
                       onChange={(e) => setRememberEmail(e.target.checked)}
                       className="sr-only"
                     />
-                    {/* visual checkbox customizado */}
-                    <div
-                      className={[
-                        "w-4 h-4 rounded border-2 flex items-center justify-center transition-all",
-                        rememberEmail
-                          ? "bg-teal-600 border-teal-600"
-                          : "bg-white border-gray-300 group-hover:border-teal-400",
-                      ].join(" ")}
-                    >
+                    <div className={[
+                      'w-4 h-4 rounded border-2 flex items-center justify-center transition-all',
+                      rememberEmail ? 'bg-teal-600 border-teal-600' : 'bg-white border-gray-300 group-hover:border-teal-400',
+                    ].join(' ')}>
                       {rememberEmail && (
                         <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 8" fill="none">
                           <path d="M1 4l3 3 5-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -244,23 +285,21 @@ const Auth = () => {
                       )}
                     </div>
                   </div>
-                  <span className="text-sm text-gray-600 group-hover:text-gray-800 transition-colors">
-                    Lembrar meu email
-                  </span>
+                  <span className="text-sm text-gray-600 group-hover:text-gray-800 transition-colors">Lembrar meu email</span>
                 </label>
-                {/* ────────────────────────────────────────────── */}
 
                 <button
                   type="submit" disabled={loading}
                   className="w-full h-11 bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
                 >
-                  {loading ? (
-                    <><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />Entrando...</>
-                  ) : 'Entrar'}
+                  {loading
+                    ? <><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />Entrando...</>
+                    : 'Entrar'}
                 </button>
               </form>
             )}
 
+            {/* ── CADASTRO ── */}
             {activeTab === 'signup' && (
               <form onSubmit={handleSignup} className="space-y-3">
                 {[
@@ -292,9 +331,9 @@ const Auth = () => {
                   type="submit" disabled={loading}
                   className="w-full h-11 bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 mt-2"
                 >
-                  {loading ? (
-                    <><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />Cadastrando...</>
-                  ) : 'Criar conta'}
+                  {loading
+                    ? <><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />Cadastrando...</>
+                    : 'Criar conta'}
                 </button>
               </form>
             )}
@@ -307,6 +346,4 @@ const Auth = () => {
       </div>
     </div>
   );
-};
-
-export default Auth;
+}
