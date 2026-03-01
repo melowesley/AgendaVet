@@ -118,7 +118,7 @@ async function checkLocalFeedback() {
                 if (buttons.length > 0) {
                     msg += `\n\n⚙️ **Ações:**\n` + buttons.map(b => `👉 /${b.action.replace(/\s+/g, '_')}`).join('\n');
                 }
-                bot.sendMessage(activeChatId, msg, { parse_mode: 'Markdown' });
+                bot.sendMessage(activeChatId, msg).catch(e => console.error("Erro envio tg:", e.message));
                 lastSentTextHash = currentHash;
                 lastSentButtonsStr = buttonsStr;
             }
