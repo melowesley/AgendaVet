@@ -183,34 +183,53 @@ async function remoteScroll(cdp, { scrollPercent }) {
 
 async function injectMessage(cdp, text) {
     const safeText = JSON.stringify(text);
-    const SCRIPT = `new Promise((resolve) => {
+
+    // 1. Focar a caixa e colar o texto
+    const FOCUS_SCRIPT = `(async () => {
         const editor = document.querySelector('[contenteditable="true"]');
-        if (!editor) return resolve({ ok: false });
+        if (!editor) return { ok: false };
         editor.focus();
         document.execCommand('insertText', false, ${safeText});
-        
-        // Disparar eventos para o React reconhecer o texto e habilitar a setinha de envio
-        editor.dispatchEvent(new Event('input', { bubbles: true }));
-        editor.dispatchEvent(new Event('change', { bubbles: true }));
-        
-        setTimeout(() => {
-            const submit = document.querySelector('button[type="submit"]') || 
-                           document.querySelector('button[aria-label*="Send"]') ||
-                           document.querySelector('button[aria-label*="Submit"]') ||
-                           document.querySelector('svg.lucide-arrow-right')?.closest('button') ||
-                           document.querySelector('svg.lucide-arrow-up')?.closest('button');
-            if (submit && !submit.disabled) submit.click();
-            resolve({ ok: true });
-        }, 150);
-    })`;
+        return { ok: true };
+    })()`;
 
+    let activeContextId = null;
     for (const ctx of cdp.contexts) {
         try {
-            const res = await cdp.call("Runtime.evaluate", { expression: SCRIPT, returnByValue: true, awaitPromise: true, contextId: ctx.id });
-            if (res.result?.value?.ok) return res.result.value;
+            const res = await cdp.call("Runtime.evaluate", { expression: FOCUS_SCRIPT, returnByValue: true, awaitPromise: true, contextId: ctx.id });
+            if (res.result?.value?.ok) {
+                activeContextId = ctx.id;
+                break;
+            }
         } catch (e) { }
     }
-    return { ok: false };
+
+    if (!activeContextId) return;
+
+    // 2. Disparar tecla ENTER física no nível do CDP para forçar o submit do React
+    try {
+        await cdp.call('Input.dispatchKeyEvent', {
+            type: 'rawKeyDown',
+            windowsVirtualKeyCode: 13,
+            unmodifiedText: '\r',
+            text: '\r',
+            key: 'Enter',
+            code: 'Enter'
+        });
+
+        await new Promise(r => setTimeout(r, 50));
+
+        await cdp.call('Input.dispatchKeyEvent', {
+            type: 'keyUp',
+            windowsVirtualKeyCode: 13,
+            key: 'Enter',
+            code: 'Enter'
+        });
+
+        console.log(`[CDP] Enter key simulated successfully.`);
+    } catch (e) {
+        console.error(`[CDP] Failed to simulate Enter:`, e);
+    }
 }
 
 async function executeSystemCommand(cdp, command) {
