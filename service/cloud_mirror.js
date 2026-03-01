@@ -1,6 +1,8 @@
 import { WebSocket } from 'ws';
 import 'dotenv/config';
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * SIMBIOSE CLOUD BRIDGE
@@ -314,16 +316,22 @@ async function startBridge() {
             await remoteScroll(cdpConnection, msg.data);
         }
 
+        if (msg.type === 'upload_image') {
+            const uploadDir = path.join(process.cwd(), 'remote_uploads');
+            if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
+            const safeName = msg.filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+            const filePath = path.join(uploadDir, safeName);
+
+            const base64Data = msg.content.replace(/^data:image\/\w+;base64,/, "");
+            fs.writeFileSync(filePath, base64Data, 'base64');
+
+            console.log(`📸 Imagem salva em: ${filePath}`);
+            await injectMessage(cdpConnection, `Segue print da tela. Arquivo salvo em: ${filePath}`);
+        }
+
         if (msg.type === 'system_command') {
-            if (msg.data.command === 'start_plan') {
-                console.log(`💬 Injetando comando especial: Open Plan`);
-                await injectMessage(cdpConnection, "Open Plan");
-            } else if (msg.data.command === 'run') {
-                console.log(`💬 Injetando comando especial: Rodar projeto`);
-                await injectMessage(cdpConnection, "Rodar o projeto/testes");
-            } else {
-                await executeSystemCommand(cdpConnection, msg.data.command);
-            }
+            await executeSystemCommand(cdpConnection, msg.data.command);
         }
     });
 
