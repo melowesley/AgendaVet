@@ -120,6 +120,8 @@ const MODELS = [
 ];
 
 // --- WebSocket ---
+let wsPingInterval;
+
 function connectWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}`;
@@ -134,6 +136,12 @@ function connectWebSocket() {
             console.log('WS Connected');
             updateStatus(true);
             loadSnapshot();
+
+            // Keep-alive para evitar desconexão 4G
+            clearInterval(wsPingInterval);
+            wsPingInterval = setInterval(() => {
+                if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'ping' }));
+            }, 25000);
         };
 
         ws.onmessage = (event) => {
@@ -151,6 +159,7 @@ function connectWebSocket() {
         ws.onclose = () => {
             console.log('WS Disconnected');
             updateStatus(false);
+            clearInterval(wsPingInterval);
             setTimeout(connectWebSocket, 3000);
         };
     } catch (e) {
@@ -202,6 +211,9 @@ async function loadSnapshot() {
         const clientHeight = chatContainer.clientHeight;
         const isNearBottom = scrollHeight - scrollPos - clientHeight < 120;
         const isUserScrollLocked = Date.now() < userScrollLockUntil;
+
+        // Limpa a opacidade de carregamento (feedback de envio)
+        chatContent.style.opacity = '1';
 
         // --- UPDATE STATS ---
         if (data.stats) {
@@ -615,9 +627,9 @@ function sendMessage() {
             }));
         }
 
-        // Always reload snapshot to check if message appeared
-        setTimeout(loadSnapshot, 300);
-        setTimeout(loadSnapshot, 800);
+        // Em vez de forçar carregamento, vamos apenas mostrar um loader visual na tela
+        // e esperar o servidor empurrar o 'snapshot_update' sozinho.
+        chatContent.style.opacity = '0.7';
     } catch (e) {
         console.error('Send error:', e);
     } finally {
