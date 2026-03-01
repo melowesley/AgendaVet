@@ -12,6 +12,7 @@ import { AnalyticsDashboard } from '@/modules/vet/components/AnalyticsDashboard'
 import { UserManagement } from '@/modules/vet/components/UserManagement';
 import { PetsListTab } from '@/modules/vet/components/PetsListTab';
 import { TutorsListTab } from '@/modules/vet/components/TutorsListTab';
+import { VetDiagnosticTest } from '@/modules/vet/components/VetDiagnosticTest';
 import { useAppointmentRequests } from '@/hooks/useAppointmentRequests';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 
@@ -181,6 +182,10 @@ const AdminDashboard = () => {
                 Dashboard Analítico
               </h2>
               <AnalyticsDashboard />
+              <div className="mt-8 border-t pt-8">
+                <h3 className="text-sm font-semibold text-gray-500 mb-4 text-center uppercase tracking-wider">Teste de Componente Novo</h3>
+                <VetDiagnosticTest />
+              </div>
             </div>
           )}
 
