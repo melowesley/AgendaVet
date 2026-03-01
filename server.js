@@ -1,10 +1,8 @@
 import express from 'express';
-import { spawn } from 'child_process';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { WebSocketServer } from 'ws';
 import http from 'http';
-import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import 'dotenv/config';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,227 +13,93 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 const PORT = process.env.PORT || 8080;
-const SECURITY_TOKEN = process.env.REMOTE_TOKEN || 'Weslei3423@';
+const PASSWORD = process.env.APP_PASSWORD || 'antigravity';
+const REMOTE_TOKEN = process.env.REMOTE_TOKEN || 'Weslei3423@';
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// --- Telegram Bridge State ---
-let lastAIFeedback = {
-  recentText: "Aguardando comandos...",
-  buttons: [],
-  isGenerating: false
-};
+// Serve the Mirror UI for the phone
+app.use('/mirror', express.static(path.join(__dirname, 'remote_ui')));
 
-// Broadcast function for all connected clients
-const broadcast = (data) => {
-  const message = JSON.stringify(data);
-  wss.clients.forEach((client) => {
-    if (client.readyState === 1) {
-      client.send(message);
-    }
-  });
-};
-
-// Intercept console.log to broadcast to WebSocket
-const originalLog = console.log;
-console.log = (...args) => {
-  originalLog(...args);
-  broadcast({ type: 'log', data: args.join(' ') });
-};
-
-// Serve static files from Vite build
+// Serve the main AgendaVet site (dist)
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Middleware de segurança
-const authMiddleware = (req, res, next) => {
-  const token = req.headers['x-auth-token'] || req.body.token || req.query.token;
-  if (token !== SECURITY_TOKEN) {
-    return res.status(401).send('Acesso não autorizado. Use o token correto.');
-  }
-  next();
+// --- Relay Logic ---
+let lastSnapshot = null;
+let bridgeClient = null;
+
+const broadcastToPhones = (data) => {
+    const msg = JSON.stringify(data);
+    wss.clients.forEach(client => {
+        if (client !== bridgeClient && client.readyState === 1) {
+            client.send(msg);
+        }
+    });
 };
 
-// --- Telegram Bot Endpoints ---
+wss.on('connection', (ws, req) => {
+    console.log('New connection attempt...');
 
-// Recebe mensagem do Bot e encaminha para o Local Bridge via WS
-app.post('/send', (req, res) => {
-  const { message } = req.body;
-  console.log(`[RELAY] Encaminhando mensagem para Local: ${message}`);
-  broadcast({ type: 'ai_input', data: message });
-  res.json({ status: 'ok', response: 'Mensagem enviada para o Antigravity local!' });
-});
+    ws.on('message', (message) => {
+        try {
+            const data = JSON.parse(message);
 
-// Bot consulta o feedback (o que a IA "disse")
-app.get('/chat-feedback', (req, res) => {
-  res.json(lastAIFeedback);
-});
-
-// Bot clica em botões de aprovação
-app.post('/remote-click', authMiddleware, (req, res) => {
-  const { textContent, index, action } = req.body;
-  console.log(`[RELAY] Encaminhando clique: ${textContent}`);
-  broadcast({ type: 'remote_click', data: { textContent, index, action } });
-  res.json({ status: 'ok' });
-});
-
-// Novo endpoint para o Local Bridge sincronizar o feedback
-app.post('/update-feedback', authMiddleware, (req, res) => {
-  if (req.body.feedback) {
-    lastAIFeedback = req.body.feedback;
-  }
-  if (req.body.log) {
-    broadcast({ type: 'stdout', data: req.body.log });
-  }
-  res.json({ status: 'ok' });
-});
-
-// Endpoint para receber logs do terminal local
-app.post('/local-log', authMiddleware, (req, res) => {
-  const { log, type } = req.body;
-  broadcast({ type: type || 'stdout', data: log });
-  res.json({ status: 'ok' });
-});
-
-// --- Interface Remota Premium ---
-app.get('/remoto', (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="pt-br">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>AgendaVet - Live Control</title>
-      <style>
-        body { font-family: 'Inter', sans-serif; padding: 20px; background: #0f172a; color: #f8fafc; margin: 0; }
-        .container { max-width: 800px; margin: 0 auto; }
-        h1 { font-size: 1.25rem; color: #2dd4bf; display: flex; align-items: center; gap: 8px; }
-        .card { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
-        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        button { background: #0d9488; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:active { transform: scale(0.98); }
-        #terminal { 
-          background: #000; 
-          color: #10b981; 
-          padding: 15px; 
-          border-radius: 8px; 
-          height: 300px; 
-          overflow-y: auto; 
-          font-family: 'Fira Code', monospace; 
-          font-size: 11px; 
-          border: 1px solid #065f46;
-          white-space: pre-wrap;
-        }
-        .status { font-size: 10px; color: #94a3b8; text-align: right; margin-top: 4px; }
-        .log-entry { color: #38bdf8; border-left: 2px solid #0369a1; padding-left: 8px; margin-bottom: 4px; border-bottom: 1px solid #33415555; padding-bottom: 2px; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <h1>🚀 AgendaVet Live Terminal</h1>
-        
-        <div class="card">
-          <label>Senha Weslei:</label>
-          <input type="password" id="token" value="${SECURITY_TOKEN}" />
-          <label>Comando Terminal:</label>
-          <input type="text" id="command" placeholder="ex: npm run build" />
-          <button onclick="runCommand()">Executar e Monitorar</button>
-        </div>
-
-        <div id="terminal">Aguardando conexão...</div>
-        <div class="status" id="ws-status">Desconectado</div>
-      </div>
-
-      <script>
-        const terminal = document.getElementById('terminal');
-        const status = document.getElementById('ws-status');
-        let ws;
-
-        function connect() {
-          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-          ws = new WebSocket(protocol + '//' + window.location.host);
-          
-          ws.onopen = () => {
-            status.innerText = 'Conectado em tempo real';
-            status.style.color = '#2dd4bf';
-            terminal.innerHTML += '\\n[SISTEMA] Painel remoto sincronizado.\\n';
-          };
-
-          ws.onmessage = (event) => {
-            const msg = JSON.parse(event.data);
-            if (msg.type === 'stdout' || msg.type === 'stderr' || msg.type === 'log') {
-              const div = document.createElement('div');
-              if (msg.type === 'stdout') div.style.color = '#10b981';
-              if (msg.type === 'stderr') div.style.color = '#f43f5e';
-              if (msg.type === 'log') div.className = 'log-entry';
-              div.innerText = msg.data;
-              terminal.appendChild(div);
-              terminal.scrollTop = terminal.scrollHeight;
+            // 1. Identify Bridge (Local PC)
+            if (data.type === 'auth_bridge' && data.token === REMOTE_TOKEN) {
+                bridgeClient = ws;
+                console.log('✅ Local Bridge connected!');
+                ws.send(JSON.stringify({ type: 'auth_success' }));
+                return;
             }
-          };
 
-          ws.onclose = () => {
-            status.innerText = 'Desconectado - Reconectando...';
-            status.style.color = '#f43f5e';
-            setTimeout(connect, 3000);
-          };
-        }
-
-        async function runCommand() {
-          const token = document.getElementById('token').value;
-          const command = document.getElementById('command').value;
-          
-          if (!command) return;
-          
-          terminal.innerHTML += '\\n\\n> ' + command + '\\n';
-          terminal.scrollTop = terminal.scrollHeight;
-
-          try {
-            const resp = await fetch('/run-command', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ token, command })
-            });
-            
-            if (resp.status === 401) {
-              alert('Senha Weslei incorreta!');
+            // 2. Handle Snapshot from Bridge
+            if (ws === bridgeClient && data.type === 'snapshot_update') {
+                lastSnapshot = data.snapshot;
+                broadcastToPhones({ type: 'snapshot_update', timestamp: new Date().toISOString() });
+                return;
             }
-          } catch (e) {
-            terminal.innerHTML += '\\n[ERRO] Falha ao enviar comando.\\n';
-          }
+
+            // 3. Handle Inputs from Phone
+            if (ws !== bridgeClient) {
+                // Relay everything to bridge
+                if (bridgeClient && bridgeClient.readyState === 1) {
+                    bridgeClient.send(JSON.stringify(data));
+                }
+            }
+        } catch (e) {
+            console.error('Relay error:', e);
         }
+    });
 
-        connect();
-      </script>
-    </body>
-    </html>
-  `);
+    ws.on('close', () => {
+        if (ws === bridgeClient) {
+            console.log('❌ Local Bridge disconnected');
+            bridgeClient = null;
+        }
+    });
 });
 
-// Endpoint de Execução de Comandos (Encaminha para o Local via WS)
-app.post('/run-command', authMiddleware, (req, res) => {
-  const { command } = req.body;
-  const cleanCommand = command.trim().toLowerCase();
-  console.log(`[RELAY] Encaminhando comando para terminal local: ${cleanCommand}`);
-
-  // Avisa a todos (inclusive ao celular) que o comando foi solicitado
-  broadcast({ type: 'stdout', data: `> ${cleanCommand}\n[SISTEMA] Encaminhando para o PC local...\n` });
-
-  // Envia o comando real para o Local Bridge
-  broadcast({ type: 'remote_command', data: cleanCommand });
-
-  res.json({ status: 'forwarded' });
+// APIs for Mirror UI
+app.get('/snapshot', (req, res) => {
+    if (!lastSnapshot) return res.status(503).json({ error: 'Aguardando PC local...' });
+    res.json(lastSnapshot);
 });
 
-// Fallback para o SPA (Vite)
+app.post('/login', (req, res) => {
+    const { password } = req.body;
+    if (password === PASSWORD) {
+        res.json({ success: true });
+    } else {
+        res.status(401).json({ success: false });
+    }
+});
+
+// Fallback to SPA
 app.get('*', (req, res) => {
-  if (req.path.startsWith('/api') || req.path === '/send' || req.path === '/chat-feedback' || req.path === '/remote-click') {
-    return res.status(404).json({ error: 'Endpoint não encontrado' });
-  }
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
 });
 
-server.listen(PORT, () => {
-  console.log(`✅ Servidor AgendaVet Online!`);
-  console.log(`🚀 Painel Mobile: http://localhost:${PORT}/remoto`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📱 Mirror UI: /mirror/index.html`);
 });

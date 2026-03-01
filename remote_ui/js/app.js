@@ -53,25 +53,13 @@ async function fetchWithAuth(url, options = {}) {
 }
 const USER_SCROLL_LOCK_DURATION = 3000; // 3 seconds of scroll protection
 
-// --- Sync State (Desktop is Always Priority) ---
+// --- Sync State ---
 async function fetchAppState() {
     try {
-        const res = await fetchWithAuth('/app-state');
+        const res = await fetch('/app-state');
         const data = await res.json();
-
-        // Mode Sync (Fast/Planning) - Desktop is source of truth
-        if (data.mode && data.mode !== 'Unknown') {
-            modeText.textContent = data.mode;
-            modeBtn.classList.toggle('active', data.mode === 'Planning');
-            currentMode = data.mode;
-        }
-
-        // Model Sync - Desktop is source of truth
-        if (data.model && data.model !== 'Unknown') {
-            modelText.textContent = data.model;
-        }
-
-        console.log('[SYNC] State refreshed from Desktop:', data);
+        if (data.mode) modeText.textContent = data.mode;
+        if (data.model) modelText.textContent = data.model;
     } catch (e) { console.error('[SYNC] Failed to sync state', e); }
 }
 
@@ -143,11 +131,7 @@ function connectWebSocket() {
 
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.type === 'error' && data.message === 'Unauthorized') {
-            window.location.href = '/login.html';
-            return;
-        }
-        if (data.type === 'snapshot_update' && autoRefreshEnabled && !userIsScrolling) {
+        if (data.type === 'snapshot_update') {
             loadSnapshot();
         }
     };
