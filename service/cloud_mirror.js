@@ -1,4 +1,4 @@
-import WebSocket from 'ws';
+import { WebSocket } from 'ws';
 import 'dotenv/config';
 import http from 'http';
 
@@ -71,6 +71,8 @@ async function connectCDP(url) {
     });
 
     await call("Runtime.enable", {});
+    // Pequeno atraso para o navegador reportar os contextos (frames/abas)
+    await new Promise(r => setTimeout(r, 1500));
     return { ws, call, contexts };
 }
 
@@ -135,7 +137,12 @@ async function startBridge() {
     cdpConnection = await connectCDP(cdpInfo.url);
     console.log('✅ Conectado ao Antigravity!');
 
+    console.log(`🌐 Tentando conectar ao Render: ${REMOTE_WS_URL}`);
     remoteWs = new WebSocket(REMOTE_WS_URL);
+
+    remoteWs.on('error', (err) => {
+        console.error('❌ Erro na conexão com o Render:', err.message);
+    });
 
     remoteWs.on('open', () => {
         console.log('✅ Conectado ao Render!');
@@ -146,11 +153,19 @@ async function startBridge() {
         const msg = JSON.parse(data);
 
         if (msg.type === 'auth_success') {
+            console.log('🔓 Autenticado na nuvem com sucesso!');
             const sync = async () => {
-                if (remoteWs.readyState !== 1) return;
-                const snapshot = await captureSnapshot(cdpConnection);
-                if (snapshot) remoteWs.send(JSON.stringify({ type: 'snapshot_update', snapshot }));
-                setTimeout(sync, 2000);
+                if (!remoteWs || remoteWs.readyState !== 1) return;
+                try {
+                    const snapshot = await captureSnapshot(cdpConnection);
+                    if (snapshot) {
+                        remoteWs.send(JSON.stringify({ type: 'snapshot_update', snapshot }));
+                        // Sincronização automática em background
+                    }
+                } catch (e) {
+                    console.error('Erro no sync:', e.message);
+                }
+                setTimeout(sync, 2500);
             };
             sync();
         }

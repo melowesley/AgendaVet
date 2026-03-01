@@ -1,3 +1,4 @@
+console.log('--- MIRROR APP STARTING ---');
 // --- Elements ---
 const chatContainer = document.getElementById('chatContainer');
 const chatContent = document.getElementById('chatContent');
@@ -121,26 +122,41 @@ const MODELS = [
 // --- WebSocket ---
 function connectWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    ws = new WebSocket(`${protocol}//${window.location.host}`);
+    const wsUrl = `${protocol}//${window.location.host}`;
+    console.log('[WS] Connecting to:', wsUrl);
 
-    ws.onopen = () => {
-        console.log('WS Connected');
-        updateStatus(true);
-        loadSnapshot();
-    };
+    if (statusText) statusText.textContent = 'Connecting...';
 
-    ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === 'snapshot_update') {
+    try {
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            console.log('WS Connected');
+            updateStatus(true);
             loadSnapshot();
-        }
-    };
+        };
 
-    ws.onclose = () => {
-        console.log('WS Disconnected');
-        updateStatus(false);
-        setTimeout(connectWebSocket, 2000);
-    };
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'snapshot_update') {
+                loadSnapshot();
+            }
+        };
+
+        ws.onerror = (err) => {
+            console.error('[WS] Error:', err);
+            if (statusText) statusText.textContent = 'WS Error';
+        };
+
+        ws.onclose = () => {
+            console.log('WS Disconnected');
+            updateStatus(false);
+            setTimeout(connectWebSocket, 3000);
+        };
+    } catch (e) {
+        console.error('[WS] Setup failed:', e);
+        if (statusText) statusText.textContent = 'WS Setup Err';
+    }
 }
 
 function updateStatus(connected) {
