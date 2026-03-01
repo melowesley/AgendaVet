@@ -58,12 +58,12 @@ const authMiddleware = (req, res, next) => {
 
 // --- Telegram Bot Endpoints ---
 
-// Rebece mensagem do Bot e joga no terminal/logs
+// Recebe mensagem do Bot e encaminha para o Local Bridge via WS
 app.post('/send', (req, res) => {
   const { message } = req.body;
-  console.log(`[TELEGRAM] Mensagem recebida: ${message}`);
-  // Aqui você pode adicionar lógica para processar comandos automáticos se desejar
-  res.json({ status: 'ok', response: 'Comando recebido pelo servidor!' });
+  console.log(`[RELAY] Encaminhando mensagem para Local: ${message}`);
+  broadcast({ type: 'ai_input', data: message });
+  res.json({ status: 'ok', response: 'Mensagem enviada para o Antigravity local!' });
 });
 
 // Bot consulta o feedback (o que a IA "disse")
@@ -73,8 +73,27 @@ app.get('/chat-feedback', (req, res) => {
 
 // Bot clica em botões de aprovação
 app.post('/remote-click', authMiddleware, (req, res) => {
-  const { textContent, index } = req.body;
-  console.log(`[TELEGRAM] Clique remoto em: ${textContent} (Index: ${index})`);
+  const { textContent, index, action } = req.body;
+  console.log(`[RELAY] Encaminhando clique: ${textContent}`);
+  broadcast({ type: 'remote_click', data: { textContent, index, action } });
+  res.json({ status: 'ok' });
+});
+
+// Novo endpoint para o Local Bridge sincronizar o feedback
+app.post('/update-feedback', authMiddleware, (req, res) => {
+  if (req.body.feedback) {
+    lastAIFeedback = req.body.feedback;
+  }
+  if (req.body.log) {
+    broadcast({ type: 'stdout', data: req.body.log });
+  }
+  res.json({ status: 'ok' });
+});
+
+// Endpoint para receber logs do terminal local
+app.post('/local-log', authMiddleware, (req, res) => {
+  const { log, type } = req.body;
+  broadcast({ type: type || 'stdout', data: log });
   res.json({ status: 'ok' });
 });
 
@@ -193,27 +212,18 @@ app.get('/remoto', (req, res) => {
   `);
 });
 
-// Endpoint de Execução de Comandos (Streaming via WS)
+// Endpoint de Execução de Comandos (Encaminha para o Local via WS)
 app.post('/run-command', authMiddleware, (req, res) => {
   const { command } = req.body;
-  console.log(`[TERMINAL] Executando: ${command}`);
+  console.log(`[RELAY] Encaminhando comando para terminal local: ${command}`);
 
-  const [cmd, ...args] = command.split(' ');
-  const child = spawn(cmd, args, { shell: true });
+  // Avisa a todos (inclusive ao celular) que o comando foi solicitado
+  broadcast({ type: 'stdout', data: `> ${command}\n[SISTEMA] Encaminhando para o PC local...\n` });
 
-  child.stdout.on('data', (data) => {
-    broadcast({ type: 'stdout', data: data.toString() });
-  });
+  // Envia o comando real para o Local Bridge
+  broadcast({ type: 'remote_command', data: command });
 
-  child.stderr.on('data', (data) => {
-    broadcast({ type: 'stderr', data: data.toString() });
-  });
-
-  child.on('close', (code) => {
-    broadcast({ type: 'stdout', data: `[SISTEMA] Comando finalizado (Code: ${code})\\n` });
-  });
-
-  res.json({ status: 'started' });
+  res.json({ status: 'forwarded' });
 });
 
 // Fallback para o SPA (Vite)
