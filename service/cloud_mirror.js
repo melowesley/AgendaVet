@@ -315,7 +315,12 @@ async function startBridge() {
         }
 
         if (msg.type === 'system_command') {
-            await executeSystemCommand(cdpConnection, msg.data.command);
+            if (msg.data.command === 'start_plan') {
+                console.log(`💬 Injetando comando especial: Iniciar plano de implementação`);
+                await injectMessage(cdpConnection, "Iniciar plano de implementação");
+            } else {
+                await executeSystemCommand(cdpConnection, msg.data.command);
+            }
         }
     });
 
