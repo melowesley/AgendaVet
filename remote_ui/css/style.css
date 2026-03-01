@@ -878,3 +878,74 @@ textarea::-webkit-scrollbar {
 .mt-4 {
     margin-top: 24px;
 }
+
+/* --- Remote Control Panel --- */
+.remote-control-bar {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border);
+    justify-content: space-between;
+    z-index: 100;
+}
+
+.remote-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 4px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.remote-btn span {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.remote-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Specific button colors */
+.remote-btn.accept {
+    color: var(--success);
+    border-color: rgba(34, 197, 94, 0.2);
+}
+
+.remote-btn.accept:active {
+    background: rgba(34, 197, 94, 0.15);
+}
+
+.remote-btn.run {
+    color: #3b82f6;
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.remote-btn.run:active {
+    background: rgba(59, 130, 246, 0.15);
+}
+
+.remote-btn.undo {
+    color: var(--warning);
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+.remote-btn.undo:active {
+    background: rgba(245, 158, 11, 0.15);
+}
+
+.remote-btn:active {
+    transform: scale(0.95);
+}

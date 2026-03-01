@@ -626,7 +626,24 @@ function sendMessage() {
     }
 }
 
-// --- Click Ingestion ---
+// --- System Commands (Remote Control Panel) ---
+function systemCommand(command) {
+    console.log(`[SYSTEM] Command emitted: ${command}`);
+    if (ws && ws.readyState === 1) {
+        ws.send(JSON.stringify({
+            type: 'system_command',
+            data: { command }
+        }));
+    }
+
+    // Feedback visual
+    const btn = document.querySelector(`.remote-btn.${command === 'accept_all' ? 'accept' : command}`);
+    if (btn) {
+        btn.style.filter = 'brightness(1.5)';
+        setTimeout(() => btn.style.filter = '', 500);
+    }
+}
+
 // --- Click Ingestion ---
 chatContent.addEventListener('click', (e) => {
     const rect = chatContent.getBoundingClientRect();

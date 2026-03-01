@@ -108,6 +108,29 @@
         </div>
     </div>
 
+    <!-- Remote Control Panel (Fixed Actions) -->
+    <div class="remote-control-bar" id="remoteControlBar">
+        <button class="remote-btn accept" onclick="systemCommand('accept_all')" title="Accept All Changes">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M20 6L9 17l-5-5" />
+            </svg>
+            <span>Aceitar Tudo</span>
+        </button>
+        <button class="remote-btn run" onclick="systemCommand('run')" title="Run Code">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M5 3l14 9-14 9V3z" />
+            </svg>
+            <span>Rodar</span>
+        </button>
+        <button class="remote-btn undo" onclick="systemCommand('undo')" title="Undo Changes">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M3 10h10a5 5 0 0 1 5 5v2" />
+                <path d="M3 10l5-5M3 10l5 5" />
+            </svg>
+            <span>Desfazer</span>
+        </button>
+    </div>
+
     <!-- Input Section -->
     <div class="input-section">
         <div class="input-wrapper">

@@ -202,6 +202,58 @@ async function injectMessage(cdp, text) {
     return { ok: false };
 }
 
+async function executeSystemCommand(cdp, command) {
+    console.log(`🚀 Executando comando de sistema: ${command}`);
+    const SCRIPT = `(async () => {
+        const buttons = Array.from(document.querySelectorAll('button, [role="button"], .action-item'));
+        let target = null;
+
+        if ("${command}" === "accept_all") {
+            // Busca agressiva por "Accept All" ou ícone de Check
+            target = buttons.find(b => 
+                (b.title && b.title.includes('Accept')) || 
+                (b.innerText && b.innerText.includes('Accept')) ||
+                b.querySelector('svg.lucide-check')
+            );
+        } else if ("${command}" === "run") {
+            // Busca por "Run" ou ícone de Play
+            target = buttons.find(b => 
+                (b.title && b.title.includes('Run')) || 
+                (b.innerText && (b.innerText.includes('Run') || b.innerText.includes('Execute'))) ||
+                b.querySelector('svg.lucide-play')
+            );
+        } else if ("${command}" === "undo") {
+            // Busca por "Undo" ou ícone de volta
+            target = buttons.find(b => 
+                (b.title && b.title.includes('Undo')) || 
+                b.querySelector('svg.lucide-undo')
+            );
+        }
+
+        if (target) {
+            target.scrollIntoView({ block: 'center' });
+            target.click();
+            // Disparar eventos reais para React
+            ['mousedown', 'mouseup'].forEach(name => {
+                target.dispatchEvent(new MouseEvent(name, { bubbles: true, cancelable: true, view: window }));
+            });
+            return { ok: true, found: target.title || target.innerText || 'button' };
+        }
+        return { ok: false, error: 'Botão não encontrado para este comando' };
+    })()`;
+
+    for (const ctx of cdp.contexts) {
+        try {
+            const res = await cdp.call("Runtime.evaluate", { expression: SCRIPT, returnByValue: true, awaitPromise: true, contextId: ctx.id });
+            if (res.result?.value?.ok) {
+                console.log(`✅ Comando ${command} executado em: ${res.result.value.found}`);
+                return res.result.value;
+            }
+        } catch (e) { }
+    }
+    return { ok: false };
+}
+
 // --- Cloud Connection Logic ---
 
 async function startBridge() {
@@ -260,6 +312,10 @@ async function startBridge() {
 
         if (msg.type === 'remote_scroll') {
             await remoteScroll(cdpConnection, msg.data);
+        }
+
+        if (msg.type === 'system_command') {
+            await executeSystemCommand(cdpConnection, msg.data.command);
         }
     });
 
