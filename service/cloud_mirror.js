@@ -82,8 +82,8 @@ async function captureSnapshot(cdp) {
         if (!cascade) return { error: 'Chat não encontrado' };
         
         const clone = cascade.cloneNode(true);
-        // Limpeza agressiva de áreas de interação
-        clone.querySelectorAll('[contenteditable="true"], button, .interaction-area').forEach(el => el.remove());
+        // Remove apenas áreas de edição para evitar conflito com teclado do celular
+        clone.querySelectorAll('[contenteditable="true"]').forEach(el => el.remove());
         
         return {
             html: clone.outerHTML,
@@ -101,6 +101,49 @@ async function captureSnapshot(cdp) {
         } catch (e) { }
     }
     return null;
+}
+
+async function clickElement(cdp, { selector, index, textContent }) {
+    const safeText = JSON.stringify(textContent || '');
+    const EXP = `(async () => {
+        const root = document.getElementById('conversation') || document.getElementById('chat') || document.getElementById('cascade') || document;
+        let elements = Array.from(root.querySelectorAll('${selector}'));
+        const filterText = ${safeText};
+        if (filterText) {
+            elements = elements.filter(el => (el.innerText || el.textContent || '').includes(filterText));
+        }
+        const target = elements[${index} || 0];
+        if (target) {
+            target.click();
+            return { success: true };
+        }
+        return { error: 'Elemento não encontrado' };
+    })()`;
+
+    for (const ctx of cdp.contexts) {
+        try {
+            const res = await cdp.call("Runtime.evaluate", { expression: EXP, returnByValue: true, awaitPromise: true, contextId: ctx.id });
+            if (res.result?.value?.success) return res.result.value;
+        } catch (e) { }
+    }
+    return { error: 'Falha ao clicar' };
+}
+
+async function remoteScroll(cdp, { scrollPercent }) {
+    const EXP = `(async () => {
+        const target = document.querySelector('#conversation .overflow-y-auto, #chat .overflow-y-auto, #cascade .overflow-y-auto') || document.getElementById('conversation') || document.getElementById('chat') || document.getElementById('cascade');
+        if (target) {
+            target.scrollTop = (target.scrollHeight - target.clientHeight) * ${scrollPercent};
+            return { success: true };
+        }
+        return { error: 'Alvo de rolagem não encontrado' };
+    })()`;
+    for (const ctx of cdp.contexts) {
+        try {
+            const res = await cdp.call("Runtime.evaluate", { expression: EXP, returnByValue: true, awaitPromise: true, contextId: ctx.id });
+            if (res.result?.value?.success) return res.result.value;
+        } catch (e) { }
+    }
 }
 
 async function injectMessage(cdp, text) {
@@ -173,6 +216,15 @@ async function startBridge() {
         if (msg.type === 'ai_input' || msg.type === 'send') {
             console.log(`💬 Injetando mensagem: ${msg.data || msg.message}`);
             await injectMessage(cdpConnection, msg.data || msg.message);
+        }
+
+        if (msg.type === 'remote_click') {
+            console.log(`🖱 Clique remoto: ${msg.data.textContent} (${msg.data.selector})`);
+            await clickElement(cdpConnection, msg.data);
+        }
+
+        if (msg.type === 'remote_scroll') {
+            await remoteScroll(cdpConnection, msg.data);
         }
     });
 

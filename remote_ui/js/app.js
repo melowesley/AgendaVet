@@ -594,7 +594,7 @@ function scrollToBottom() {
 }
 
 // --- Inputs ---
-async function sendMessage() {
+function sendMessage() {
     const message = messageInput.value.trim();
     if (!message) return;
 
@@ -608,42 +608,46 @@ async function sendMessage() {
     sendBtn.style.opacity = '0.5';
 
     try {
-        // If no chat is open, start a new one first
-        if (!chatIsOpen) {
-            const newChatRes = await fetchWithAuth('/new-chat', { method: 'POST' });
-            const newChatData = await newChatRes.json();
-            if (newChatData.success) {
-                // Wait for the new chat to be ready
-                await new Promise(r => setTimeout(r, 800));
-                chatIsOpen = true;
-            }
+        if (ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({
+                type: 'send',
+                message: message
+            }));
         }
-
-        const res = await fetchWithAuth('/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message })
-        });
 
         // Always reload snapshot to check if message appeared
         setTimeout(loadSnapshot, 300);
         setTimeout(loadSnapshot, 800);
-        setTimeout(checkChatStatus, 1000);
-
-        // Don't revert the input - if user sees the message in chat, it was sent
-        // Only log errors for debugging, don't show alert popups
-        if (!res.ok) {
-            console.warn('Send response not ok, but message may have been sent:', await res.json().catch(() => ({})));
-        }
     } catch (e) {
-        // Network error - still try to refresh in case it went through
         console.error('Send error:', e);
-        setTimeout(loadSnapshot, 500);
     } finally {
         sendBtn.disabled = false;
         sendBtn.style.opacity = '1';
     }
 }
+
+// --- Click Ingestion ---
+chatContent.addEventListener('click', (e) => {
+    // Detect clicks on buttons or actionable items in the snapshot
+    const target = e.target.closest('button, [role="button"], a, .action-item, [data-tooltip-id]');
+    if (target) {
+        const textContent = target.innerText.trim();
+        const selector = target.tagName.toLowerCase();
+
+        console.log('[CLICK] Remote click intercepted:', textContent);
+
+        if (ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({
+                type: 'remote_click',
+                data: { selector, textContent, index: 0 } // index 0 for now
+            }));
+        }
+
+        // Visual feedback
+        target.style.opacity = '0.5';
+        setTimeout(() => target.style.opacity = '1', 300);
+    }
+});
 
 // --- Event Listeners ---
 sendBtn.addEventListener('click', sendMessage);
@@ -675,11 +679,12 @@ let snapshotReloadPending = false;
 async function syncScrollToDesktop() {
     const scrollPercent = chatContainer.scrollTop / (chatContainer.scrollHeight - chatContainer.clientHeight);
     try {
-        await fetchWithAuth('/remote-scroll', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ scrollPercent })
-        });
+        if (ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({
+                type: 'remote_scroll',
+                data: { scrollPercent }
+            }));
+        }
 
         // After scrolling desktop, reload snapshot to get newly visible content
         // (Antigravity uses virtualized scrolling - only visible messages are in DOM)
