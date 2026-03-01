@@ -205,29 +205,29 @@ async function injectMessage(cdp, text) {
 async function executeSystemCommand(cdp, command) {
     console.log(`🚀 Executando comando de sistema: ${command}`);
     const SCRIPT = `(async () => {
-        const buttons = Array.from(document.querySelectorAll('button, [role="button"], .action-item'));
+        // Varredura muito mais ampla: pegamos span, div, etc.
+        const allElements = Array.from(document.querySelectorAll('button, span, div, a, [role="button"], .action-item'));
         let target = null;
 
         if ("${command}" === "accept_all") {
-            // Busca agressiva por "Accept All" ou ícone de Check
-            target = buttons.find(b => 
-                (b.title && b.title.includes('Accept')) || 
-                (b.innerText && b.innerText.includes('Accept')) ||
-                b.querySelector('svg.lucide-check')
-            );
+            target = allElements.find(b => {
+                const txt = (b.innerText || b.textContent || '').trim().toLowerCase();
+                const title = (b.title || '').toLowerCase();
+                return txt === 'accept all' || title.includes('accept all') || b.querySelector?.('svg.lucide-check');
+            });
         } else if ("${command}" === "run") {
-            // Busca por "Run" ou ícone de Play
-            target = buttons.find(b => 
-                (b.title && b.title.includes('Run')) || 
-                (b.innerText && (b.innerText.includes('Run') || b.innerText.includes('Execute'))) ||
-                b.querySelector('svg.lucide-play')
-            );
+            target = allElements.find(b => {
+                const txt = (b.innerText || b.textContent || '').trim().toLowerCase();
+                const title = (b.title || '').toLowerCase();
+                // O botão de Run pode ser 'run' ou atalhos como 'Alt+Enter'
+                return txt === 'run' || txt === 'runalt+⏎' || txt === 'alt+⏎' || title.includes('run') || b.querySelector?.('svg.lucide-play');
+            });
         } else if ("${command}" === "undo") {
-            // Busca por "Undo" ou ícone de volta
-            target = buttons.find(b => 
-                (b.title && b.title.includes('Undo')) || 
-                b.querySelector('svg.lucide-undo')
-            );
+            target = allElements.find(b => {
+                const txt = (b.innerText || b.textContent || '').trim().toLowerCase();
+                const title = (b.title || '').toLowerCase();
+                return txt === 'undo' || txt === 'reject all' || title.includes('undo') || b.querySelector?.('svg.lucide-undo');
+            });
         }
 
         if (target) {
@@ -237,9 +237,9 @@ async function executeSystemCommand(cdp, command) {
             ['mousedown', 'mouseup'].forEach(name => {
                 target.dispatchEvent(new MouseEvent(name, { bubbles: true, cancelable: true, view: window }));
             });
-            return { ok: true, found: target.title || target.innerText || 'button' };
+            return { ok: true, found: target.tagName + ' - ' + (target.innerText || target.title || 'icon') };
         }
-        return { ok: false, error: 'Botão não encontrado para este comando' };
+        return { ok: false, error: 'Botão não encontrado' };
     })()`;
 
     for (const ctx of cdp.contexts) {
