@@ -3,7 +3,8 @@
 
 const agendamentos = [
     { id: 1, pet: "Rex", tutor: "Wesley", hora: "10:00" },
-    { id: 2, pet: "Thor", tutor: "João", hora: "11:30" }
+    { id: 2, pet: "Thor", tutor: "João", hora: "11:30" },
+    { id: 3, pet: "Maya", tutor: "Namorado", hora: "14:00" }
 ];
 
 function listarAgendamentos(lista) {

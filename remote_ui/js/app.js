@@ -627,24 +627,36 @@ function sendMessage() {
 }
 
 // --- Click Ingestion ---
+// --- Click Ingestion ---
 chatContent.addEventListener('click', (e) => {
+    const rect = chatContent.getBoundingClientRect();
+    const xPercent = (e.clientX - rect.left) / rect.width;
+    const yPercent = (e.clientY - rect.top) / rect.height;
+
     const target = e.target;
     const remoteId = target.getAttribute('data-remote-id') || target.closest('[data-remote-id]')?.getAttribute('data-remote-id');
     const textContent = target.innerText.trim() || target.textContent.trim();
 
-    console.log(`[CLICK] Remote click: ID=${remoteId}, Text=${textContent.substring(0, 20)}`);
+    console.log(`[CLICK] X=${(xPercent * 100).toFixed(1)}%, Y=${(yPercent * 100).toFixed(1)}% | ID=${remoteId}`);
 
     if (ws && ws.readyState === 1) {
         ws.send(JSON.stringify({
             type: 'remote_click',
-            data: { remoteId, textContent }
+            data: {
+                remoteId,
+                textContent,
+                xPercent,
+                yPercent
+            }
         }));
     }
 
     // Visual feedback
     const feedbackTarget = target.closest('button, a, .action-item') || target;
     feedbackTarget.style.opacity = '0.5';
-    setTimeout(() => feedbackTarget.style.opacity = '1', 300);
+    setTimeout(() => {
+        if (feedbackTarget) feedbackTarget.style.opacity = '1';
+    }, 300);
 });
 
 // --- Event Listeners ---

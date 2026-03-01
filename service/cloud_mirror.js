@@ -113,32 +113,44 @@ async function captureSnapshot(cdp) {
     return null;
 }
 
-async function clickElement(cdp, { remoteId, selector, textContent }) {
+async function clickElement(cdp, { remoteId, textContent, xPercent, yPercent }) {
     const EXP = `(async () => {
-        const root = document.body;
-        
         let target = null;
-        if ("${remoteId}" && "${remoteId}" !== "null" && "${remoteId}" !== "undefined") {
+        
+        // 1. Prioridade Máxima: Coordenadas (Modo AnyDesk)
+        if (typeof ${xPercent} === 'number' && typeof ${yPercent} === 'number') {
+            const root = document.getElementById('conversation') || document.getElementById('chat') || document.getElementById('cascade') || document.body;
+            const rect = root.getBoundingClientRect();
+            const x = rect.left + (rect.width * ${xPercent});
+            const y = rect.top + (rect.height * ${yPercent});
+            
+            target = document.elementFromPoint(x, y);
+            console.log("Coordenadas: (" + x + "," + y + ") alvo: " + (target ? target.tagName : 'null'));
+        }
+
+        // 2. Fallback: ID Remoto
+        if (!target && "${remoteId}" && "${remoteId}" !== "null") {
             target = document.querySelector('[data-remote-id="${remoteId}"]');
         }
         
+        // 3. Fallback: Texto
         if (!target && "${textContent}") {
-            // Busca secundária por texto se o ID falhar (ex: botão novo que apareceu entre snapshots)
             const all = Array.from(document.querySelectorAll('button, a, [role="button"], span, div'));
             target = all.find(el => (el.innerText || el.textContent || '').trim() === "${textContent}");
         }
 
         if (target) {
-            target.scrollIntoView({ block: 'center' });
-            // Clique real simulado
-            target.click();
-            // Disparar mousedown/mouseup para garantir que o React perceba
-            const events = ['mousedown', 'mouseup'];
-            events.forEach(name => {
+            // Se for um elemento interno (como o SVG do check), tenta subir para o botão pai
+            const actualBtn = target.closest('button, a, [role="button"]') || target;
+            actualBtn.scrollIntoView({ block: 'center' });
+            actualBtn.click();
+            
+            // Simular eventos de mouse para React/Vue
+            ['mousedown', 'mouseup'].forEach(name => {
                 const ev = new MouseEvent(name, { bubbles: true, cancelable: true, view: window });
-                target.dispatchEvent(ev);
+                actualBtn.dispatchEvent(ev);
             });
-            return { success: true, method: target.getAttribute('data-remote-id') ? 'id' : 'text' };
+            return { success: true, tag: actualBtn.tagName };
         }
         return { error: 'Elemento não encontrado' };
     })()`;
