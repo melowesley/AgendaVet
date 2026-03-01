@@ -316,8 +316,11 @@ async function startBridge() {
 
         if (msg.type === 'system_command') {
             if (msg.data.command === 'start_plan') {
-                console.log(`💬 Injetando comando especial: Iniciar plano de implementação`);
-                await injectMessage(cdpConnection, "Iniciar plano de implementação");
+                console.log(`💬 Injetando comando especial: Open Plan`);
+                await injectMessage(cdpConnection, "Open Plan");
+            } else if (msg.data.command === 'run') {
+                console.log(`💬 Injetando comando especial: Rodar projeto`);
+                await injectMessage(cdpConnection, "Rodar o projeto/testes");
             } else {
                 await executeSystemCommand(cdpConnection, msg.data.command);
             }
