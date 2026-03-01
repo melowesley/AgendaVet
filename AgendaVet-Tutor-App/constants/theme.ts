@@ -32,25 +32,35 @@ export const Colors = {
     warning: '#f59e0b',
   },
   dark: {
+    // Identidade visual - Mantendo o azul AgendaVet ajustado para modo escuro
     primary: '#4A9FD8',
     primaryDark: '#0369a1',
-    primaryLight: '#075985',
-    background: '#0f172a',
-    surface: '#1e293b',
-    border: '#334155',
-    text: '#f1f5f9',
-    textSecondary: '#94a3b8',
-    textMuted: '#64748b',
+    primaryLight: '#082f49', // Mais escuro para contraste no preto
+    
+    // UI - Estilo Supabase / Shadcn Dark
+    background: '#000000',    // Preto verdadeiro
+    surface: '#09090b',       // Cartão (Zinc 950)
+    border: '#18181b',        // Borda discreta (Zinc 900)
+    
+    // Tipografia
+    text: '#fafafa',          // Branco suave (Zinc 50)
+    textSecondary: '#a1a1aa', // Texto secundário (Zinc 400)
+    textMuted: '#52525b',      // Texto desativado (Zinc 600)
+    
+    // Elementos de Navegação
     tint: '#4A9FD8',
-    tabIconDefault: '#64748b',
+    tabIconDefault: '#52525b',
     tabIconSelected: '#4A9FD8',
-    statusPending: '#fbbf24',
-    statusConfirmed: '#34d399',
-    statusCancelled: '#f87171',
-    statusCompleted: '#818cf8',
-    success: '#34d399',
-    error: '#f87171',
-    warning: '#fbbf24',
+    
+    // Status (Cores mais vibrantes para destacar no fundo preto)
+    statusPending: '#f59e0b',   // Amber
+    statusConfirmed: '#10b981', // Emerald
+    statusCancelled: '#ef4444', // Red
+    statusCompleted: '#6366f1', // Indigo
+    
+    success: '#10b981',
+    error: '#ef4444',
+    warning: '#f59e0b',
   },
 };
 

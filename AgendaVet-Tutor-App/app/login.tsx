@@ -1,18 +1,27 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image, useColorScheme, ActivityIndicator } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
+import { Colors } from '@/constants/theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
 
     async function signInWithEmail() {
+        if (!email || !password) {
+            Alert.alert('Erro', 'Por favor, preencha todos os campos.');
+            return;
+        }
         setLoading(true);
         const { error } = await supabase.auth.signInWithPassword({
-            email: email,
+            email: email.trim(),
             password: password,
         });
 
@@ -21,9 +30,13 @@ export default function Login() {
     }
 
     async function signUpWithEmail() {
+        if (!email || !password) {
+            Alert.alert('Erro', 'Por favor, preencha todos os campos.');
+            return;
+        }
         setLoading(true);
         const { error } = await supabase.auth.signUp({
-            email: email,
+            email: email.trim(),
             password: password,
         });
 
@@ -33,108 +46,146 @@ export default function Login() {
     }
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>AgendaVet</Text>
-            <Text style={styles.subtitle}>Portal do Tutor</Text>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
 
-            <View style={styles.formContainer}>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Seu E-mail"
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
+            <View style={styles.header}>
+                <Image
+                    source={
+                        colorScheme === 'dark'
+                            ? require('@/assets/images/logo-transparent-light.png')
+                            : require('@/assets/images/logo-transparent.png')
+                    }
+                    style={styles.logo}
+                    resizeMode="contain"
                 />
-                <TextInput
-                    style={styles.input}
-                    placeholder="Sua Senha"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                    autoCapitalize="none"
-                />
+            </View>
+
+            <View style={[styles.formContainer, { backgroundColor: theme.surface === '#ffffff' ? '#ffffff' : theme.surface, borderColor: theme.border }]}>
+                <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.textSecondary }]}>E-mail</Text>
+                    <TextInput
+                        style={[styles.input, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
+                        placeholder="seu@email.com"
+                        placeholderTextColor={theme.textMuted}
+                        value={email}
+                        onChangeText={setEmail}
+                        autoCapitalize="none"
+                        keyboardType="email-address"
+                    />
+                </View>
+
+                <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.textSecondary }]}>Senha</Text>
+                    <TextInput
+                        style={[styles.input, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
+                        placeholder="••••••••"
+                        placeholderTextColor={theme.textMuted}
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry
+                        autoCapitalize="none"
+                    />
+                </View>
 
                 <TouchableOpacity
-                    style={styles.button}
+                    style={[styles.button, { backgroundColor: theme.primary }]}
                     onPress={signInWithEmail}
                     disabled={loading}
                 >
-                    <Text style={styles.buttonText}>{loading ? 'Entrando...' : 'Entrar'}</Text>
+                    {loading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <Text style={styles.buttonText}>Entrar</Text>
+                    )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={[styles.button, styles.outlineButton]}
+                    style={[styles.outlineButton, { borderColor: theme.border }]}
                     onPress={signUpWithEmail}
                     disabled={loading}
                 >
-                    <Text style={styles.outlineButtonText}>Criar Conta</Text>
+                    <Text style={[styles.outlineButtonText, { color: theme.text }]}>Criar nova conta</Text>
                 </TouchableOpacity>
             </View>
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
+        padding: 24,
         justifyContent: 'center',
-        backgroundColor: '#f0f9ff',
+    },
+    header: {
+        alignItems: 'center',
+        marginBottom: 40,
+    },
+    logo: {
+        width: 200,
+        height: 100,
+        marginBottom: 8,
     },
     title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#0369a1',
+        fontSize: 28,
+        fontWeight: '800',
         textAlign: 'center',
-        marginBottom: 5,
+        letterSpacing: -0.5,
     },
     subtitle: {
         fontSize: 16,
-        color: '#64748b',
         textAlign: 'center',
-        marginBottom: 40,
+        marginTop: 4,
     },
     formContainer: {
-        backgroundColor: 'white',
-        padding: 20,
-        borderRadius: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        padding: 24,
+        borderRadius: 24,
+        borderWidth: 1,
+    },
+    inputGroup: {
+        marginBottom: 20,
+    },
+    label: {
+        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 8,
+        marginLeft: 4,
     },
     input: {
-        height: 50,
+        height: 54,
         borderWidth: 1,
-        borderColor: '#cbd5e1',
-        borderRadius: 8,
-        marginBottom: 15,
-        paddingHorizontal: 15,
-        backgroundColor: '#f8fafc',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        fontSize: 16,
     },
     button: {
-        backgroundColor: '#4A9FD8',
-        height: 50,
-        borderRadius: 8,
+        height: 54,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 15,
+        marginTop: 10,
+        shadowColor: '#4A9FD8',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
     },
     buttonText: {
         color: 'white',
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '700',
     },
     outlineButton: {
-        backgroundColor: 'transparent',
+        height: 54,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 12,
         borderWidth: 1,
-        borderColor: '#4A9FD8',
     },
     outlineButtonText: {
-        color: '#4A9FD8',
-        fontSize: 16,
-        fontWeight: 'bold',
+        fontSize: 15,
+        fontWeight: '600',
     },
 });

@@ -8,6 +8,7 @@ import {
     RefreshControl,
     useColorScheme,
     TouchableOpacity,
+    Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
@@ -33,14 +34,12 @@ interface AppointmentRequest {
     pets: Pet | null;
 }
 
-// ─── Status badge config ──────────────────────────────────────────────────────
-type StatusKey = 'pending' | 'confirmed' | 'cancelled' | 'completed' | string;
-
+// ─── Status badge config (Ajustado para contraste em modo escuro) ──────────────
 const STATUS_CONFIG: Record<string, { label: string; icon: string; bg: string; text: string }> = {
-    pending: { label: 'Pendente', icon: 'time-outline', bg: '#fef3c7', text: '#b45309' },
-    confirmed: { label: 'Confirmado', icon: 'checkmark-circle-outline', bg: '#d1fae5', text: '#065f46' },
-    cancelled: { label: 'Cancelado', icon: 'close-circle-outline', bg: '#fee2e2', text: '#991b1b' },
-    completed: { label: 'Concluído', icon: 'ribbon-outline', bg: '#ede9fe', text: '#4c1d95' },
+    pending: { label: 'Pendente', icon: 'time-outline', bg: '#f59e0b20', text: '#f59e0b' },
+    confirmed: { label: 'Confirmado', icon: 'checkmark-circle-outline', bg: '#10b98120', text: '#10b981' },
+    cancelled: { label: 'Cancelado', icon: 'close-circle-outline', bg: '#ef444420', text: '#ef4444' },
+    completed: { label: 'Concluído', icon: 'ribbon-outline', bg: '#6366f120', text: '#818cf8' },
 };
 
 const PET_EMOJIS: Record<string, string> = {
@@ -53,8 +52,8 @@ function AppointmentCard({ appointment, theme }: { appointment: AppointmentReque
     const status = STATUS_CONFIG[appointment.status] ?? {
         label: appointment.status,
         icon: 'help-circle-outline',
-        bg: '#f1f5f9',
-        text: '#64748b',
+        bg: theme.border,
+        text: theme.textSecondary,
     };
 
     const petEmoji = appointment.pets ? (PET_EMOJIS[appointment.pets.type] ?? '🐾') : '🐾';
@@ -64,39 +63,44 @@ function AppointmentCard({ appointment, theme }: { appointment: AppointmentReque
             {/* Linha superior: pet + status */}
             <View style={styles.cardHeader}>
                 <View style={styles.petRow}>
-                    <Text style={styles.petEmojiSmall}>{petEmoji}</Text>
+                    <View style={[styles.petIconBg, { backgroundColor: theme.border }]}>
+                        <Text style={styles.petEmojiSmall}>{petEmoji}</Text>
+                    </View>
                     <Text style={[styles.petNameText, { color: theme.text }]}>
                         {appointment.pets?.name ?? 'Pet removido'}
                     </Text>
                 </View>
                 <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-                    <Ionicons name={status.icon as any} size={13} color={status.text} />
+                    <Ionicons name={status.icon as any} size={12} color={status.text} />
                     <Text style={[styles.statusText, { color: status.text }]}>{status.label}</Text>
                 </View>
             </View>
 
             {/* Data e hora */}
-            <View style={styles.metaRow}>
-                <Ionicons name="calendar-outline" size={14} color={theme.textMuted} />
-                <Text style={[styles.metaValue, { color: theme.textSecondary }]}>
-                    {appointment.preferred_date}
-                    {appointment.preferred_time ? ` às ${appointment.preferred_time}` : ''}
-                </Text>
-            </View>
+            <View style={styles.detailsBox}>
+                <View style={styles.metaRow}>
+                    <Ionicons name="calendar" size={14} color={theme.primary} />
+                    <Text style={[styles.metaValue, { color: theme.textSecondary }]}>
+                        {appointment.preferred_date}
+                        {appointment.preferred_time ? ` · ${appointment.preferred_time}` : ''}
+                    </Text>
+                </View>
 
-            {/* Motivo */}
-            <View style={styles.metaRow}>
-                <Ionicons name="document-text-outline" size={14} color={theme.textMuted} />
-                <Text style={[styles.remarkText, { color: theme.textSecondary }]} numberOfLines={2}>
-                    {appointment.reason}
-                </Text>
+                {/* Motivo */}
+                <View style={styles.metaRow}>
+                    <Ionicons name="medical" size={14} color={theme.textMuted} />
+                    <Text style={[styles.remarkText, { color: theme.textSecondary }]} numberOfLines={2}>
+                        {appointment.reason}
+                    </Text>
+                </View>
             </View>
 
             {/* Observações (se existir) */}
             {appointment.notes ? (
                 <View style={[styles.notesBox, { backgroundColor: theme.background }]}>
-                    <Text style={[styles.notesText, { color: theme.textMuted }]}>
-                        💬 {appointment.notes}
+                    <Text style={[styles.notesText, { color: theme.textSecondary }]}>
+                        <Text style={{ fontWeight: '700', color: theme.textMuted }}>Nota: </Text>
+                        {appointment.notes}
                     </Text>
                 </View>
             ) : null}
@@ -108,7 +112,7 @@ function AppointmentCard({ appointment, theme }: { appointment: AppointmentReque
 export default function AgendamentosScreen() {
     const { session } = useAuth();
     const colorScheme = useColorScheme();
-    const theme = Colors[colorScheme ?? 'light'];
+    const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
 
     const [appointments, setAppointments] = useState<AppointmentRequest[]>([]);
     const [loading, setLoading] = useState(true);
@@ -165,30 +169,35 @@ export default function AgendamentosScreen() {
     return (
         <View style={[styles.screen, { backgroundColor: theme.background }]}>
             {/* Filtros */}
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={[styles.filterBar, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}
-                contentContainerStyle={styles.filterContent}
-            >
-                {FILTERS.map((f) => (
-                    <TouchableOpacity
-                        key={f.value}
-                        style={[
-                            styles.filterChip,
-                            {
-                                backgroundColor: filter === f.value ? theme.primary : theme.background,
-                                borderColor: filter === f.value ? theme.primary : theme.border,
-                            },
-                        ]}
-                        onPress={() => setFilter(f.value)}
-                    >
-                        <Text style={[styles.filterChipText, { color: filter === f.value ? '#fff' : theme.textSecondary }]}>
-                            {f.label}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
+            <View style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.filterBar}
+                    contentContainerStyle={styles.filterContent}
+                >
+                    {FILTERS.map((f) => {
+                        const active = filter === f.value;
+                        return (
+                            <TouchableOpacity
+                                key={f.value}
+                                style={[
+                                    styles.filterChip,
+                                    {
+                                        backgroundColor: active ? theme.primary : theme.surface,
+                                        borderColor: active ? theme.primary : theme.border,
+                                    },
+                                ]}
+                                onPress={() => setFilter(f.value)}
+                            >
+                                <Text style={[styles.filterChipText, { color: active ? '#fff' : theme.textSecondary }]}>
+                                    {f.label}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
+            </View>
 
             {/* Lista */}
             <ScrollView
@@ -197,14 +206,16 @@ export default function AgendamentosScreen() {
             >
                 {filtered.length === 0 ? (
                     <View style={[styles.emptyCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                        <Text style={styles.emptyEmoji}>📅</Text>
+                        <View style={[styles.emptyIconBg, { backgroundColor: theme.border }]}>
+                            <Ionicons name="calendar-outline" size={48} color={theme.textMuted} />
+                        </View>
                         <Text style={[styles.emptyTitle, { color: theme.text }]}>
-                            {filter === 'all' ? 'Nenhuma solicitação ainda' : 'Nenhum resultado'}
+                            {filter === 'all' ? 'Nenhuma solicitação' : 'Nenhum resultado'}
                         </Text>
                         <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
                             {filter === 'all'
-                                ? 'Vá em "Pets" e toque em "Agendar" para solicitar uma consulta.'
-                                : 'Nenhuma solicitação neste status.'}
+                                ? 'Suas solicitações de consulta aparecerão aqui assim que você agendar para um pet.'
+                                : 'Não encontramos solicitações com este status.'}
                         </Text>
                     </View>
                 ) : (
@@ -221,68 +232,83 @@ export default function AgendamentosScreen() {
 const styles = StyleSheet.create({
     screen: { flex: 1 },
     centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-    loadingText: { fontSize: 14 },
+    loadingText: { fontSize: 14, fontWeight: '500' },
 
     // Filtros
-    filterBar: { borderBottomWidth: 1, maxHeight: 56 },
-    filterContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, alignItems: 'center' },
+    filterBar: { maxHeight: 64 },
+    filterContent: { paddingHorizontal: 20, paddingVertical: 14, gap: 10, alignItems: 'center' },
     filterChip: {
-        borderWidth: 1.5,
+        borderWidth: 1,
         borderRadius: 20,
-        paddingHorizontal: 14,
-        paddingVertical: 6,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
     },
-    filterChipText: { fontSize: 13, fontWeight: '600' },
+    filterChipText: { fontSize: 14, fontWeight: '700' },
 
     // Lista
-    scrollContent: { padding: 16, paddingBottom: 32 },
+    scrollContent: { padding: 20, paddingBottom: 40 },
 
     // Card
     card: {
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 12,
+        borderRadius: 20,
+        padding: 18,
+        marginBottom: 16,
         borderWidth: 1,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 3,
     },
     cardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 10,
+        marginBottom: 16,
     },
-    petRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    petRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    petIconBg: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     petEmojiSmall: { fontSize: 20 },
-    petNameText: { fontSize: 15, fontWeight: '700' },
+    petNameText: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
     statusBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         borderRadius: 12,
     },
-    statusText: { fontSize: 12, fontWeight: '700' },
-    metaRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginBottom: 6 },
-    metaValue: { fontSize: 13 },
-    remarkText: { fontSize: 13, flex: 1 },
-    notesBox: { borderRadius: 8, padding: 10, marginTop: 6 },
-    notesText: { fontSize: 12, lineHeight: 18 },
+    statusText: { fontSize: 12, fontWeight: '800' },
+    detailsBox: { gap: 8 },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    metaValue: { fontSize: 14, fontWeight: '600' },
+    remarkText: { fontSize: 14, flex: 1, lineHeight: 20 },
+    notesBox: { borderRadius: 12, padding: 12, marginTop: 12 },
+    notesText: { fontSize: 13, lineHeight: 20 },
 
     // Empty
     emptyCard: {
-        borderRadius: 20,
-        borderWidth: 2,
-        borderStyle: 'dashed',
-        padding: 32,
+        borderRadius: 24,
+        padding: 40,
         alignItems: 'center',
-        marginTop: 8,
+        marginTop: 20,
+        borderWidth: 1,
+        borderStyle: 'dashed',
     },
-    emptyEmoji: { fontSize: 52, marginBottom: 12 },
-    emptyTitle: { fontSize: 18, fontWeight: '700', marginBottom: 6, textAlign: 'center' },
-    emptySubtitle: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+    emptyIconBg: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 20,
+    },
+    emptyTitle: { fontSize: 20, fontWeight: '800', marginBottom: 8, textAlign: 'center' },
+    emptySubtitle: { fontSize: 15, textAlign: 'center', lineHeight: 22 },
 });

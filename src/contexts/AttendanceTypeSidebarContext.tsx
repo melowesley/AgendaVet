@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import type { AttendanceTypeKey } from '@/components/admin/AttendanceTypeDialog';
+import type { AttendanceTypeKey } from '@/modules/vet/components/AttendanceTypeDialog';
 
 interface Selection {
   type: AttendanceTypeKey;

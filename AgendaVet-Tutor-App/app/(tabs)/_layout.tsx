@@ -8,34 +8,38 @@ import { HapticTab } from '@/components/haptic-tab';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? 'light'];
+  const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: theme.tint,
+        tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.tabIconDefault,
         tabBarButton: HapticTab,
         tabBarStyle: {
-          backgroundColor: theme.surface,
+          backgroundColor: theme.background,
           borderTopColor: theme.border,
           borderTopWidth: 1,
-          paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+          paddingBottom: Platform.OS === 'ios' ? 24 : 12,
           paddingTop: 8,
-          height: Platform.OS === 'ios' ? 84 : 64,
+          height: Platform.OS === 'ios' ? 88 : 68,
+          elevation: 0, // Remove shadow on Android
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
-          marginTop: 2,
         },
         headerStyle: {
-          backgroundColor: theme.primary,
+          backgroundColor: theme.background,
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.border,
         },
-        headerTintColor: '#fff',
+        headerTintColor: theme.text,
         headerTitleStyle: {
-          fontWeight: 'bold',
-          fontSize: 18,
+          fontWeight: '800',
+          fontSize: 20,
         },
       }}
     >

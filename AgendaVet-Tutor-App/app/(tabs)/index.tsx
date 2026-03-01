@@ -13,6 +13,7 @@ import {
   Pressable,
   useColorScheme,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
@@ -61,13 +62,18 @@ function PetCard({
   onSchedule: () => void;
   theme: typeof Colors.light;
 }) {
+  const router = useRouter();
   const emoji = PET_EMOJIS[pet.type] ?? '🐾';
   const label = PET_LABELS[pet.type] ?? pet.type;
 
   return (
-    <View style={[styles.petCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={() => router.push({ pathname: '/pet-details/[id]' as any, params: { id: pet.id } })}
+      style={[styles.petCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
+    >
       {/* Avatar */}
-      <View style={[styles.petAvatar, { backgroundColor: theme.primaryLight }]}>
+      <View style={[styles.petAvatar, { backgroundColor: theme.primaryLight + '40' }]}>
         <Text style={styles.petEmoji}>{emoji}</Text>
       </View>
 
@@ -79,15 +85,15 @@ function PetCard({
         </Text>
         <View style={styles.petMeta}>
           {pet.age && (
-            <View style={[styles.metaChip, { backgroundColor: theme.background }]}>
-              <Ionicons name="time-outline" size={11} color={theme.textMuted} />
-              <Text style={[styles.metaText, { color: theme.textMuted }]}>{pet.age}</Text>
+            <View style={[styles.metaChip, { backgroundColor: theme.border }]}>
+              <Ionicons name="time-outline" size={12} color={theme.textSecondary} />
+              <Text style={[styles.metaText, { color: theme.textSecondary }]}>{pet.age}</Text>
             </View>
           )}
           {pet.weight && (
-            <View style={[styles.metaChip, { backgroundColor: theme.background }]}>
-              <Ionicons name="scale-outline" size={11} color={theme.textMuted} />
-              <Text style={[styles.metaText, { color: theme.textMuted }]}>{pet.weight} kg</Text>
+            <View style={[styles.metaChip, { backgroundColor: theme.border }]}>
+              <Ionicons name="scale-outline" size={12} color={theme.textSecondary} />
+              <Text style={[styles.metaText, { color: theme.textSecondary }]}>{pet.weight} kg</Text>
             </View>
           )}
         </View>
@@ -95,14 +101,17 @@ function PetCard({
 
       {/* Ação */}
       <TouchableOpacity
-        style={[styles.scheduleBtn, { backgroundColor: theme.primary }]}
-        onPress={onSchedule}
-        activeOpacity={0.8}
+        style={[styles.scheduleBtn, { backgroundColor: theme.primary + '15' }]}
+        onPress={(e) => {
+          e.stopPropagation();
+          onSchedule();
+        }}
+        activeOpacity={0.7}
       >
-        <Ionicons name="calendar-outline" size={14} color="#fff" />
-        <Text style={styles.scheduleBtnText}>Agendar</Text>
+        <Ionicons name="calendar" size={18} color={theme.primary} />
+        <Text style={[styles.scheduleBtnText, { color: theme.primary }]}>Agendar</Text>
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -435,7 +444,7 @@ function RequestAppointmentModal({
 export default function PetsScreen() {
   const { session } = useAuth();
   const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? 'light'];
+  const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
 
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -568,94 +577,100 @@ export default function PetsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  loadingText: { fontSize: 14 },
-  scrollContent: { padding: 16, paddingBottom: 32 },
+  loadingText: { fontSize: 14, fontWeight: '500' },
+  scrollContent: { padding: 20, paddingBottom: 40 },
 
   greetingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 24,
+    marginTop: 8,
   },
-  greetingText: { fontSize: 20, fontWeight: '700' },
+  greetingText: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
+    shadowColor: '#4A9FD8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  addBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  addBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   // Pet Card
   petCard: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 16,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
   petAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  petEmoji: { fontSize: 28 },
+  petEmoji: { fontSize: 32 },
   petInfo: { flex: 1 },
-  petName: { fontSize: 16, fontWeight: '700', marginBottom: 2 },
-  petBreed: { fontSize: 13, marginBottom: 6 },
-  petMeta: { flexDirection: 'row', gap: 6 },
+  petName: { fontSize: 18, fontWeight: '800', marginBottom: 2, letterSpacing: -0.3 },
+  petBreed: { fontSize: 14, marginBottom: 8 },
+  petMeta: { flexDirection: 'row', gap: 8 },
   metaChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  metaText: { fontSize: 11 },
+  metaText: { fontSize: 12, fontWeight: '600' },
   scheduleBtn: {
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 2,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 12,
-    minWidth: 64,
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 16,
+    minWidth: 72,
   },
-  scheduleBtnText: { color: '#fff', fontSize: 11, fontWeight: '600' },
+  scheduleBtnText: { fontSize: 11, fontWeight: '700' },
 
   // Empty state
   emptyCard: {
-    borderRadius: 20,
-    borderWidth: 2,
+    borderRadius: 24,
+    borderWidth: 1,
     borderStyle: 'dashed',
-    padding: 32,
+    padding: 40,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 20,
   },
-  emptyEmoji: { fontSize: 52, marginBottom: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', marginBottom: 6, textAlign: 'center' },
-  emptySubtitle: { fontSize: 14, textAlign: 'center', marginBottom: 20, lineHeight: 20 },
+  emptyEmoji: { fontSize: 64, marginBottom: 16 },
+  emptyTitle: { fontSize: 20, fontWeight: '800', marginBottom: 8, textAlign: 'center' },
+  emptySubtitle: { fontSize: 15, textAlign: 'center', marginBottom: 24, lineHeight: 22 },
   emptyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 24,
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 28,
   },
-  emptyBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  emptyBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 
   // Modal
   modalContainer: { flex: 1 },
@@ -663,52 +678,70 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
   },
-  modalCloseBtn: { padding: 4 },
-  modalTitle: { fontSize: 17, fontWeight: '700' },
+  modalCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  modalTitle: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
   modalSaveBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     borderRadius: 20,
-    minWidth: 64,
+    minWidth: 72,
     alignItems: 'center',
   },
   modalSaveBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  modalBody: { padding: 16, paddingBottom: 40 },
+  modalBody: { padding: 20, paddingBottom: 60 },
 
   // Formulário
-  fieldLabel: { fontSize: 12, fontWeight: '600', marginBottom: 6, marginTop: 14, textTransform: 'uppercase', letterSpacing: 0.5 },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 8,
+    marginTop: 20,
+    textTransform: 'uppercase',
+    letterSpacing: 1
+  },
   fieldInput: {
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
   },
-  fieldTextarea: { minHeight: 80, paddingTop: 12 },
-  typeRow: { marginBottom: 4 },
+  fieldTextarea: { minHeight: 100, paddingTop: 14, lineHeight: 22 },
+  typeRow: { marginBottom: 8 },
   typeChip: {
     borderWidth: 1.5,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    marginRight: 8,
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  typeChipText: { fontSize: 14, fontWeight: '600' },
-  rowFields: { flexDirection: 'row' },
+  typeChipText: { fontSize: 15, fontWeight: '700' },
+  rowFields: { flexDirection: 'row', gap: 12 },
 
   // Pet selection (modal agendamento)
   petSelectRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 12,
-    borderRadius: 12,
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
     borderWidth: 1.5,
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  petSelectName: { flex: 1, fontSize: 15, fontWeight: '600' },
+  petSelectName: { flex: 1, fontSize: 16, fontWeight: '700' },
 });

@@ -1,0 +1,157 @@
+﻿[
+    {
+        "svgClasses":  "lucide lucide-download h-4 w-4 cursor-pointer mr-2 opacity-50 hover:opacity-70",
+        "ariaLabel":  "",
+        "parentText":  "Review"
+    },
+    {
+        "svgClasses":  "lucide lucide-chevron-down",
+        "ariaLabel":  "",
+        "parentText":  "Review"
+    },
+    {
+        "svgClasses":  "lucide lucide-copy h-3.5 w-3.5",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-history h-4 w-4 stroke-[1.5px]",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-square-terminal h-3.5 w-3.5 flex-none opacity-50",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-undo2 lucide-undo-2 w-4 h-4",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-copy h-4 w-4",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-chevron-up h-3 w-3 opacity-50 shrink-0",
+        "ariaLabel":  "",
+        "parentText":  "Ask every time"
+    },
+    {
+        "svgClasses":  "lucide lucide-undo2 lucide-undo-2 w-4 h-4",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-external-link h-3.5 w-3.5",
+        "ariaLabel":  "",
+        "parentText":  "Open"
+    },
+    {
+        "svgClasses":  "lucide lucide-copy h-4 w-4",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-chevron-up h-3 w-3 opacity-50 shrink-0",
+        "ariaLabel":  "",
+        "parentText":  "Ask every time"
+    },
+    {
+        "svgClasses":  "lucide lucide-external-link h-3.5 w-3.5",
+        "ariaLabel":  "",
+        "parentText":  "Open"
+    },
+    {
+        "svgClasses":  "lucide lucide-copy h-4 w-4",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-chevron-up h-3 w-3 opacity-50 shrink-0",
+        "ariaLabel":  "",
+        "parentText":  "Ask every time"
+    },
+    {
+        "svgClasses":  "lucide lucide-chevron-down h-3.5 w-3.5 transition-transform duration-200 !w-3.5 !h-3.5 rotate-90",
+        "ariaLabel":  "",
+        "parentText":  "Expand all"
+    },
+    {
+        "svgClasses":  "lucide lucide-arrow-left stroke-1",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-file h-4 w-4 stroke-1 opacity-60",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-square-terminal h-4 w-4 stroke-1 opacity-60",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-chromium h-4 w-4 stroke-1 opacity-60",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-list-checks h-4 w-4 stroke-1",
+        "ariaLabel":  "",
+        "parentText":  "Review Changes"
+    },
+    {
+        "svgClasses":  "lucide lucide-chevron-up rotate-180",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-x",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-x",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-plus",
+        "ariaLabel":  "",
+        "parentText":  ""
+    },
+    {
+        "svgClasses":  "lucide lucide-image",
+        "ariaLabel":  "",
+        "parentText":  "Media"
+    },
+    {
+        "svgClasses":  "lucide lucide-at-sign",
+        "ariaLabel":  "",
+        "parentText":  "Mentions"
+    },
+    {
+        "svgClasses":  "lucide lucide-square-slash",
+        "ariaLabel":  "",
+        "parentText":  "Workflows"
+    },
+    {
+        "svgClasses":  "lucide lucide-chevron-up size-4 stroke-1",
+        "ariaLabel":  "",
+        "parentText":  "Planning"
+    },
+    {
+        "svgClasses":  "lucide lucide-chevron-up size-4 shrink-0 stroke-1 opacity-70",
+        "ariaLabel":  "",
+        "parentText":  "Gemini 3.1 Pro (Low)"
+    },
+    {
+        "svgClasses":  "lucide lucide-mic w-4 h-4",
+        "ariaLabel":  "Record voice memo",
+        "parentText":  ""
+    }
+]

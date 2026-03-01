@@ -1,0 +1,312 @@
+﻿[
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Customize Layout...",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Quick Open",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Open Browser (Preview)",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Editor-Specific Settings",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Profile",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Close (Ctrl+F4)",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Close (Ctrl+F4)",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Close (Ctrl+F4)",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Close (Ctrl+F4)",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Close (Ctrl+F4)",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Close (Ctrl+F4)",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Split Editor Right (Ctrl+])\n[Alt] Split Editor Down",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Go Back (Alt+LeftArrow)",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Go Forward (Alt+RightArrow)",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "More Actions...",
+        "title":  ""
+    },
+    {
+        "text":  "Review",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Additional Views",
+        "title":  ""
+    },
+    {
+        "text":  "Antigravity Agent",
+        "ariaLabel":  "Focus Terminal (Ctrl+DownArrow)\n[Alt] Split Terminal (Ctrl+Shift+5)",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "New Terminal (Ctrl+Shift+\u0027)\n[Alt] Split Terminal (Ctrl+Shift+5)",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Launch Profile...",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Send Terminal to Chat (Ctrl+L)",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Split Terminal (Ctrl+Shift+5)",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Kill Terminal",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Views and More Actions...",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Hide Panel (Ctrl+J)",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "remote",
+        "title":  ""
+    },
+    {
+        "text":  "0 \n 0",
+        "ariaLabel":  "No Problems",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Notifications",
+        "title":  ""
+    },
+    {
+        "text":  "Antigravity - Settings",
+        "ariaLabel":  "Antigravity - Settings",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Thought for 6s",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Open",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Ask every time",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Thought for 1s",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Thought for 2s",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Ask every time",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Thought for 10s",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Open",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Ask every time",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Cancel",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Open",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Ask every time",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Cancel",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Expand all",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Review Changes",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Planning",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Planning",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "Gemini 3.1 Pro (Low)",
+        "ariaLabel":  "",
+        "title":  ""
+    },
+    {
+        "text":  "(empty)",
+        "ariaLabel":  "Record voice memo",
+        "title":  ""
+    }
+]
