@@ -1,8 +1,6 @@
 import { WebSocket } from 'ws';
 import 'dotenv/config';
 import http from 'http';
-import fs from 'fs';
-import path from 'path';
 
 /**
  * SIMBIOSE CLOUD BRIDGE
@@ -185,53 +183,23 @@ async function remoteScroll(cdp, { scrollPercent }) {
 
 async function injectMessage(cdp, text) {
     const safeText = JSON.stringify(text);
-
-    // 1. Focar a caixa e colar o texto
-    const FOCUS_SCRIPT = `(async () => {
+    const SCRIPT = `(async () => {
         const editor = document.querySelector('[contenteditable="true"]');
         if (!editor) return { ok: false };
         editor.focus();
         document.execCommand('insertText', false, ${safeText});
+        const submit = document.querySelector('button[type="submit"]') || document.querySelector('svg.lucide-arrow-right')?.closest('button');
+        if (submit) submit.click();
         return { ok: true };
     })()`;
 
-    let activeContextId = null;
     for (const ctx of cdp.contexts) {
         try {
-            const res = await cdp.call("Runtime.evaluate", { expression: FOCUS_SCRIPT, returnByValue: true, awaitPromise: true, contextId: ctx.id });
-            if (res.result?.value?.ok) {
-                activeContextId = ctx.id;
-                break;
-            }
+            const res = await cdp.call("Runtime.evaluate", { expression: SCRIPT, returnByValue: true, awaitPromise: true, contextId: ctx.id });
+            if (res.result?.value?.ok) return res.result.value;
         } catch (e) { }
     }
-
-    if (!activeContextId) return;
-
-    // 2. Disparar tecla ENTER física no nível do CDP para forçar o submit do React
-    try {
-        await cdp.call('Input.dispatchKeyEvent', {
-            type: 'rawKeyDown',
-            windowsVirtualKeyCode: 13,
-            unmodifiedText: '\r',
-            text: '\r',
-            key: 'Enter',
-            code: 'Enter'
-        });
-
-        await new Promise(r => setTimeout(r, 50));
-
-        await cdp.call('Input.dispatchKeyEvent', {
-            type: 'keyUp',
-            windowsVirtualKeyCode: 13,
-            key: 'Enter',
-            code: 'Enter'
-        });
-
-        console.log(`[CDP] Enter key simulated successfully.`);
-    } catch (e) {
-        console.error(`[CDP] Failed to simulate Enter:`, e);
-    }
+    return { ok: false };
 }
 
 async function executeSystemCommand(cdp, command) {
@@ -259,13 +227,6 @@ async function executeSystemCommand(cdp, command) {
                 const txt = (b.innerText || b.textContent || '').trim().toLowerCase();
                 const title = (b.title || '').toLowerCase();
                 return txt === 'undo' || txt === 'reject all' || title.includes('undo') || b.querySelector?.('svg.lucide-undo');
-            });
-        } else if ("${command}" === "add_file") {
-            target = allElements.find(b => {
-                const txt = (b.innerText || b.textContent || '').trim().toLowerCase();
-                const title = (b.title || '').toLowerCase();
-                const ariaLabel = (b.getAttribute('aria-label') || '').toLowerCase();
-                return title.includes('add context') || txt === 'add context' || title.includes('attach') || ariaLabel.includes('add context') || b.querySelector?.('svg.lucide-plus') || b.querySelector?.('svg.lucide-paperclip');
             });
         }
 
@@ -351,20 +312,6 @@ async function startBridge() {
 
         if (msg.type === 'remote_scroll') {
             await remoteScroll(cdpConnection, msg.data);
-        }
-
-        if (msg.type === 'upload_image') {
-            const uploadDir = path.join(process.cwd(), 'remote_uploads');
-            if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-
-            const safeName = msg.filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-            const filePath = path.join(uploadDir, safeName);
-
-            const base64Data = msg.content.replace(/^data:image\/\w+;base64,/, "");
-            fs.writeFileSync(filePath, base64Data, 'base64');
-
-            console.log(`📸 Imagem recebida e salva em: ${filePath}`);
-            await injectMessage(cdpConnection, `Anexei uma imagem para você analisar! O arquivo está salvo localmente em: ${filePath}`);
         }
 
         if (msg.type === 'system_command') {

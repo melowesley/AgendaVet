@@ -36,36 +36,19 @@ async function run() {
 
     await call("Runtime.enable", {});
 
-    // Simulate Enter Key using CDP Input.dispatchKeyEvent
     const EXP = `(async () => {
-        const editor = document.querySelector('[contenteditable="true"]');
-        if (!editor) return { error: 'Editor not found' };
-        
-        editor.focus();
-        document.execCommand('insertText', false, "Teste de Submit com Enter CDP");
-        return { success: true };
+        const els = Array.from(document.querySelectorAll('*')).filter(el => {
+            const txt = (el.innerText || el.textContent || '').trim().toLowerCase();
+            const title = (el.title || '').toLowerCase();
+            const isSmall = el.childElementCount <= 2;
+            const matches = txt === 'accept all' || title.includes('accept all');
+            return isSmall && matches;
+        });
+        return els.map(el => ({ tag: el.tagName, text: el.innerText?.trim() || el.textContent?.trim(), title: el.title, cls: el.className })).slice(0, 10);
     })()`;
 
-    await call("Runtime.evaluate", { expression: EXP, awaitPromise: true });
-
-    // Agora mandamos eventos de teclado RAW via CDP (isso emula um teclado físico perfeitamente)
-    await call("Input.dispatchKeyEvent", {
-        type: 'rawKeyDown',
-        windowsVirtualKeyCode: 13,
-        unmodifiedText: '\r',
-        text: '\r',
-        key: 'Enter',
-        code: 'Enter'
-    });
-
-    await call("Input.dispatchKeyEvent", {
-        type: 'keyUp',
-        windowsVirtualKeyCode: 13,
-        key: 'Enter',
-        code: 'Enter'
-    });
-
-    console.log("Enter simulado via CDP!");
+    const res = await call("Runtime.evaluate", { expression: EXP, returnByValue: true, awaitPromise: true });
+    console.log(JSON.stringify(res, null, 2));
     process.exit(0);
 }
 

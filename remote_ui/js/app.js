@@ -638,41 +638,8 @@ function sendMessage() {
     }
 }
 
-// --- File Upload ---
-function triggerFileUpload() {
-    const fileInput = document.getElementById('mobileFileUpload');
-    if (fileInput) fileInput.click();
-}
-
-function handleFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    if (statusText) statusText.textContent = 'Uploading...';
-    chatContent.style.opacity = '0.7';
-
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        const base64 = e.target.result;
-        if (ws && ws.readyState === 1) {
-            ws.send(JSON.stringify({
-                type: 'upload_image',
-                filename: file.name,
-                content: base64
-            }));
-        }
-    };
-    reader.readAsDataURL(file);
-    event.target.value = ''; // Reset input
-}
-
 // --- System Commands (Remote Control Panel) ---
 function systemCommand(command) {
-    if (command === 'add_file') {
-        triggerFileUpload();
-        return;
-    }
-
     console.log(`[SYSTEM] Command emitted: ${command}`);
     if (ws && ws.readyState === 1) {
         ws.send(JSON.stringify({
