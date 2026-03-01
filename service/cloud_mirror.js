@@ -183,15 +183,26 @@ async function remoteScroll(cdp, { scrollPercent }) {
 
 async function injectMessage(cdp, text) {
     const safeText = JSON.stringify(text);
-    const SCRIPT = `(async () => {
+    const SCRIPT = `new Promise((resolve) => {
         const editor = document.querySelector('[contenteditable="true"]');
-        if (!editor) return { ok: false };
+        if (!editor) return resolve({ ok: false });
         editor.focus();
         document.execCommand('insertText', false, ${safeText});
-        const submit = document.querySelector('button[type="submit"]') || document.querySelector('svg.lucide-arrow-right')?.closest('button');
-        if (submit) submit.click();
-        return { ok: true };
-    })()`;
+        
+        // Disparar eventos para o React reconhecer o texto e habilitar a setinha de envio
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+        editor.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        setTimeout(() => {
+            const submit = document.querySelector('button[type="submit"]') || 
+                           document.querySelector('button[aria-label*="Send"]') ||
+                           document.querySelector('button[aria-label*="Submit"]') ||
+                           document.querySelector('svg.lucide-arrow-right')?.closest('button') ||
+                           document.querySelector('svg.lucide-arrow-up')?.closest('button');
+            if (submit && !submit.disabled) submit.click();
+            resolve({ ok: true });
+        }, 150);
+    })`;
 
     for (const ctx of cdp.contexts) {
         try {
@@ -227,6 +238,13 @@ async function executeSystemCommand(cdp, command) {
                 const txt = (b.innerText || b.textContent || '').trim().toLowerCase();
                 const title = (b.title || '').toLowerCase();
                 return txt === 'undo' || txt === 'reject all' || title.includes('undo') || b.querySelector?.('svg.lucide-undo');
+            });
+        } else if ("${command}" === "add_file") {
+            target = allElements.find(b => {
+                const txt = (b.innerText || b.textContent || '').trim().toLowerCase();
+                const title = (b.title || '').toLowerCase();
+                const ariaLabel = (b.getAttribute('aria-label') || '').toLowerCase();
+                return title.includes('add context') || txt === 'add context' || title.includes('attach') || ariaLabel.includes('add context') || b.querySelector?.('svg.lucide-plus') || b.querySelector?.('svg.lucide-paperclip');
             });
         }
 
