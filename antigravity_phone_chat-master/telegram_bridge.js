@@ -3,234 +3,177 @@ import axios from 'axios';
 import WebSocket from 'ws';
 import 'dotenv/config';
 
+// Configurações
 const token = process.env.TELEGRAM_TOKEN;
 const AUTO_EXECUTE = process.env.TELEGRAM_AUTO_EXECUTE === 'true';
 const ADMIN_ID = process.env.TELEGRAM_ADMIN_ID ? Number(process.env.TELEGRAM_ADMIN_ID) : null;
-const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3000';
+const SERVER_URL = process.env.SERVER_URL || 'https://agendavet.onrender.com';
+const LOCAL_BRIDGE_URL = 'http://localhost:3000'; // Antigravity Core Local
 const WS_URL = SERVER_URL.replace(/^http/, 'ws');
+const REMOTE_TOKEN = process.env.REMOTE_TOKEN || 'Weslei3423@';
 
 if (!token) {
     console.error('❌ ERRO: TELEGRAM_TOKEN não encontrado no arquivo .env');
-    console.log('Por favor, adicione TELEGRAM_TOKEN=seu_token_aqui no seu arquivo .env');
     process.exit(1);
 }
 
-// Cria o bot
 const bot = new TelegramBot(token, { polling: true });
-
-console.log('🚀 Servidor de Ponte do Telegram Iniciado!');
-console.log('Aguardando mensagens...');
+console.log('🚀 Ponte Híbrida (PC <-> Nuvem <-> Telegram) Iniciada!');
 
 let lastFeedbackState = {
     isGenerating: false,
-    buttonsMap: {} // to store index mappings for easy /run /accept
+    buttonsMap: {}
 };
 
 let lastSentTextHash = '';
 let lastSentButtonsStr = '';
-let activeChatId = ADMIN_ID; // Will auto-update on first message if null
+let activeChatId = ADMIN_ID;
 
-function connectWebSocket() {
-    console.log(`🔌 Conectando ao WebSocket (${WS_URL})...`);
+// --- 1. CONEXÃO COM A NUVEM (RENDER) ---
+function connectCloud() {
+    console.log(`🔌 Conectando ao Relay na Nuvem (${WS_URL})...`);
     const ws = new WebSocket(WS_URL);
 
     ws.on('open', () => {
-        console.log('✅ Conectado ao servidor local (WebSocket) - Modo Feedback Ativo!');
-        checkFeedback(true);
+        console.log('✅ Sincronização com Nuvem Ativa!');
+        // Inicia o polling de feedback local
+        setInterval(() => checkLocalFeedback(), 2000);
     });
 
     ws.on('message', async (data) => {
         try {
             const msg = JSON.parse(data);
-            if (msg.type === 'snapshot_update') {
-                // Wait a tiny bit for render to settle
-                setTimeout(() => checkFeedback(false), 800);
+
+            // Recebeu entrada de texto do celular ou comando natural
+            if (msg.type === 'ai_input') {
+                console.log(`☁️ Input via Nuvem: ${msg.data}`);
+                await axios.post(`${LOCAL_BRIDGE_URL}/send`, { message: msg.data });
             }
-        } catch (e) { }
+
+            // Recebeu comando de terminal para rodar no PC
+            if (msg.type === 'remote_command') {
+                const { spawn } = await import('child_process');
+                const path = await import('path');
+                const projectRoot = path.resolve(process.cwd(), '..');
+
+                console.log(`💻 Executando no PC (Pasta: ${projectRoot}): ${msg.data}`);
+                const [cmd, ...args] = msg.data.split(' ');
+                const child = spawn(cmd, args, { shell: true, cwd: projectRoot });
+
+                child.stdout.on('data', (d) => sendLogToCloud(d.toString(), 'stdout'));
+                child.stderr.on('data', (d) => sendLogToCloud(d.toString(), 'stderr'));
+            }
+
+            // Recebeu clique em botão de ação
+            if (msg.type === 'remote_click') {
+                console.log(`🖱️ Clique remoto: ${msg.data.textContent}`);
+                await axios.post(`${LOCAL_BRIDGE_URL}/remote-click`, msg.data);
+            }
+        } catch (e) {
+            console.error('Erro ao processar mensagem da nuvem:', e.message);
+        }
     });
 
     ws.on('close', () => {
-        console.log('⚠️ Conexão WebSocket perdida. Reconectando em 5s...');
-        setTimeout(connectWebSocket, 5000);
+        console.log('⚠️ Conexão com Nuvem perdida. Reconectando...');
+        setTimeout(connectCloud, 5000);
     });
 
-    ws.on('error', (err) => {
-        console.error('WS error:', err.message);
-    });
+    ws.on('error', (err) => console.error('WS Cloud Error:', err.message));
 }
-connectWebSocket();
 
-async function checkFeedback(isInitial = false) {
-    if (!activeChatId) return; // Nobody to notify yet
-
+// --- 2. SINCRONIZAÇÃO DE FEEDBACK (PC -> NUVEM -> TELEGRAM) ---
+async function checkLocalFeedback() {
     try {
-        const res = await axios.get(`${SERVER_URL}/chat-feedback`);
+        // Busca o estado atual da IA no PC Local
+        const res = await axios.get(`${LOCAL_BRIDGE_URL}/chat-feedback`);
         const data = res.data;
         if (!data || data.error) return;
+
+        // Envia o estado da IA para a Nuvem (para o celular ver)
+        try {
+            await axios.post(`${SERVER_URL}/update-feedback`, {
+                feedback: data,
+                token: REMOTE_TOKEN
+            });
+        } catch (e) { }
 
         const isGeneratingNow = data.isGenerating;
         const textSummary = data.recentText || '';
         const buttons = data.buttons || [];
         const buttonsStr = buttons.map(b => b.action).join(',');
 
-        // Auto-execute if enabled
-        if (AUTO_EXECUTE && buttons.length > 0) {
-            // Click each button automatically
-            for (const b of buttons) {
-                try {
-                    await axios.post(`${SERVER_URL}/remote-click`, {
-                        selector: 'button, div[role="button"]',
-                        index: b.index,
-                        textContent: b.text
-                    });
-                } catch (e) { /* ignore */ }
-            }
-            // After auto-click, refresh feedback after short delay
-            setTimeout(() => checkFeedback(false), 2000);
-            return; // skip sending message
-        }
-
-        let shouldSendFeedback = false;
-
-        // Generation just finished
-        if (lastFeedbackState.isGenerating && !isGeneratingNow) {
-            shouldSendFeedback = true;
-        }
-
-        // New buttons appeared
-        if (buttonsStr !== lastSentButtonsStr && buttons.length > 0) {
-            shouldSendFeedback = true;
-        }
-
-        // Always Update State
-        lastFeedbackState.isGenerating = isGeneratingNow;
+        // Mapeia botões para comandos do Telegram
         lastFeedbackState.buttonsMap = {};
-        buttons.forEach(b => {
-            lastFeedbackState.buttonsMap[b.action] = b.index;
-        });
+        buttons.forEach(b => { lastFeedbackState.buttonsMap[b.action] = b.index; });
 
-        if (shouldSendFeedback) {
+        // Decide se deve enviar mensagem para o Telegram
+        let shouldNotify = (lastFeedbackState.isGenerating && !isGeneratingNow) ||
+            (buttonsStr !== lastSentButtonsStr && buttons.length > 0);
+
+        if (shouldNotify && activeChatId) {
             const currentHash = textSummary.substring(0, 50) + textSummary.length;
-
-            let message = '';
-
-            if (textSummary) {
-                let truncated = textSummary;
-                if (truncated.length > 1000) truncated = truncated.substring(truncated.length - 1000); // Max 1000 chars
-                message += `📝 **Ação Solicitada / Resumo:**\n...${truncated}\n\n`;
-            } else {
-                message += `✅ Tarefa finalizada (nenhum texto novo detectado).\n\n`;
-            }
-
-            if (buttons.length > 0) {
-                message += `⚙️ **Comandos Disponíveis:**\n`;
-                buttons.forEach(b => {
-                    const cmd = `/${b.action.replace(/\\s+/g, '_')}`; // accept all -> /accept_all
-                    message += `👉 ${cmd} - Executar botão '${b.text}'\n`;
-                });
-            }
-
-            // Only send if we have a mapped activeChatId and it changed
-            if (message.trim().length > 0 && (currentHash !== lastSentTextHash || buttonsStr !== lastSentButtonsStr)) {
-                bot.sendMessage(activeChatId, message);
+            if (currentHash !== lastSentTextHash || buttonsStr !== lastSentButtonsStr) {
+                let msg = textSummary ? `📝 **Antigravity diz:**\n\n${textSummary.slice(-800)}` : '✅ Tarefa Concluída.';
+                if (buttons.length > 0) {
+                    msg += `\n\n⚙️ **Ações:**\n` + buttons.map(b => `👉 /${b.action.replace(/\s+/g, '_')}`).join('\n');
+                }
+                bot.sendMessage(activeChatId, msg).catch(e => console.error("Erro envio tg:", e.message));
                 lastSentTextHash = currentHash;
                 lastSentButtonsStr = buttonsStr;
             }
         }
-    } catch (err) {
-        // Server down, ignore
-    }
+        lastFeedbackState.isGenerating = isGeneratingNow;
+
+    } catch (err) { /* PC Offline */ }
 }
 
-// Cache simples para armazenar IDs de mensagens já processadas (evita duplicidade)
-const processedMessageIds = new Set();
+async function sendLogToCloud(log, type = 'stdout') {
+    try {
+        await axios.post(`${SERVER_URL}/local-log`, { log, type, token: REMOTE_TOKEN });
+    } catch (e) { }
+}
 
+// --- 3. INTERAÇÃO VIA TELEGRAM (DIÁLOGO NATURAL) ---
 bot.on('message', async (msg) => {
-    const messageId = msg.message_id;
-
-    // 1. Trava de Segurança: Verifica se a mensagem já foi processada
-    if (processedMessageIds.has(messageId)) {
-        console.log(`⚠️ Mensagem duplicada detectada e descartada (ID: ${messageId})`);
-        // 2. Resposta imediata: Se estivesse usando webhooks puros (Express), aqui iria um res.status(200).send('OK');
-        // Como o bot usa polling (node-telegram-bot-api), a biblioteca já lida com o "OK" automaticamente.
-        return;
-    }
-
-    // Armazena no cache e mantém um limite para não consumir muita memória
-    processedMessageIds.add(messageId);
-    if (processedMessageIds.size > 200) {
-        const oldestId = processedMessageIds.values().next().value;
-        processedMessageIds.delete(oldestId);
-    }
-
     const chatId = msg.chat.id;
-    // Enforce admin restriction if ADMIN_ID is set
-    if (ADMIN_ID && chatId !== ADMIN_ID) {
-        bot.sendMessage(chatId, '⚠️ Você não tem permissão para usar este bot.');
-        return;
-    }
-    activeChatId = chatId; // Save chat ID so we can send feedback later
+    if (ADMIN_ID && chatId !== ADMIN_ID) return;
+    activeChatId = chatId;
+
     const text = msg.text;
     if (!text) return;
-    console.log(`📩 Mensagem recebida: ${text}`);
-    // Admin commands
+
+    // Comandos de Status
+    if (text === '/status' || text === '/start') {
+        bot.sendMessage(chatId, '🤖 **Mente Conectada!**\n\nEu sou o seu Antigravity remoto. Pode me mandar ordens em texto natural aqui ou usar o painel no celular.');
+        return;
+    }
+
+    // Comandos de Botão (/run, /accept, etc)
     if (text.startsWith('/')) {
-        const cmd = text.toLowerCase().substring(1).replace(/_/g, ' ');
-        if (cmd === 'status' || cmd === 'start') {
-            const statusMsg = '🤖 Ponte Antigravity via Telegram está ONLINE e monitorando feedback!\n\nEnvie tarefas para mim. Quando a IA pedir aprovação (/run, /accept), eu te avisarei!';
-            bot.sendMessage(chatId, statusMsg);
-            return;
-        }
-        if (cmd === 'admin_status') {
-            const status = `⚙️ Configurações:\n- AUTO_EXECUTE: ${AUTO_EXECUTE}\n- ADMIN_ID: ${ADMIN_ID || 'não definido'}`;
-            bot.sendMessage(chatId, status);
-            return;
-        }
-        if (cmd.startsWith('set_auto_execute')) {
-            const val = cmd.split(' ')[1];
-            if (val === 'on') process.env.TELEGRAM_AUTO_EXECUTE = 'true';
-            else if (val === 'off') process.env.TELEGRAM_AUTO_EXECUTE = 'false';
-            bot.sendMessage(chatId, `✅ AUTO_EXECUTE definido para ${process.env.TELEGRAM_AUTO_EXECUTE}`);
-            return;
-        }
-        // Action Command (Run, Accept, Reject etc)
-        if (['run', 'accept', 'reject', 'approve', 'continue', 'confirm', 'accept all', 'reject all', 'apply'].includes(cmd)) {
-            const index = lastFeedbackState.buttonsMap[cmd];
-            if (index !== undefined) {
-                try {
-                    await axios.post(`${SERVER_URL}/remote-click`, {
-                        selector: 'button, div[role="button"]',
-                        index: index,
-                        textContent: cmd.charAt(0).toUpperCase() + cmd.slice(1)
-                    });
-                    bot.sendMessage(chatId, `✅ Comando /${cmd.replace(/\\s+/g, '_')} enviado ao PC!`);
-                    setTimeout(() => checkFeedback(false), 2000);
-                } catch (e) {
-                    bot.sendMessage(chatId, `❌ Erro ao clicar no botão remoto: ${e.message}`);
-                }
-            } else {
-                bot.sendMessage(chatId, `⚠️ Erro: O botão '${cmd}' não está disponível no momento ou já foi clicado.`);
-            }
-            return;
+        const action = text.substring(1).replace(/_/g, ' ');
+        const index = lastFeedbackState.buttonsMap[action];
+        if (index !== undefined) {
+            try {
+                await axios.post(`${LOCAL_BRIDGE_URL}/remote-click`, {
+                    selector: 'button, div[role="button"]',
+                    index: index,
+                    textContent: action.charAt(0).toUpperCase() + action.slice(1)
+                });
+                bot.sendMessage(chatId, `✅ Executando: ${action}...`);
+                return;
+            } catch (e) { }
         }
     }
-    // Rest of original handling (forward to AI)
+
+    // Encaminha Diálogo Natural para a "Mente" (IDE)
     try {
-        console.log(`🤖 Encaminhando para IA: ${text}`);
-        await axios.post(`${SERVER_URL}/send`, { message: text });
-        bot.sendMessage(chatId, '✅ Comando enviado para o Antigravity! Aguardando retorno...');
-        lastSentTextHash = '';
+        console.log(`🗣️ Telegram -> IDE: ${text}`);
+        await axios.post(`${LOCAL_BRIDGE_URL}/send`, { message: text });
+        bot.sendMessage(chatId, '🧠 *Pensando...*', { parse_mode: 'Markdown' });
     } catch (err) {
-        if (err.response && err.response.status === 503) {
-            bot.sendMessage(chatId, '⚠️ O Antigravity não está aberto ou não está em uma conversa ativa no PC.');
-        } else if (err.code === 'ECONNREFUSED') {
-            bot.sendMessage(chatId, '❌ Erro: O servidor (server.js) não está rodando.');
-        } else {
-            bot.sendMessage(chatId, `❌ Erro inesperado: ${err.message}`);
-        }
+        bot.sendMessage(chatId, '❌ Erro: O Antigravity local não está respondendo.');
     }
 });
 
-bot.on('polling_error', (error) => {
-    console.error('💥 Erro de conexão do Telegram:', error.code);
-});
+connectCloud();
