@@ -215,13 +215,14 @@ app.get('/remoto', (req, res) => {
 // Endpoint de Execução de Comandos (Encaminha para o Local via WS)
 app.post('/run-command', authMiddleware, (req, res) => {
   const { command } = req.body;
-  console.log(`[RELAY] Encaminhando comando para terminal local: ${command}`);
+  const cleanCommand = command.trim().toLowerCase();
+  console.log(`[RELAY] Encaminhando comando para terminal local: ${cleanCommand}`);
 
   // Avisa a todos (inclusive ao celular) que o comando foi solicitado
-  broadcast({ type: 'stdout', data: `> ${command}\n[SISTEMA] Encaminhando para o PC local...\n` });
+  broadcast({ type: 'stdout', data: `> ${cleanCommand}\n[SISTEMA] Encaminhando para o PC local...\n` });
 
   // Envia o comando real para o Local Bridge
-  broadcast({ type: 'remote_command', data: command });
+  broadcast({ type: 'remote_command', data: cleanCommand });
 
   res.json({ status: 'forwarded' });
 });
