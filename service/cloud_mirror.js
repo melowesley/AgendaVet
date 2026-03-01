@@ -1,6 +1,8 @@
 import { WebSocket } from 'ws';
 import 'dotenv/config';
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * SIMBIOSE CLOUD BRIDGE
@@ -349,6 +351,20 @@ async function startBridge() {
 
         if (msg.type === 'remote_scroll') {
             await remoteScroll(cdpConnection, msg.data);
+        }
+
+        if (msg.type === 'upload_image') {
+            const uploadDir = path.join(process.cwd(), 'remote_uploads');
+            if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
+            const safeName = msg.filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+            const filePath = path.join(uploadDir, safeName);
+
+            const base64Data = msg.content.replace(/^data:image\/\w+;base64,/, "");
+            fs.writeFileSync(filePath, base64Data, 'base64');
+
+            console.log(`📸 Imagem recebida e salva em: ${filePath}`);
+            await injectMessage(cdpConnection, `Anexei uma imagem para você analisar! O arquivo está salvo localmente em: ${filePath}`);
         }
 
         if (msg.type === 'system_command') {
