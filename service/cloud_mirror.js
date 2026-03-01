@@ -78,20 +78,21 @@ async function connectCDP(url) {
 
 async function captureSnapshot(cdp) {
     const CAPTURE_SCRIPT = `(async () => {
-        const cascade = document.getElementById('conversation') || document.getElementById('chat') || document.getElementById('cascade');
-        if (!cascade) return { error: 'Chat não encontrado' };
+        const root = document.getElementById('conversation') || document.getElementById('chat') || document.getElementById('cascade') || document.body;
         
-        // 1. Injetar IDs únicos no DOM real ANTES de clonar
+        // 1. Injetar IDs únicos em TODOS os elementos (mais agressivo)
         let idCounter = 1;
-        cascade.querySelectorAll('button, a, [role="button"], .action-item').forEach(el => {
+        // Varremos todos os elementos dentro do root para garantir que nada escape
+        root.querySelectorAll('*').forEach(el => {
             if (!el.hasAttribute('data-remote-id')) {
-                el.setAttribute('data-remote-id', 'rid_' + Date.now() + '_' + (idCounter++));
+                el.setAttribute('data-remote-id', 'rid_' + (idCounter++));
             }
         });
 
-        // 2. Criar o clone para enviar
-        const clone = cascade.cloneNode(true);
-        // Remove áreas de edição para evitar conflito de teclado no celular
+        // 2. Clonar
+        const clone = root.cloneNode(true);
+        
+        // Remove áreas de edição
         clone.querySelectorAll('[contenteditable="true"]').forEach(el => el.remove());
         
         return {
@@ -114,24 +115,30 @@ async function captureSnapshot(cdp) {
 
 async function clickElement(cdp, { remoteId, selector, textContent }) {
     const EXP = `(async () => {
-        const root = document.getElementById('conversation') || document.getElementById('chat') || document.getElementById('cascade') || document;
+        const root = document.body;
         
-        // Busca cirúrgica pelo ID injetado
         let target = null;
-        if ("${remoteId}") {
-            target = root.querySelector('[data-remote-id="${remoteId}"]');
+        if ("${remoteId}" && "${remoteId}" !== "null" && "${remoteId}" !== "undefined") {
+            target = document.querySelector('[data-remote-id="${remoteId}"]');
         }
         
-        // Fallback para clicks muito rústicos (caso antigo)
         if (!target && "${textContent}") {
-            const allClickables = Array.from(root.querySelectorAll('button, a, [role="button"], .action-item'));
-            target = allClickables.find(el => (el.innerText || el.textContent || '').trim() === "${textContent}");
+            // Busca secundária por texto se o ID falhar (ex: botão novo que apareceu entre snapshots)
+            const all = Array.from(document.querySelectorAll('button, a, [role="button"], span, div'));
+            target = all.find(el => (el.innerText || el.textContent || '').trim() === "${textContent}");
         }
 
         if (target) {
             target.scrollIntoView({ block: 'center' });
+            // Clique real simulado
             target.click();
-            return { success: true, method: 'id' };
+            // Disparar mousedown/mouseup para garantir que o React perceba
+            const events = ['mousedown', 'mouseup'];
+            events.forEach(name => {
+                const ev = new MouseEvent(name, { bubbles: true, cancelable: true, view: window });
+                target.dispatchEvent(ev);
+            });
+            return { success: true, method: target.getAttribute('data-remote-id') ? 'id' : 'text' };
         }
         return { error: 'Elemento não encontrado' };
     })()`;
@@ -235,7 +242,7 @@ async function startBridge() {
         }
 
         if (msg.type === 'remote_click') {
-            console.log(`🖱 Clique remoto: ${msg.data.textContent} (${msg.data.selector})`);
+            console.log(`🖱 Clique remoto: ID=${msg.data.remoteId || 'null'} | Text="${msg.data.textContent}" | Tag=${msg.data.selector}`);
             await clickElement(cdpConnection, msg.data);
         }
 

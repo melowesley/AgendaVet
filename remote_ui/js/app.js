@@ -628,26 +628,23 @@ function sendMessage() {
 
 // --- Click Ingestion ---
 chatContent.addEventListener('click', (e) => {
-    // Detect clicks on buttons or actionable items in the snapshot
-    const target = e.target.closest('button, [role="button"], a, .action-item, [data-tooltip-id], [data-remote-id]');
-    if (target) {
-        const textContent = target.innerText.trim();
-        const selector = target.tagName.toLowerCase();
-        const remoteId = target.getAttribute('data-remote-id');
+    const target = e.target;
+    const remoteId = target.getAttribute('data-remote-id') || target.closest('[data-remote-id]')?.getAttribute('data-remote-id');
+    const textContent = target.innerText.trim() || target.textContent.trim();
 
-        console.log(`[CLICK] Remote click intercepted: ID=${remoteId || 'none'}, Text=${textContent}`);
+    console.log(`[CLICK] Remote click: ID=${remoteId}, Text=${textContent.substring(0, 20)}`);
 
-        if (ws && ws.readyState === 1) {
-            ws.send(JSON.stringify({
-                type: 'remote_click',
-                data: { remoteId, selector, textContent }
-            }));
-        }
-
-        // Visual feedback
-        target.style.opacity = '0.5';
-        setTimeout(() => target.style.opacity = '1', 300);
+    if (ws && ws.readyState === 1) {
+        ws.send(JSON.stringify({
+            type: 'remote_click',
+            data: { remoteId, textContent }
+        }));
     }
+
+    // Visual feedback
+    const feedbackTarget = target.closest('button, a, .action-item') || target;
+    feedbackTarget.style.opacity = '0.5';
+    setTimeout(() => feedbackTarget.style.opacity = '1', 300);
 });
 
 // --- Event Listeners ---
