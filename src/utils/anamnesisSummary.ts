@@ -1,4 +1,4 @@
-import { AnamnesisData } from '@/components/admin/anamnesisTypes';
+import { AnamnesisData } from '@/modules/vet/components/anamnesisTypes';
 
 /**
  * Gera um resumo ordenado da anamnese seguindo a ordem exata da ficha.
@@ -8,7 +8,7 @@ export const generateAnamnesisSummary = (anamnesis: AnamnesisData): Record<strin
   const summary: Record<string, unknown> = {};
 
   // ─── ABA ANAMNESE ────────────────────────────────────────────────────────────────
-  
+
   // 1. Queixa Principal
   if (anamnesis.queixa_principal?.trim()) {
     summary.queixa_principal = anamnesis.queixa_principal.trim();
@@ -56,7 +56,7 @@ export const generateAnamnesisSummary = (anamnesis: AnamnesisData): Record<strin
   if (Array.isArray(anamnesis.comportamento) && anamnesis.comportamento.length > 0) {
     summary.comportamento = anamnesis.comportamento;
   }
-  
+
   // Ectoparasitas (objeto)
   if (anamnesis.ectoparasitas && typeof anamnesis.ectoparasitas === 'object' && !Array.isArray(anamnesis.ectoparasitas)) {
     const ectoEntries = Object.entries(anamnesis.ectoparasitas).filter(([, v]) => {
@@ -69,11 +69,11 @@ export const generateAnamnesisSummary = (anamnesis: AnamnesisData): Record<strin
       summary.ectoparasitas = anamnesis.ectoparasitas;
     }
   }
-  
+
   if (anamnesis.vermifugo?.trim()) {
     summary.vermifugo = anamnesis.vermifugo.trim();
   }
-  
+
   // Banho (objeto)
   if (anamnesis.banho && typeof anamnesis.banho === 'object' && !Array.isArray(anamnesis.banho)) {
     const banhoEntries = Object.entries(anamnesis.banho).filter(([, v]) => {
@@ -85,7 +85,7 @@ export const generateAnamnesisSummary = (anamnesis: AnamnesisData): Record<strin
       summary.banho = anamnesis.banho;
     }
   }
-  
+
   // Acesso à rua (objeto)
   if (anamnesis.acesso_rua && typeof anamnesis.acesso_rua === 'object' && !Array.isArray(anamnesis.acesso_rua)) {
     const acessoEntries = Object.entries(anamnesis.acesso_rua).filter(([, v]) => {
@@ -97,7 +97,7 @@ export const generateAnamnesisSummary = (anamnesis: AnamnesisData): Record<strin
       summary.acesso_rua = anamnesis.acesso_rua;
     }
   }
-  
+
   // Contactantes (objeto)
   if (anamnesis.contactantes && typeof anamnesis.contactantes === 'object' && !Array.isArray(anamnesis.contactantes)) {
     const contactEntries = Object.entries(anamnesis.contactantes).filter(([, v]) => {
