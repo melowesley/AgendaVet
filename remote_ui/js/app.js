@@ -629,22 +629,18 @@ function sendMessage() {
 // --- Click Ingestion ---
 chatContent.addEventListener('click', (e) => {
     // Detect clicks on buttons or actionable items in the snapshot
-    const target = e.target.closest('button, [role="button"], a, .action-item, [data-tooltip-id]');
+    const target = e.target.closest('button, [role="button"], a, .action-item, [data-tooltip-id], [data-remote-id]');
     if (target) {
         const textContent = target.innerText.trim();
         const selector = target.tagName.toLowerCase();
+        const remoteId = target.getAttribute('data-remote-id');
 
-        console.log('[CLICK] Remote click intercepted:', textContent);
-
-        // Find index of this element among similar ones with same text
-        const allSame = Array.from(chatContent.querySelectorAll(selector))
-            .filter(el => el.innerText.trim() === textContent);
-        const index = allSame.indexOf(target);
+        console.log(`[CLICK] Remote click intercepted: ID=${remoteId || 'none'}, Text=${textContent}`);
 
         if (ws && ws.readyState === 1) {
             ws.send(JSON.stringify({
                 type: 'remote_click',
-                data: { selector, textContent, index: index >= 0 ? index : 0 }
+                data: { remoteId, selector, textContent }
             }));
         }
 

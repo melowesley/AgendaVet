@@ -81,8 +81,17 @@ async function captureSnapshot(cdp) {
         const cascade = document.getElementById('conversation') || document.getElementById('chat') || document.getElementById('cascade');
         if (!cascade) return { error: 'Chat não encontrado' };
         
+        // 1. Injetar IDs únicos no DOM real ANTES de clonar
+        let idCounter = 1;
+        cascade.querySelectorAll('button, a, [role="button"], .action-item').forEach(el => {
+            if (!el.hasAttribute('data-remote-id')) {
+                el.setAttribute('data-remote-id', 'rid_' + Date.now() + '_' + (idCounter++));
+            }
+        });
+
+        // 2. Criar o clone para enviar
         const clone = cascade.cloneNode(true);
-        // Remove apenas áreas de edição para evitar conflito com teclado do celular
+        // Remove áreas de edição para evitar conflito de teclado no celular
         clone.querySelectorAll('[contenteditable="true"]').forEach(el => el.remove());
         
         return {
@@ -103,19 +112,26 @@ async function captureSnapshot(cdp) {
     return null;
 }
 
-async function clickElement(cdp, { selector, index, textContent }) {
-    const safeText = JSON.stringify(textContent || '');
+async function clickElement(cdp, { remoteId, selector, textContent }) {
     const EXP = `(async () => {
         const root = document.getElementById('conversation') || document.getElementById('chat') || document.getElementById('cascade') || document;
-        let elements = Array.from(root.querySelectorAll('${selector}'));
-        const filterText = ${safeText};
-        if (filterText) {
-            elements = elements.filter(el => (el.innerText || el.textContent || '').includes(filterText));
+        
+        // Busca cirúrgica pelo ID injetado
+        let target = null;
+        if ("${remoteId}") {
+            target = root.querySelector('[data-remote-id="${remoteId}"]');
         }
-        const target = elements[${index} || 0];
+        
+        // Fallback para clicks muito rústicos (caso antigo)
+        if (!target && "${textContent}") {
+            const allClickables = Array.from(root.querySelectorAll('button, a, [role="button"], .action-item'));
+            target = allClickables.find(el => (el.innerText || el.textContent || '').trim() === "${textContent}");
+        }
+
         if (target) {
+            target.scrollIntoView({ block: 'center' });
             target.click();
-            return { success: true };
+            return { success: true, method: 'id' };
         }
         return { error: 'Elemento não encontrado' };
     })()`;
