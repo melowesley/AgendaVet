@@ -636,10 +636,15 @@ chatContent.addEventListener('click', (e) => {
 
         console.log('[CLICK] Remote click intercepted:', textContent);
 
+        // Find index of this element among similar ones with same text
+        const allSame = Array.from(chatContent.querySelectorAll(selector))
+            .filter(el => el.innerText.trim() === textContent);
+        const index = allSame.indexOf(target);
+
         if (ws && ws.readyState === 1) {
             ws.send(JSON.stringify({
                 type: 'remote_click',
-                data: { selector, textContent, index: 0 } // index 0 for now
+                data: { selector, textContent, index: index >= 0 ? index : 0 }
             }));
         }
 
