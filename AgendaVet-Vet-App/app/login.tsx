@@ -54,7 +54,7 @@ export default function Login() {
                     style={styles.logo}
                     resizeMode="contain"
                 />
-                <View style={[styles.vetBadge, { backgroundColor: theme.primary + '20' }]}>
+                <View style={[styles.vetBadge, { backgroundColor: theme.primary + '15', borderWidth: 1, borderColor: theme.primary + '30' }]}>
                     <Text style={[styles.vetBadgeText, { color: theme.primary }]}>
                         🩺 Portal do Veterinário
                     </Text>
@@ -135,14 +135,14 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     formContainer: {
-        padding: 24,
-        borderRadius: 24,
+        padding: 28,
+        borderRadius: 28,
         borderWidth: 1,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.08,
-        shadowRadius: 24,
-        elevation: 4,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.1,
+        shadowRadius: 30,
+        elevation: 8,
     },
     inputGroup: {
         marginBottom: 20,
@@ -161,16 +161,16 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
     button: {
-        height: 54,
-        borderRadius: 12,
+        height: 58,
+        borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 10,
-        shadowColor: '#4A9FD8',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
+        marginTop: 15,
+        shadowColor: '#0EA5E9',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+        elevation: 6,
     },
     buttonText: {
         color: 'white',

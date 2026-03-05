@@ -1,21 +1,21 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/core/integrations/supabase/client';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
+import { Button } from '@/shared/components/ui/button';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { Separator } from '@/shared/components/ui/separator';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import { Textarea } from '@/shared/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { ArrowLeft, Save, FileDown } from 'lucide-react';
-import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
-import { useToast } from '@/hooks/use-toast';
+import { AppointmentRequest } from '@/modules/vet/hooks/useAppointmentRequests';
+import { useToast } from '@/shared/hooks/use-toast';
 import { TutorInfoSection } from './detail/TutorInfoSection';
 import { exportAppointmentPdf } from './exportAppointmentPdf';
 import { PetAdminHistorySection } from './PetAdminHistorySection';
 import { logPetAdminHistory } from './petAdminHistory';
-import { generateRetornoSummary } from '@/utils/procedureSummaries';
+import { generateRetornoSummary } from '@/modules/vet/utils/procedureSummaries';
 
 interface RetornoDialogProps {
   open: boolean;

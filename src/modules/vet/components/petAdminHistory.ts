@@ -17,7 +17,7 @@
  *  - O erro é registrado no console e retornado para que o chamador possa
  *    opcionalmente exibir um aviso ao usuário (sem bloquear a operação).
  */
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/core/integrations/supabase/client';
 
 export interface LogPetAdminHistoryInput {
   petId: string;

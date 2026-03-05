@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/core/integrations/supabase/client';
+import { Button } from '@/shared/components/ui/button';
+import { Card, CardContent } from '@/shared/components/ui/card';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { useToast } from '@/shared/hooks/use-toast';
 import {
   ArrowLeft, Stethoscope, FlaskConical, FileText, Calendar,
   PawPrint, Weight, Syringe, ClipboardList,
@@ -13,9 +13,9 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 import { RequestAppointmentDialog } from '@/modules/tutor/components/RequestAppointmentDialog';
-import { ClientLayout } from '@/components/layout/ClientLayout';
-import { StatusBadge, getStatusDotClass } from '@/components/StatusBadge';
-import { AppointmentStatus } from '@/types/appointment';
+import { ClientLayout } from '@/modules/tutor/layouts/ClientLayout';
+import { StatusBadge, getStatusDotClass } from '@/shared/components/StatusBadge';
+import { AppointmentStatus } from '@/core/types/appointment';
 
 interface Pet {
   id: string;

@@ -1,10 +1,10 @@
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/shared/components/ui/label';
+import { Textarea } from '@/shared/components/ui/textarea';
 import { AnamnesisCheckboxGroup } from '@/modules/tutor/components/AnamnesisCheckboxGroup';
 import { AnamnesisData } from '../anamnesisTypes';
 import {
   SGI_OPTIONS, SGU_OPTIONS, SCR_OPTIONS, SN_OPTIONS, SME_OPTIONS, SOT_OPTIONS,
-} from '@/data/anamnesisOptions';
+} from '@/shared/data/anamnesisOptions';
 
 interface AnamneseTabProps {
   anamnesis: AnamnesisData;

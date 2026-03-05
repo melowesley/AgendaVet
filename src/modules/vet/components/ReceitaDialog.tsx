@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/core/integrations/supabase/client';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
+import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import { useToast } from '@/shared/hooks/use-toast';
 import {
   ClipboardList, Save, Trash2, Pill, ArrowLeft, FileDown,
   ScrollText, ShieldAlert, ChevronRight, Eye,

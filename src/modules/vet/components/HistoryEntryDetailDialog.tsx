@@ -3,13 +3,13 @@ import {
   PageDialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
+} from '@/shared/components/ui/dialog';
+import { Badge } from '@/shared/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Stethoscope, Calendar, Clock } from 'lucide-react';
-import type { TimelineEntry } from '@/hooks/usePetTimeline';
-import { getModuleLabel } from '@/hooks/usePetTimeline';
+import type { TimelineEntry } from '@/modules/vet/hooks/usePetTimeline';
+import { getModuleLabel } from '@/modules/vet/hooks/usePetTimeline';
 
 /**
  * Mapeamento de chaves técnicas para rótulos legíveis em PT-BR.

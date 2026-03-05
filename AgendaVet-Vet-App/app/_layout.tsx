@@ -22,7 +22,7 @@ function InitialLayout() {
 
         if (!session && !inAuthGroup) {
             router.replace('/login');
-        } else if (session && !inTabsGroup) {
+        } else if (session && inAuthGroup) {
             router.replace('/(tabs)');
         }
     }, [session, loading, segments]);
@@ -34,7 +34,6 @@ function InitialLayout() {
             <Stack>
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="login" options={{ headerShown: false }} />
-                <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
             </Stack>
             <StatusBar style="auto" />
         </ThemeProvider>
@@ -45,10 +44,16 @@ export const unstable_settings = {
     anchor: '(tabs)',
 };
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
+
 export default function RootLayout() {
     return (
-        <AuthProvider>
-            <InitialLayout />
-        </AuthProvider>
+        <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+                <InitialLayout />
+            </AuthProvider>
+        </QueryClientProvider>
     );
 }

@@ -2,7 +2,7 @@ import { AnamnesisCheckboxGroup } from '@/modules/tutor/components/AnamnesisChec
 import { AnamnesisData } from '../anamnesisTypes';
 import {
   ALIMENTACAO_OPTIONS, VACINACAO_OPTIONS, AMBIENTE_OPTIONS, COMPORTAMENTO_OPTIONS,
-} from '@/data/anamnesisOptions';
+} from '@/shared/data/anamnesisOptions';
 
 interface ManejoTabProps {
   anamnesis: AnamnesisData;

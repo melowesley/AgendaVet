@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Clock, User, PawPrint, FileText, MapPin } from 'lucide-react';
-import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
+import { AppointmentRequest } from '@/modules/vet/hooks/useAppointmentRequests';
 
 interface TutorInfoSectionProps {
   request: AppointmentRequest;

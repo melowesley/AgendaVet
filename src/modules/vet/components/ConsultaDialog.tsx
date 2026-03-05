@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from '@/core/integrations/supabase/client';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
+import { Button } from '@/shared/components/ui/button';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { Separator } from '@/shared/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { ArrowLeft, Save, FileDown } from 'lucide-react';
-import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
-import { useToast } from '@/hooks/use-toast';
+import { AppointmentRequest } from '@/modules/vet/hooks/useAppointmentRequests';
+import { useToast } from '@/shared/hooks/use-toast';
 import { TutorInfoSection } from './detail/TutorInfoSection';
 import { AnamneseTab } from './detail/AnamneseTab';
 import { ManejoTab } from './detail/ManejoTab';
@@ -16,7 +16,7 @@ import { AnamnesisData, EMPTY_ANAMNESIS } from './anamnesisTypes';
 import { exportAppointmentPdf } from './exportAppointmentPdf';
 import { PetAdminHistorySection } from './PetAdminHistorySection';
 import { logPetAdminHistory } from './petAdminHistory';
-import { generateAnamnesisSummary } from '@/utils/anamnesisSummary';
+import { generateAnamnesisSummary } from '@/modules/vet/utils/anamnesisSummary';
 
 interface ConsultaDialogProps {
   open: boolean;

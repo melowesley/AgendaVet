@@ -4,15 +4,20 @@ import { Colors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { usePets, Pet } from '@/hooks/usePets';
 import { AddPatientModal } from '@/components/AddPatientModal';
+import { useRouter } from 'expo-router';
 
 export default function PacientesScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+    const router = useRouter();
     const { pets, loading, refresh, addPet } = usePets();
     const [modalVisible, setModalVisible] = useState(false);
 
     const renderPet = ({ item }: { item: Pet }) => (
-        <View style={[styles.petCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <TouchableOpacity
+            style={[styles.petCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
+            onPress={() => router.push({ pathname: '/pet/[id]', params: { id: item.id } })}
+        >
             <View style={[styles.iconContainer, { backgroundColor: theme.primary + '15' }]}>
                 <Ionicons
                     name={item.type === 'cat' ? 'logo-octocat' : 'paw'}
@@ -27,7 +32,7 @@ export default function PacientesScreen() {
                 </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
-        </View>
+        </TouchableOpacity>
     );
 
     return (

@@ -1,12 +1,12 @@
 import { useEffect } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/shared/components/ui/toaster";
+import { Toaster as Sonner } from "@/shared/components/ui/sonner";
+import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { queryClient } from "@/lib/queryClient";
-import { initializeAuth } from "@/store/useAuthStore";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { queryClient } from "@/core/lib/queryClient";
+import { initializeAuth } from "@/core/auth/useAuthStore";
+import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./modules/tutor/pages/Auth";
 import ClientPortal from "./modules/tutor/pages/Dashboard";
@@ -14,7 +14,7 @@ import PetProfile from "./modules/tutor/pages/PetProfile";
 import AdminDashboard from "./modules/vet/pages/Dashboard";
 import AdminAuth from "./modules/vet/pages/Auth";
 import AdminPetProfile from "./modules/vet/pages/PetProfile";
-import SidebarDemo from "./components/sidebar-demo";
+import SidebarDemo from "@/shared/components/sidebar-demo";
 import AgendaDemo from "./pages/AgendaDemo";
 import NotFound from "./pages/NotFound";
 

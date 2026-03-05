@@ -1,9 +1,9 @@
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/shared/components/ui/card';
 import { Calendar, Clock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { StatusBadge } from '@/components/StatusBadge';
-import { AppointmentStatus } from '@/types/appointment';
+import { StatusBadge } from '@/shared/components/StatusBadge';
+import { AppointmentStatus } from '@/core/types/appointment';
 
 interface AppointmentRequest {
   id: string;

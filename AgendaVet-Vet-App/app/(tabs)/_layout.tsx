@@ -4,10 +4,12 @@ import { Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+    const insets = useSafeAreaInsets();
 
     return (
         <Tabs
@@ -15,13 +17,17 @@ export default function TabLayout() {
                 tabBarActiveTintColor: theme.primary,
                 tabBarInactiveTintColor: theme.tabIconDefault,
                 tabBarStyle: {
-                    backgroundColor: theme.background,
+                    backgroundColor: theme.surface,
                     borderTopColor: theme.border,
                     borderTopWidth: 1,
-                    paddingBottom: Platform.OS === 'ios' ? 24 : 12,
+                    paddingBottom: Platform.OS === 'ios' ? insets.bottom : Math.max(insets.bottom, 12),
                     paddingTop: 8,
-                    height: Platform.OS === 'ios' ? 88 : 68,
-                    elevation: 0,
+                    height: Platform.OS === 'ios' ? 68 + insets.bottom : 72 + Math.max(insets.bottom, 12),
+                    elevation: 20,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: -4 },
+                    shadowOpacity: 0.12,
+                    shadowRadius: 10,
                 },
                 tabBarLabelStyle: {
                     fontSize: 11,
@@ -64,13 +70,35 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="perfil"
+                name="solicitacoes"
                 options={{
-                    title: 'Perfil',
-                    tabBarLabel: 'Perfil',
-                    headerTitle: '👤 Meu Perfil',
+                    title: 'Solicitações',
+                    tabBarLabel: 'Solicitações',
+                    headerTitle: '📩 Solicitações',
                     tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="person-circle" size={size} color={color} />
+                        <Ionicons name="mail" size={size} color={color} />
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name="prontuario"
+                options={{
+                    title: 'Prontuário',
+                    tabBarLabel: 'Prontuário',
+                    headerTitle: '📋 Prontuário Médico',
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="medical" size={size} color={color} />
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name="menu"
+                options={{
+                    title: 'Menu',
+                    tabBarLabel: 'Menu',
+                    headerTitle: '⚙️ Opções',
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="grid" size={size} color={color} />
                     ),
                 }}
             />

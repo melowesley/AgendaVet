@@ -1,18 +1,18 @@
 import { useEffect, useState, useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/core/integrations/supabase/client';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
+import { Button } from '@/shared/components/ui/button';
+import { Badge } from '@/shared/components/ui/badge';
+import { Input } from '@/shared/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Sparkles, Eye, Check, X, Search, History } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/shared/hooks/use-toast';
 import { ManageRequestDialog } from './ManageRequestDialog';
 import { PetHistoryDialog } from './PetHistoryDialog';
-import { StatusBadge } from '@/components/StatusBadge';
-import { AppointmentStatus, APPOINTMENT_STATUS } from '@/types/appointment';
+import { StatusBadge } from '@/shared/components/StatusBadge';
+import { AppointmentStatus, APPOINTMENT_STATUS } from '@/core/types/appointment';
 
 interface AppointmentRequest {
   id: string;
