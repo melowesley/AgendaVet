@@ -1,12 +1,12 @@
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import { Textarea } from '@/shared/components/ui/textarea';
 import { AnamnesisCheckboxGroup } from '@/modules/tutor/components/AnamnesisCheckboxGroup';
 import { AnamnesisData } from '../anamnesisTypes';
-import { MUCOSAS_OPTIONS, LINFONODOS_OPTIONS } from '@/data/anamnesisOptions';
+import { MUCOSAS_OPTIONS, LINFONODOS_OPTIONS } from '@/shared/data/anamnesisOptions';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+} from '@/shared/components/ui/select';
 
 interface ExameFisicoTabProps {
   anamnesis: AnamnesisData;

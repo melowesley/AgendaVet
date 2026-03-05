@@ -20,10 +20,14 @@ export default function TabLayout() {
           backgroundColor: theme.background,
           borderTopColor: theme.border,
           borderTopWidth: 1,
-          paddingBottom: Platform.OS === 'ios' ? 24 : 12,
+          paddingBottom: Platform.OS === 'ios' ? 32 : 16,
           paddingTop: 8,
-          height: Platform.OS === 'ios' ? 88 : 68,
-          elevation: 0, // Remove shadow on Android
+          height: Platform.OS === 'ios' ? 96 : 76,
+          elevation: 10,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
         },
         tabBarLabelStyle: {
           fontSize: 11,

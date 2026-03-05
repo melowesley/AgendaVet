@@ -4,10 +4,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { usePetsList } from '@/hooks/usePetsList';
+} from '@/shared/components/ui/dialog';
+import { Input } from '@/shared/components/ui/input';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { usePetsList } from '@/modules/vet/hooks/usePetsList';
 import { ATTENDANCE_TYPES, type AttendanceTypeKey } from '@/modules/vet/components/AttendanceTypeDialog';
 import { Search, PawPrint } from 'lucide-react';
 import { useState } from 'react';

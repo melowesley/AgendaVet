@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { supabase } from '@/core/integrations/supabase/client';
+import { Input } from '@/shared/components/ui/input';
+import { Card, CardContent } from '@/shared/components/ui/card';
 import { Search, User, Phone, PawPrint } from 'lucide-react';
 
 export interface TutorListItem {

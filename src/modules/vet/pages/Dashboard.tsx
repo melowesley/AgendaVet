@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAdminCheck } from '@/hooks/useAdminCheck';
+import { supabase } from '@/core/integrations/supabase/client';
+import { useAdminCheck } from '@/modules/vet/hooks/useAdminCheck';
 import { Clock, Calendar, Users, PawPrint } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/shared/hooks/use-toast';
 import { AppointmentRequestsTable } from '@/modules/vet/components/AppointmentRequestsTable';
 import { ServicesManager } from '@/modules/vet/components/ServicesManager';
 import { AdminStatsCard } from '@/modules/vet/components/AdminStatsCard';
@@ -13,8 +13,8 @@ import { UserManagement } from '@/modules/vet/components/UserManagement';
 import { PetsListTab } from '@/modules/vet/components/PetsListTab';
 import { TutorsListTab } from '@/modules/vet/components/TutorsListTab';
 import { VetDiagnosticTest } from '@/modules/vet/components/VetDiagnosticTest';
-import { useAppointmentRequests } from '@/hooks/useAppointmentRequests';
-import { AdminLayout } from '@/components/layout/AdminLayout';
+import { useAppointmentRequests } from '@/modules/vet/hooks/useAppointmentRequests';
+import { AdminLayout } from '@/modules/vet/layouts/AdminLayout';
 
 const VALID_TABS = ['patients', 'tutors', 'calendar', 'requests', 'analytics', 'users', 'services'] as const;
 type AdminTab = (typeof VALID_TABS)[number];

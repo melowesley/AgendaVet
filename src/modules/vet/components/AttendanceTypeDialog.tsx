@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Dialog, LeftPanelDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, LeftPanelDialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
 import { 
   Stethoscope, Scissors, RotateCcw, ClipboardCheck, Weight, 
   Microscope, FileText, FlaskConical, Camera, Droplet, 
   ClipboardList, MessageSquare, Video, Cross, Bug, 
   ScissorsLineDashed, Skull, Syringe
 } from 'lucide-react';
-import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { AppointmentRequest } from '@/modules/vet/hooks/useAppointmentRequests';
+import { supabase } from '@/core/integrations/supabase/client';
+import { useToast } from '@/shared/hooks/use-toast';
 import { ConsultaDialog } from './ConsultaDialog';
 import { AvaliacaoCirurgicaDialog } from './AvaliacaoCirurgicaDialog';
 import { CirurgiaDialog } from './CirurgiaDialog';

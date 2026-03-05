@@ -1,17 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '@/core/integrations/supabase/client';
+import { Button } from '@/shared/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { PawPrint, Plus, Calendar } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/shared/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { AddPetDialog } from '@/modules/tutor/components/AddPetDialog';
 import { PetCard } from '@/modules/tutor/components/PetCard';
 import { RequestAppointmentDialog } from '@/modules/tutor/components/RequestAppointmentDialog';
 import { AppointmentRequestCard } from '@/modules/tutor/components/AppointmentRequestCard';
-import { ClientLayout } from '@/components/layout/ClientLayout';
-import { useAuthStore } from '@/store/useAuthStore';
+import { ClientLayout } from '@/modules/tutor/layouts/ClientLayout';
+import { useAuthStore } from '@/core/auth/useAuthStore';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface Pet {

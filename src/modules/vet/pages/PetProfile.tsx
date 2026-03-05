@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAdminCheck } from '@/hooks/useAdminCheck';
-import { usePetTimeline, getModuleLabel, type TimelineEntry } from '@/hooks/usePetTimeline';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/core/integrations/supabase/client';
+import { useAdminCheck } from '@/modules/vet/hooks/useAdminCheck';
+import { usePetTimeline, getModuleLabel, type TimelineEntry } from '@/modules/vet/hooks/usePetTimeline';
+import { Button } from '@/shared/components/ui/button';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { useToast } from '@/shared/hooks/use-toast';
 import {
   Calendar, Stethoscope, ChevronRight, ChevronLeft,
   PawPrint, Printer, Phone,
@@ -18,13 +18,13 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AttendanceTypeDialog, ATTENDANCE_TYPES, type AttendanceTypeKey } from '@/modules/vet/components/AttendanceTypeDialog';
 import { HistoryEntryDetailDialog } from '@/modules/vet/components/HistoryEntryDetailDialog';
-import { AdminLayout } from '@/components/layout/AdminLayout';
-import { useAttendanceTypeSidebar } from '@/contexts/AttendanceTypeSidebarContext';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { PetService, type Pet } from '@/modules/pets/pet.service';
+import { AdminLayout } from '@/modules/vet/layouts/AdminLayout';
+import { useAttendanceTypeSidebar } from '@/modules/vet/contexts/AttendanceTypeSidebarContext';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/shared/components/ui/tabs';
+import { Input } from '@/shared/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
+import { PetService, type Pet } from '@/shared/services/pet.service';
 
 interface OwnerProfile {
   full_name: string | null;

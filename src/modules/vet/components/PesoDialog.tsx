@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/core/integrations/supabase/client';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
+import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import { Textarea } from '@/shared/components/ui/textarea';
+import { useToast } from '@/shared/hooks/use-toast';
 import { Weight, Save, Trash2, Edit2, TrendingUp, TrendingDown, Minus, ArrowLeft, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/shared/components/ui/card';
 import { exportPetRecordPdf } from './exportPetRecordPdf';
 import { logPetAdminHistory } from './petAdminHistory';
 import { PetAdminHistorySection } from './PetAdminHistorySection';
-import { generatePesoSummary } from '@/utils/procedureSummaries';
+import { generatePesoSummary } from '@/modules/vet/utils/procedureSummaries';
 
 interface PesoDialogProps {
   open: boolean;

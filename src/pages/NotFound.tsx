@@ -1,7 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { BorderedContentFrame } from "@/components/layout/BorderedContentFrame";
-import { AppNavbar } from "@/components/layout/AppNavbar";
+import { BorderedContentFrame } from "@/shared/layouts/BorderedContentFrame";
+import { AppNavbar } from "@/shared/layouts/AppNavbar";
 
 const NotFound = () => {
   const location = useLocation();

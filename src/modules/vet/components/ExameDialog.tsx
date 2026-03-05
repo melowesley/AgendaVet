@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/core/integrations/supabase/client';
+import { Dialog, PageDialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
+import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import { Textarea } from '@/shared/components/ui/textarea';
+import { useToast } from '@/shared/hooks/use-toast';
 import { FlaskConical, Save, Trash2, Download, Edit2, ArrowLeft, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { exportPetRecordPdf } from './exportPetRecordPdf';
 import { logPetAdminHistory } from './petAdminHistory';
 import { PetAdminHistorySection } from './PetAdminHistorySection';
-import { generateExameSummary } from '@/utils/procedureSummaries';
+import { generateExameSummary } from '@/modules/vet/utils/procedureSummaries';
 
 interface ExameDialogProps {
   open: boolean;

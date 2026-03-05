@@ -2,9 +2,9 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, CalendarDays, CalendarRange, MoreHorizontal } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
+import { Button } from '@/shared/components/ui/button';
+import { cn } from '@/core/lib/utils';
+import { AppointmentRequest } from '@/modules/vet/hooks/useAppointmentRequests';
 import { CalendarAppointmentDetail } from './CalendarAppointmentDetail';
 import {
   DropdownMenu,
@@ -13,18 +13,18 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/shared/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/integrations/supabase/client';
-import { queryClient } from '@/lib/queryClient';
+} from '@/shared/components/ui/dialog';
+import { Label } from '@/shared/components/ui/label';
+import { Textarea } from '@/shared/components/ui/textarea';
+import { supabase } from '@/core/integrations/supabase/client';
+import { queryClient } from '@/core/lib/queryClient';
 
 // ─── Notas de célula ──────────────────────────────────────────────────────────
 

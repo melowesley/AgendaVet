@@ -1,4 +1,4 @@
-import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
+import { AppointmentRequest } from '@/modules/vet/hooks/useAppointmentRequests';
 import type { AnamnesisData } from './anamnesisTypes';
 import {
   SGI_OPTIONS,
@@ -13,7 +13,7 @@ import {
   COMPORTAMENTO_OPTIONS,
   MUCOSAS_OPTIONS,
   LINFONODOS_OPTIONS,
-} from '@/data/anamnesisOptions';
+} from '@/shared/data/anamnesisOptions';
 
 interface ExportPdfOptions {
   request: AppointmentRequest;

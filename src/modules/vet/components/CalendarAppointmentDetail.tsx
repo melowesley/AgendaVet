@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
+import { Badge } from '@/shared/components/ui/badge';
+import { Button } from '@/shared/components/ui/button';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { Separator } from '@/shared/components/ui/separator';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PawPrint } from 'lucide-react';
-import { AppointmentRequest } from '@/hooks/useAppointmentRequests';
+import { AppointmentRequest } from '@/modules/vet/hooks/useAppointmentRequests';
 import { TutorInfoSection } from './detail/TutorInfoSection';
 import { AttendanceTypeDialog } from './AttendanceTypeDialog';
 

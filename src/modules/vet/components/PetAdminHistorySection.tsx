@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
+import { supabase } from '@/core/integrations/supabase/client';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { Button } from '@/shared/components/ui/button';
 import { format, isValid, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { History, ChevronDown, ChevronUp, Printer } from 'lucide-react';
