@@ -4,6 +4,7 @@ import {
     TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal, Dimensions
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
@@ -72,6 +73,7 @@ export default function ReceitaScreen() {
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
     const router = useRouter();
     const queryClient = useQueryClient();
+    const insets = useSafeAreaInsets();
 
     const [tipoReceita, setTipoReceita] = useState<'simples' | 'controle'>('simples');
     const [saving, setSaving] = useState(false);
@@ -300,23 +302,25 @@ export default function ReceitaScreen() {
             </KeyboardAvoidingView>
 
             {/* MODAL DE PRÉ-VISUALIZAÇÃO */}
-            <Modal visible={!!previewHtml} animationType="slide" presentationStyle="pageSheet">
-                <View style={s.previewModal}>
-                    <View style={[s.previewHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+            <Modal visible={!!previewHtml} animationType="slide" presentationStyle="overFullScreen">
+                <View style={[s.previewModal, { backgroundColor: theme.background }]}>
+                    <View style={[s.previewHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border, paddingTop: insets.top || 16 }]}>
                         <Text style={[s.previewTitle, { color: theme.text }]}>Pré-visualização</Text>
                         <TouchableOpacity onPress={() => setPreviewHtml(null)} style={s.closeBtn}>
                             <Ionicons name="close" size={24} color={theme.text} />
                         </TouchableOpacity>
                     </View>
                     {previewHtml && (
-                        <WebView
-                            source={{ html: previewHtml }}
-                            style={{ flex: 1 }}
-                            scalesPageToFit
-                            showsVerticalScrollIndicator={false}
-                        />
+                        <View style={{ flex: 1, backgroundColor: '#fff' }}>
+                            <WebView
+                                source={{ html: previewHtml }}
+                                style={{ flex: 1 }}
+                                scalesPageToFit={true}
+                                showsVerticalScrollIndicator={false}
+                            />
+                        </View>
                     )}
-                    <View style={[s.previewFooter, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+                    <View style={[s.previewFooter, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
                         <TouchableOpacity style={[s.saveBtn, { backgroundColor: accentColor }]}
                             onPress={() => { setPreviewHtml(null); handleSaveAndPrint(); }}>
                             <Ionicons name="download-outline" size={20} color="white" style={{ marginRight: 6 }} />
@@ -344,9 +348,9 @@ const s = StyleSheet.create({
     saveBtn: { height: 52, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
     saveBtnText: { fontSize: 15, fontWeight: '800' },
     // Preview Modal
-    previewModal: { flex: 1, backgroundColor: '#f1f5f9' },
+    previewModal: { flex: 1 },
     previewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1 },
     previewTitle: { fontSize: 17, fontWeight: '800' },
     closeBtn: { padding: 4 },
-    previewFooter: { padding: 16, paddingBottom: 32, borderTopWidth: 1 },
+    previewFooter: { padding: 16, borderTopWidth: 1 },
 });

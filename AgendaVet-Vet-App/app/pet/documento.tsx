@@ -46,7 +46,7 @@ export default function DocumentoScreen() {
     };
 
     return (
-        <KeyboardAvoidingView style={[s.container, { backgroundColor: theme.background }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <KeyboardAvoidingView style={[s.container, { backgroundColor: theme.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <Stack.Screen options={{ title: 'Documento', headerStyle: { backgroundColor: theme.background }, headerShadowVisible: false, headerLeft: () => <TouchableOpacity onPress={() => router.back()} style={{ paddingRight: 12 }}><Ionicons name="chevron-back" size={26} color={theme.primary} /></TouchableOpacity> }} />
             <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
                 <View style={[s.hero, { backgroundColor: theme.primary + '15' }]}>
