@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
     View, Text, StyleSheet, useColorScheme, ScrollView,
-    TouchableOpacity, RefreshControl, Alert, ActivityIndicator, ImageBackground
+    TouchableOpacity, RefreshControl, Alert, ActivityIndicator, ImageBackground, TextInput, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 
 // ── Status helpers ──────────────────────────────────────────
 const STATUS_LABEL: Record<string, string> = {
@@ -38,6 +39,8 @@ export default function AgendaScreen() {
     const { requests, loading, refresh } = useAppointmentRequests();
 
     const [selectedDate, setSelectedDate] = useState(new Date());
+    const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [noteText, setNoteText] = useState('');
 
     const weekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
     const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -46,17 +49,27 @@ export default function AgendaScreen() {
         queryKey: ['admin-stats'],
         queryFn: async () => {
             const today = new Date().toISOString().split('T')[0];
-            const [pendingRes, confirmedRes, clientsRes, petsRes] = await Promise.all([
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+            const todayEnd = new Date();
+            todayEnd.setHours(23, 59, 59, 999);
+
+            const [pendingRes, confirmedRes, clientsRes, petsRes, revenueRes] = await Promise.all([
                 supabase.from('appointment_requests').select('id', { count: 'exact' }).eq('status', 'pending'),
                 supabase.from('appointment_requests').select('id', { count: 'exact' }).eq('status', 'confirmed').eq('scheduled_date', today),
                 supabase.from('profiles').select('id', { count: 'exact' }),
                 supabase.from('pets').select('id', { count: 'exact' }),
+                supabase.from('invoices').select('total_amount').eq('status', 'paid').gte('updated_at', todayStart.toISOString()).lte('updated_at', todayEnd.toISOString()),
             ]);
+
+            const revenueToday = revenueRes.data ? revenueRes.data.reduce((sum, current) => sum + Number(current.total_amount), 0) : 0;
+
             return {
                 pendingRequests: pendingRes.count || 0,
                 confirmedToday: confirmedRes.count || 0,
                 totalClients: clientsRes.count || 0,
                 totalPets: petsRes.count || 0,
+                revenueToday,
             };
         }
     });
@@ -86,11 +99,39 @@ export default function AgendaScreen() {
         onError: (e: any) => Alert.alert('Erro', e.message),
     });
 
+    const updateNotes = useMutation({
+        mutationFn: async ({ id, notes }: { id: string; notes: string }) => {
+            const { error } = await supabase.from('appointment_requests')
+                .update({ quick_notes: notes, updated_at: new Date().toISOString() }).eq('id', id);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            queryClient.invalidateQueries({ queryKey: ['appointment-requests'] });
+            setExpandedId(null);
+        },
+        onError: (e: any) => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert('Erro', 'Não foi possível salvar a anotação.');
+        },
+    });
+
     const handleCancel = (id: string) => {
         Alert.alert('Atenção', 'Deseja cancelar este agendamento?', [
             { text: 'Não', style: 'cancel' },
             { text: 'Sim, Cancelar', style: 'destructive', onPress: () => updateStatus.mutate({ id, status: 'cancelled' }) }
         ]);
+    };
+
+    const toggleExpand = (item: any) => {
+        if (expandedId === item.id) {
+            setExpandedId(null);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        } else {
+            setExpandedId(item.id);
+            setNoteText(item.quick_notes || '');
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
     };
 
     const isDark = colorScheme === 'dark';
@@ -161,55 +202,93 @@ export default function AgendaScreen() {
                             const action = NEXT_ACTION[item.status];
                             const statusColor = STATUS_COLOR[item.status] || theme.textMuted;
                             const petId = item.pet?.id;
+                            const isExpanded = expandedId === item.id;
 
                             return (
-                                <View key={item.id} style={[s.row, { borderBottomColor: theme.border, backgroundColor: theme.surface + '80' }]}>
-                                    {/* Col Hora */}
-                                    <View style={s.timeCol}>
-                                        <Text style={[s.timeText, { color: theme.text }]}>
-                                            {item.scheduled_time || item.preferred_time || '--:--'}
-                                        </Text>
-                                        <View style={[s.statusDot, { backgroundColor: statusColor }]} />
+                                <View key={item.id} style={{ borderBottomWidth: 1, borderBottomColor: theme.border, backgroundColor: theme.surface + (isExpanded ? 'B3' : '80') }}>
+                                    <View style={[s.row, { borderBottomWidth: 0 }]}>
+                                        {/* Col Hora */}
+                                        <View style={s.timeCol}>
+                                            <Text style={[s.timeText, { color: theme.text }]}>
+                                                {item.scheduled_time || item.preferred_time || '--:--'}
+                                            </Text>
+                                            <View style={[s.statusDot, { backgroundColor: statusColor }]} />
+                                        </View>
+
+                                        {/* Col Paciente/Status */}
+                                        <TouchableOpacity
+                                            style={s.infoCol}
+                                            onPress={() => toggleExpand(item)}
+                                            activeOpacity={0.6}
+                                        >
+                                            <Text style={[s.petName, { color: theme.text }]}>{item.pet?.name || '---'}</Text>
+                                            <Text style={[s.ownerName, { color: theme.textSecondary }]}>{item.profile?.full_name || '---'}</Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                                                <Text style={[s.statusLabel, { color: statusColor }]}>{STATUS_LABEL[item.status]}</Text>
+                                                {item.quick_notes && !isExpanded && <Ionicons name="document-text" size={12} color={theme.textMuted} />}
+                                            </View>
+                                        </TouchableOpacity>
+
+                                        {/* Col Ações */}
+                                        <View style={s.actionCol}>
+                                            {action ? (
+                                                <TouchableOpacity
+                                                    style={[s.actionBtn, { backgroundColor: action.color }]}
+                                                    onPress={() => updateStatus.mutate({ id: item.id, status: action.nextStatus })}
+                                                    disabled={updateStatus.isPending || isExpanded}
+                                                >
+                                                    {updateStatus.isPending
+                                                        ? <ActivityIndicator size="small" color="white" />
+                                                        : <Ionicons name={action.icon} size={18} color="white" />
+                                                    }
+                                                </TouchableOpacity>
+                                            ) : item.status === 'completed' ? (
+                                                <Ionicons name="checkmark-done-circle" size={24} color={theme.success} />
+                                            ) : null}
+
+                                            {item.status !== 'completed' && item.status !== 'cancelled' && !isExpanded && (
+                                                <TouchableOpacity
+                                                    style={[s.cancelBtn, { borderColor: theme.border }]}
+                                                    onPress={() => handleCancel(item.id)}
+                                                >
+                                                    <Ionicons name="close" size={16} color={theme.error} />
+                                                </TouchableOpacity>
+                                            )}
+
+                                            <TouchableOpacity onPress={() => petId && router.push({ pathname: '/pet/[id]', params: { id: petId } })} style={{ padding: 4, marginLeft: 2 }}>
+                                                <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+                                            </TouchableOpacity>
+                                        </View>
                                     </View>
 
-                                    {/* Col Paciente/Status */}
-                                    <TouchableOpacity
-                                        style={s.infoCol}
-                                        onPress={() => petId && router.push({ pathname: '/pet/[id]', params: { id: petId } })}
-                                    >
-                                        <Text style={[s.petName, { color: theme.text }]}>{item.pet?.name || '---'}</Text>
-                                        <Text style={[s.ownerName, { color: theme.textSecondary }]}>{item.profile?.full_name || '---'}</Text>
-                                        <Text style={[s.statusLabel, { color: statusColor }]}>
-                                            {STATUS_LABEL[item.status]}
-                                        </Text>
-                                    </TouchableOpacity>
-
-                                    {/* Col Ações */}
-                                    <View style={s.actionCol}>
-                                        {action ? (
-                                            <TouchableOpacity
-                                                style={[s.actionBtn, { backgroundColor: action.color }]}
-                                                onPress={() => updateStatus.mutate({ id: item.id, status: action.nextStatus })}
-                                                disabled={updateStatus.isPending}
-                                            >
-                                                {updateStatus.isPending
-                                                    ? <ActivityIndicator size="small" color="white" />
-                                                    : <Ionicons name={action.icon} size={18} color="white" />
-                                                }
-                                            </TouchableOpacity>
-                                        ) : item.status === 'completed' ? (
-                                            <Ionicons name="checkmark-done-circle" size={24} color={theme.success} />
-                                        ) : null}
-
-                                        {item.status !== 'completed' && item.status !== 'cancelled' && (
-                                            <TouchableOpacity
-                                                style={[s.cancelBtn, { borderColor: theme.border }]}
-                                                onPress={() => handleCancel(item.id)}
-                                            >
-                                                <Ionicons name="close" size={16} color={theme.error} />
-                                            </TouchableOpacity>
-                                        )}
-                                    </View>
+                                    {/* Expanded Notes Section */}
+                                    {isExpanded && (
+                                        <View style={s.expandedArea}>
+                                            <Text style={[s.expandedTitle, { color: theme.textSecondary }]}>Anotações do Atendimento</Text>
+                                            <TextInput
+                                                style={[s.noteInput, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
+                                                placeholder="Digite sintomas, observações ou lembres sobre o tutor..."
+                                                placeholderTextColor={theme.textMuted}
+                                                multiline
+                                                numberOfLines={3}
+                                                textAlignVertical="top"
+                                                value={noteText}
+                                                onChangeText={setNoteText}
+                                            />
+                                            <View style={s.expandedActions}>
+                                                <TouchableOpacity style={[s.expandedBtn, { backgroundColor: theme.surfaceElevated }]} onPress={() => setExpandedId(null)}>
+                                                    <Text style={{ color: theme.text, fontWeight: '600' }}>Cancelar</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={[s.expandedBtn, { backgroundColor: theme.primary }]}
+                                                    onPress={() => updateNotes.mutate({ id: item.id, notes: noteText })}
+                                                    disabled={updateNotes.isPending}
+                                                >
+                                                    {updateNotes.isPending ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ color: '#fff', fontWeight: '700' }}>Salvar Nota</Text>}
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    )}
                                 </View>
                             );
                         })}
@@ -221,9 +300,13 @@ export default function AgendaScreen() {
                             <Text style={[s.statVal, { color: theme.primary }]}>{stats?.pendingRequests || 0}</Text>
                             <Text style={[s.statLab, { color: theme.textSecondary }]}>Pendentes</Text>
                         </View>
-                        <View style={s.statItem}>
+                        <View style={[s.statItem, { borderRightColor: theme.border, borderRightWidth: 1 }]}>
                             <Text style={[s.statVal, { color: theme.primary }]}>{stats?.totalPets || 0}</Text>
                             <Text style={[s.statLab, { color: theme.textSecondary }]}>Pets Totais</Text>
+                        </View>
+                        <View style={s.statItem}>
+                            <Text style={[s.statVal, { color: '#10B981' }]}>R$ {stats?.revenueToday?.toFixed(0) || 0}</Text>
+                            <Text style={[s.statLab, { color: theme.textSecondary }]}>Receita Hoje</Text>
                         </View>
                     </View>
 
@@ -269,5 +352,11 @@ const s = StyleSheet.create({
     footerStats: { flexDirection: 'row', margin: 20, padding: 16, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 },
     statItem: { flex: 1, alignItems: 'center', borderRightWidth: 0 },
     statVal: { fontSize: 18, fontWeight: '800' },
-    statLab: { fontSize: 10, fontWeight: '600' }
+    statLab: { fontSize: 10, fontWeight: '600' },
+
+    expandedArea: { paddingHorizontal: 16, paddingBottom: 16, paddingTop: 4 },
+    expandedTitle: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 },
+    noteInput: { minHeight: 80, borderRadius: 12, borderWidth: 1, padding: 12, fontSize: 14 },
+    expandedActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12, gap: 10 },
+    expandedBtn: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8 },
 });

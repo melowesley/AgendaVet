@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
     View, Text, StyleSheet, useColorScheme, ScrollView, TouchableOpacity,
-    ActivityIndicator, Alert, TextInput, Linking
+    ActivityIndicator, Alert, TextInput, Linking, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Colors } from '@/constants/theme';
@@ -72,10 +72,29 @@ export default function GravacoesScreen() {
     const uploadVideoToStorage = async (uri: string): Promise<string> => {
         const ext = uri.split('.').pop() || 'mp4';
         const fileName = `pets/${petId}/videos/${Date.now()}.${ext}`;
-        const response = await fetch(uri);
-        const blob = await response.blob();
-        const { error } = await supabase.storage.from('pet-media').upload(fileName, blob, { contentType: `video/${ext}` });
-        if (error) throw error;
+
+        const { data: { session } } = await supabase.auth.getSession();
+
+        const formData = new FormData();
+        formData.append('file', {
+            uri: Platform.OS === 'ios' ? uri.replace('file://', '') : uri,
+            name: `upload.${ext}`,
+            type: `video/${ext === 'mov' ? 'quicktime' : ext}`
+        } as any);
+
+        const res = await fetch(`${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/pet-media/${fileName}`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${session?.access_token}`
+            },
+            body: formData,
+        });
+
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`Falha no upload do vídeo. Detalhes: ${errorText}`);
+        }
+
         const { data: { publicUrl } } = supabase.storage.from('pet-media').getPublicUrl(fileName);
         return publicUrl;
     };
@@ -123,12 +142,12 @@ export default function GravacoesScreen() {
     };
 
     return (
-        <>
+        <KeyboardAvoidingView style={{ flex: 1, backgroundColor: theme.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <Stack.Screen options={{
                 title: 'Gravações', headerStyle: { backgroundColor: theme.background }, headerShadowVisible: false,
-                headerLeft: () => <TouchableOpacity onPress={() => router.back()} style={{ paddingRight: 12 }}><Ionicons name="chevron-back" size={26} color={ACCENT} /></TouchableOpacity>
+                headerLeft: () => <TouchableOpacity onPress={() => router.back()} style={{ paddingRight: 12 }}><Ionicons name="chevron-back" size={26} color={theme.primary} /></TouchableOpacity>
             }} />
-            <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
 
                 {/* Hero */}
                 <View style={[s.hero, { backgroundColor: theme.primary + '15' }]}>
@@ -264,7 +283,7 @@ export default function GravacoesScreen() {
                 </TouchableOpacity>
 
             </ScrollView>
-        </>
+        </KeyboardAvoidingView>
     );
 }
 

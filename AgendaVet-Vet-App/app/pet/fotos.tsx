@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, useColorScheme, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, useColorScheme, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,10 +46,28 @@ export default function FotosScreen() {
             for (const uri of fotos) {
                 const ext = uri.split('.').pop() || 'jpg';
                 const fileName = `pets/${petId}/fotos/${Date.now()}.${ext}`;
-                const response = await fetch(uri);
-                const blob = await response.blob();
-                const { data: uploadData, error: uploadError } = await supabase.storage.from('pet-media').upload(fileName, blob, { contentType: `image/${ext}` });
-                if (uploadError) throw uploadError;
+
+                // Usando FormData nativo para contornar problemas de 'Network request failed' no RN
+                const formData = new FormData();
+                formData.append('file', {
+                    uri: Platform.OS === 'ios' ? uri.replace('file://', '') : uri,
+                    name: `upload.${ext}`,
+                    type: `image/${ext === 'jpeg' || ext === 'jpg' ? 'jpeg' : ext}`
+                } as any);
+
+                const res = await fetch(`${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/pet-media/${fileName}`, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${session?.access_token}`
+                    },
+                    body: formData,
+                });
+
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`Falha no upload da foto. Detalhes: ${errorText}`);
+                }
+
                 const { data: { publicUrl } } = supabase.storage.from('pet-media').getPublicUrl(fileName);
                 uploadedUrls.push(publicUrl);
             }
@@ -70,9 +88,9 @@ export default function FotosScreen() {
     };
 
     return (
-        <>
+        <KeyboardAvoidingView style={{ flex: 1, backgroundColor: theme.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <Stack.Screen options={{ title: 'Fotos', headerStyle: { backgroundColor: theme.background }, headerShadowVisible: false, headerLeft: () => <TouchableOpacity onPress={() => router.back()} style={{ paddingRight: 12 }}><Ionicons name="chevron-back" size={26} color={theme.primary} /></TouchableOpacity> }} />
-            <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={s.scroll}>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
                 <View style={[s.hero, { backgroundColor: theme.primary + '15' }]}>
                     <Ionicons name="camera-outline" size={32} color={theme.primary} />
                     <View style={{ marginLeft: 14 }}><Text style={[s.heroTitle, { color: theme.text }]}>Registro Fotográfico</Text><Text style={[s.heroSub, { color: theme.textSecondary }]}>Documente o estado visual do paciente</Text></View>
@@ -118,7 +136,7 @@ export default function FotosScreen() {
                     {saving ? <ActivityIndicator color="white" /> : <><Ionicons name="cloud-upload-outline" size={22} color={fotos.length > 0 ? 'white' : theme.textMuted} style={{ marginRight: 8 }} /><Text style={[s.saveBtnText, { color: fotos.length > 0 ? 'white' : theme.textMuted }]}>Salvar {fotos.length > 0 ? `${fotos.length} foto(s)` : 'Fotos'}</Text></>}
                 </TouchableOpacity>
             </ScrollView>
-        </>
+        </KeyboardAvoidingView>
     );
 }
 
@@ -137,6 +155,6 @@ const s = StyleSheet.create({
     photo: { width: 100, height: 100, borderRadius: 12 },
     photoRemove: { position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 10 },
     emptyBox: { borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 20, alignItems: 'center', justifyContent: 'center', padding: 60 },
-    saveBtn: { height: 56, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    saveBtn: { height: 56, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10 },
     saveBtnText: { fontSize: 16, fontWeight: '800' },
 });
