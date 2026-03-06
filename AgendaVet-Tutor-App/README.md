@@ -16,6 +16,26 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
+3. **Acessar pelo Expo Go (celular em outra rede)** — usar túnel ngrok. **Entre na pasta do app** e rode:
+
+   ```bash
+   cd AgendaVet-Tutor-App
+   npx expo start --tunnel
+   ```
+
+   Com cache limpo: `npx expo start -c --tunnel`
+
+   No terminal aparecerá um **QR code** e uma URL `exp://...`. Abra o **Expo Go** no celular e escaneie o QR code.
+
+   **Se aparecer "ngrok tunnel took too long to connect":**
+   - **Opção A (recomendada):** Crie uma conta grátis em [ngrok.com](https://ngrok.com), pegue seu **authtoken** em [dashboard.ngrok.com/get-started/your-authtoken](https://dashboard.ngrok.com/get-started/your-authtoken) e adicione no `.env`:
+     ```env
+     NGROK_AUTHTOKEN=seu_token_aqui
+     ```
+     Depois rode de novo: `npx expo start --tunnel`.
+   - **Opção B:** Tente mais uma ou duas vezes (às vezes conecta na segunda).
+   - **Opção C:** Use na mesma rede sem túnel: `npx expo start` e conecte o celular no mesmo Wi‑Fi; no Expo Go, use a URL da LAN.
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)

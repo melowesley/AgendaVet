@@ -44,10 +44,16 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
+
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <InitialLayout />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <InitialLayout />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

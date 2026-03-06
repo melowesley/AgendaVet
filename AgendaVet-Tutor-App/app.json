@@ -35,6 +35,14 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "ios": {
+            "bundleId": "com.agendavet.tutor"
+          }
+        }
       ]
     ],
     "experiments": {

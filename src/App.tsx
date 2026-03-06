@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/shared/components/ui/toaster";
 import { Toaster as Sonner } from "@/shared/components/ui/sonner";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
@@ -7,16 +7,25 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { queryClient } from "@/core/lib/queryClient";
 import { initializeAuth } from "@/core/auth/useAuthStore";
 import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
-import Index from "./pages/Index";
-import Auth from "./modules/tutor/pages/Auth";
-import ClientPortal from "./modules/tutor/pages/Dashboard";
-import PetProfile from "./modules/tutor/pages/PetProfile";
-import AdminDashboard from "./modules/vet/pages/Dashboard";
-import AdminAuth from "./modules/vet/pages/Auth";
-import AdminPetProfile from "./modules/vet/pages/PetProfile";
-import SidebarDemo from "@/shared/components/sidebar-demo";
-import AgendaDemo from "./pages/AgendaDemo";
-import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from "@/shared/components/ProtectedRoute";
+import { AdminRoute } from "@/shared/components/AdminRoute";
+import { PawPrint } from "lucide-react";
+
+const Index = lazy(() => import("./pages/Index"));
+const Auth = lazy(() => import("./modules/tutor/pages/Auth"));
+const ClientPortal = lazy(() => import("./modules/tutor/pages/Dashboard"));
+const PetProfile = lazy(() => import("./modules/tutor/pages/PetProfile"));
+const AdminDashboard = lazy(() => import("./modules/vet/pages/Dashboard"));
+const AdminAuth = lazy(() => import("./modules/vet/pages/Auth"));
+const AdminPetProfile = lazy(() => import("./modules/vet/pages/PetProfile"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+const LoadingFallback = () => (
+  <div className="h-screen flex flex-col items-center justify-center gap-4 bg-background">
+    <PawPrint className="h-10 w-10 text-teal-600 animate-pulse" />
+    <p className="text-sm text-muted-foreground">Carregando...</p>
+  </div>
+);
 
 const App = () => {
   useEffect(() => {
@@ -32,19 +41,26 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <div className="h-full min-h-0 overflow-hidden flex flex-col">
+          <Suspense fallback={<LoadingFallback />}>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/cliente" element={<ClientPortal />} />
-            <Route path="/cliente/pet/:petId" element={<PetProfile />} />
+            <Route path="/cliente" element={
+              <ProtectedRoute><ClientPortal /></ProtectedRoute>
+            } />
+            <Route path="/cliente/pet/:petId" element={
+              <ProtectedRoute><PetProfile /></ProtectedRoute>
+            } />
             <Route path="/admin/login" element={<AdminAuth />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/pet/:petId" element={<AdminPetProfile />} />
-            <Route path="/sidebar-demo" element={<SidebarDemo />} />
-            <Route path="/agenda-demo" element={<AgendaDemo />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/admin" element={
+              <AdminRoute><AdminDashboard /></AdminRoute>
+            } />
+            <Route path="/admin/pet/:petId" element={
+              <AdminRoute><AdminPetProfile /></AdminRoute>
+            } />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
           </div>
         </BrowserRouter>
       </TooltipProvider>

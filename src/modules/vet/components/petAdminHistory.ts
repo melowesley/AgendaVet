@@ -32,7 +32,7 @@ export interface LogPetAdminHistoryInput {
 /**
  * Remove valores undefined/null profundamente para não poluir o JSONB.
  */
-const cleanDetails = (details?: Record<string, unknown> | null): Record<string, unknown> => {
+const cleanDetails = (details?: Record<string, unknown> | null): any => {
   if (!details) return {};
   return Object.fromEntries(
     Object.entries(details).filter(([, v]) => v !== undefined && v !== null && v !== '')
@@ -54,6 +54,19 @@ export const logPetAdminHistory = async ({
   if (!userId) {
     console.warn('[petAdminHistory] Usuário não autenticado — log ignorado.');
     return false;
+  }
+
+  // Módulos que já possuem Trigger no banco de dados para evitar duplicidade
+  const triggerModules = [
+    'peso', 'vacina', 'exame', 'receita', 'patologia', 'documento',
+    'internacao', 'observacao', 'video', 'foto', 'obito'
+  ];
+
+  if (triggerModules.includes(module) && action !== 'delete') {
+    // Nós apenas ignoramos o CREATE/UPDATE se houver trigger.
+    // Opcionalmente, pode ignorar o delete se ele não estiver no histórico.
+    console.log(`[petAdminHistory] Log ignorado no frontend pois o módulo '${module}' já possui trigger nativo.`);
+    return true;
   }
 
   const { error } = await supabase.from('pet_admin_history').insert({

@@ -1,0 +1,363 @@
+
+# Plano de Revisao e Melhoria Completa do AgendaVet
+
+## Visao Geral do Projeto
+
+O AgendaVet e um sistema veterinario composto por
+- Web App (Vite + React) - Painel admin e portal do tutor
+- Vet App (ExpoReact Native) - App mobile do veterinario (botoes em desenvolvimento, sem fluxos funcionais)
+- Tutor App (ExpoReact Native) - App mobile do tutor
+- Templete Web (Next.js) - Referencia futura (coexiste, nao sera priorizado)
+
+```mermaid
+graph TD
+    subgraph Monorepo AgendaVet
+        WEB[Web App (Vite + React)]
+        VET[Vet App (Expo)]
+        TUTOR[Tutor App (Expo)]
+        NEXT[Templete Web (Next.js) - Referencia]
+    end
+    DB[Supabase (PostgreSQL + Auth + RLS)]
+    WEB -- DB
+    VET -- DB
+    TUTOR -- DB
+    NEXT -- DB
+```
+
+---
+
+## FASE 1 - Revisao Geral e Seguranca
+
+Objetivo Corrigir problemas criticos de seguranca, organizar estrutura e limpar o projeto.
+
+### 1.1 - Correcoes de Seguranca (Critico)
+
+ Acao  Arquivo  Detalhe 
+------------------------
+ Remover endpoint `run-command`  `server.js` (linhas ~187-230)  Permite execucao remota de comandos - risco grave 
+ Remover token hardcoded  `server.js18`  `'Weslei3423@'` como fallback do SECURITY_TOKEN 
+ Adicionar validacao de env vars  `server.js17-19`  Falhar na inicializacao se `SECURITY_TOKEN` nao estiver definido 
+ Remover `tmptest_supabase.js`  `tmptest_supabase.js`  Arquivo de teste com queries ao banco 
+ Remover HTML inline  `server.js105-180`  Extrair template HTML para arquivo separado `publicterminal.html` 
+
+### 1.2 - Corrigir Import Quebrado
+
+ Arquivo  Problema  Correcao 
+-----------------------------
+ `srcsharedcomponentsexpandable-card-demo-standard.tsx5`  `from @hooksuse-outside-click`  `from @sharedhooksuse-outside-click` 
+
+### 1.3 - Mover Componentes Demo
+
+Mover para `srcdemo` (fora de producao)
+
+ Origem  Destino 
+-----------------
+ `srcsharedcomponentsexpandable-card-demo-standard.tsx`  `srcdemoexpandable-card-demo-standard.tsx` 
+ `srcsharedcomponentshero-section-demo-1.tsx`  `srcdemohero-section-demo-1.tsx` 
+ `srcsharedcomponentssidebar-demo.tsx`  `srcdemosidebar-demo.tsx` 
+ `srcpagesAgendaDemo.tsx`  `srcdemoAgendaDemo.tsx` 
+
+Atualizar imports em `srcApp.tsx` (rotas `sidebar-demo`, `agenda-demo`).
+
+### 1.4 - Limpar Arquivos Desnecessarios
+
+ Acao  Arquivo 
+---------------
+ Verificar se `PLANO_IMPLEMENTACAO_VET_APP.md` deve ficar no repo  Raiz 
+ Verificar se `Prompts.txt` deve ficar no repo  Raiz 
+ Adicionar ao `.gitignore`  `tmp`, `.log`, `Prompts.txt` 
+
+### 1.5 - Validacao de Env Vars no Supabase Client
+
+- Arquivo `srccoreintegrationssupabaseclient.ts`
+- Acao Adicionar verificacao na inicializacao
+```typescript
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl  !supabaseAnonKey) {
+  throw new Error(
+    'Variaveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY sao obrigatorias. Verifique o arquivo .env'
+  );
+}
+```
+
+Verificacao da Fase 1
+- [ ] `npm run build` passa sem erros
+- [ ] Nenhum tokensenha hardcoded no codigo
+- [ ] `tmp` no `.gitignore`
+- [ ] Import quebrado corrigido
+- [ ] Demos movidos para `srcdemo`
+
+---
+
+## FASE 2 - Traducao PT-BR e Ajustes de Frontend
+
+Objetivo Traduzir todos os textos em ingles para PT-BR no painel admin e ajustar rotas.
+
+### 2.1 - Traducoes Identificadas no Admin
+
+ Arquivo  Linha  Ingles  PT-BR 
+-------------------------------
+ `srcmodulesvetcomponentsUserManagement.tsx`  114  `TableHeadRoleTableHead`  `TableHeadFuncaoTableHead` 
+ `srcmodulesvetcomponentsUserManagement.tsx`  124  `BadgeAdminBadge`  `BadgeAdministradorBadge` 
+ `srcmodulesvetcomponentsManageRequestDialog.tsx`  263271  `Score {s.efficiencyScore}`  `Pontuacao {s.efficiencyScore}` 
+ `srcmodulesvetcomponentsAppointmentRequestsTable.tsx`  157  `'NA'`  `'ND'` 
+ `srcmodulesvetcomponentsAppointmentRequestsTable.tsx`  164  `request.pet.type` (raw)  Mapear `dog`-`Cao`, `cat`-`Gato`, etc. 
+ `srcmodulesvetcomponentsManageRequestDialog.tsx`  132134  `'NA'` e tipo raw  `'ND'` + mapeamento de tipo 
+ `srcmodulesvetcomponentsManageRequestDialog.tsx`  155  `.replace('_', ' ')`  Usar funcao de traducao de status 
+
+### 2.2 - Criar Utilitario de Traducao
+
+- Novo arquivo `srcsharedutilstranslations.ts`
+- Conteudo funcoes para traduzir tipos de pet, status de agendamento, e labels de modulos
+- Centraliza todas as traducoes para evitar strings duplicadas
+
+### 2.3 - Varredura Completa de Textos
+
+- Buscar em todos os arquivos `srcmodulesvet` por strings em ingles remanescentes
+- Verificar placeholders, toasts, titulos de dialogo, headers de tabela
+
+Verificacao da Fase 2
+- [ ] Nenhum texto em ingles visivel no painel admin
+- [ ] Utilitario de traducao criado e utilizado
+- [ ] Build sem erros
+
+---
+
+## FASE 3 - Migracao de Funcionalidades para o App Vet (Expo)
+
+Objetivo Migrar os fluxos clinicos da web para o app mobile do veterinario.
+
+### Estado Atual do App Vet
+
+ Tela  Status  O que falta 
+---------------------------
+ Home (index.tsx)  UI basica  Mostrar resumo de agendamentos do dia 
+ Pacientes  Lista funcional  Busca e filtro OK 
+ Pet Profile ([id].tsx)  Estrutura basica  Falta botao de atendimento e timeline 
+ Prontuario  Placeholder  Falta implementacao completa 
+ Solicitacoes  Placeholder  Falta gestao de agendamentos 
+ Menu  Links funcionais  Analytics, Calendario, Servicos, Tutores OK 
+ Consulta  Arquivo existe  Formulario vazio - precisa implementar 
+ Receita  Arquivo existe  Formulario vazio - precisa implementar 
+ Vacina  Arquivo existe  Formulario vazio - precisa implementar 
+ Exame  Arquivo existe  Formulario vazio - precisa implementar 
+ Cirurgia  Arquivo existe  Formulario vazio - precisa implementar 
+ Internacao  Arquivo existe  Formulario vazio - precisa implementar 
+ Observacao  Arquivo existe  Formulario vazio - precisa implementar 
+ Retorno  Arquivo existe  Formulario vazio - precisa implementar 
+
+### 3.1 - Implementar Tela de Atendimento Clinico
+
+Padrao a seguir (baseado na web)
+
+```mermaid
+flowchart TD
+    A[Pet Profile [id].tsx] -- B[Botao 'Iniciar Atendimento']
+    B -- C[Tela de Selecao de Modulo]
+    C -- D[Consulta]
+    C -- E[Vacina]
+    C -- F[Receita]
+    C -- G[Exame]
+    C -- H[Cirurgia]
+    C -- I[Internacao]
+    C -- J[Observacao]
+    C -- K[Retorno]
+    D -- L[Salvar + logPetAdminHistory]
+    E -- L
+    F -- L
+    G -- L
+    H -- L
+    I -- L
+    J -- L
+    K -- L
+    L -- M[Atualizar Timeline]
+```
+
+- Novo arquivo `AgendaVet-Vet-Appapppetatendimento.tsx`
+- Grid de botoes com os 17 modulos (replicar `AttendanceTypeDialog` da web)
+- Navegacao `router.push({ pathname 'petconsulta', params { petId, petName } })`
+
+### 3.2 - Implementar Formularios dos Modulos
+
+Cada arquivo em `AgendaVet-Vet-Appapppet` sera implementado seguindo o padrao
+
+1. Receber params (petId, petName) via `useLocalSearchParams()`
+2. Carregar registros existentes do Supabase
+3. Formulario com campos especificos do modulo
+4. Salvar na tabela primaria + `logPetAdminHistory()`
+5. Navegar de volta ao perfil do pet
+
+Modulos a implementar (ordem de prioridade)
+
+ Prioridade  Modulo  Arquivo  Tabela Supabase 
+----------------------------------------------
+ 1  Consulta  `apppetconsulta.tsx`  `anamnesis` 
+ 2  Receita  `apppetreceita.tsx`  `pet_prescriptions` 
+ 3  Vacina  `apppetvacina.tsx`  `pet_vaccines` 
+ 4  Exame  `apppetexame.tsx`  `pet_exams` 
+ 5  Internacao  `apppetinternacao.tsx`  `pet_hospitalizations` 
+ 6  Cirurgia  `apppetcirurgia.tsx`  `appointment_requests` 
+ 7  Retorno  `apppetretorno.tsx`  `appointment_requests` 
+ 8  Observacao  `apppetobservacao.tsx`  `pet_observations` 
+
+### 3.3 - Implementar Timeline no Pet Profile
+
+- Arquivo `AgendaVet-Vet-Appapppet[id].tsx`
+- Usar o hook `usePetTimeline` (ja existe) para exibir historico
+- FlatList com cards por tipo de registro
+- Icones e cores por modulo
+
+### 3.4 - Implementar Tela de Solicitacoes
+
+- Arquivo `AgendaVet-Vet-Appapp(tabs)solicitacoes.tsx`
+- Listar `appointment_requests` pendentes
+- Acoes Confirmar, Cancelar, Ver detalhes
+- Usar `useAppointmentRequests` (ja existe)
+
+### 3.5 - Melhorar Tela de Prontuario
+
+- Arquivo `AgendaVet-Vet-Appapp(tabs)prontuario.tsx`
+- Busca global de pacientes
+- Acesso rapido ao historico completo do pet
+
+Verificacao da Fase 3
+- [ ] Botao Iniciar Atendimento funcional no perfil do pet
+- [ ] Todos os 8 formularios salvando corretamente no Supabase
+- [ ] `logPetAdminHistory` registrando cada acao
+- [ ] Timeline exibindo historico no perfil do pet
+- [ ] Solicitacoes listando e permitindo gerenciar agendamentos
+
+---
+
+## FASE 4 - Integracao Supabase e Tratamento de Erros
+
+Objetivo Garantir que todas as conexoes com Supabase estejam seguras e com tratamento de erros adequado.
+
+### 4.1 - Validacao de Conexao
+
+ Acao  Arquivo 
+---------------
+ Validar env vars na inicializacao (web)  `srccoreintegrationssupabaseclient.ts` 
+ Validar env vars na inicializacao (vet app)  `AgendaVet-Vet-Applibsupabase.ts` 
+ Adicionar trycatch em `onAuthStateChange`  `srccoreauthuseAuthStore.ts` 
+ Adicionar trycatch em `AuthProvider`  `AgendaVet-Vet-AppcomponentsAuthProvider.tsx` 
+
+### 4.2 - Tratamento de Erros nos Hooks
+
+Revisar e adicionar tratamento de erros em
+- `usePetTimeline.ts` - Fallback se alguma tabela falhar
+- `useAppointmentRequests.ts` - Toast de erro ao usuario
+- `usePets.ts` - Mensagem amigavel se Supabase estiver fora
+
+### 4.3 - Verificacao de RLS
+
+Documentar checklist para verificar no Supabase Dashboard
+- [ ] Admins tem acesso total (FOR ALL) em todas as tabelas
+- [ ] Tutores tem SELECT apenas nos registros do seu pet
+- [ ] Tabela `user_roles` protegida
+- [ ] Tabela `pet_admin_history` apenas INSERT para admins
+
+Verificacao da Fase 4
+- [ ] App nao crasha se Supabase estiver fora
+- [ ] Mensagens de erro amigaveis exibidas ao usuario
+- [ ] Env vars validadas na inicializacao
+
+---
+
+## FASE 5 - Build, Deploy e Versionamento
+
+Objetivo Garantir que `npm run build` funciona e preparar para deploy.
+
+### 5.1 - Corrigir Build
+
+ Acao  Arquivo 
+---------------
+ Rodar `npm run build` e corrigir erros  Raiz 
+ Separar deps de server (express, ws)  `package.json` 
+ Considerar tsconfig mais rigoroso  `tsconfig.json` (`strictNullChecks true` gradual) 
+
+### 5.2 - Preparar para Deploy
+
+- Verificar `vite.config.ts` (PWA, aliases)
+- Verificar que `.env` esta no `.gitignore`
+- Criar `.env.example` com as variaveis necessarias (sem valores reais)
+
+### 5.3 - Versionamento e Commits
+
+ Acao  Detalhe 
+---------------
+ Verificar `.gitignore`  Confirmar `.env`, `tmp`, `node_modules`, `dist` 
+ Organizar commits por fase  Um commit por fase com mensagem profissional 
+ Formato de commits  `fix`, `feat`, `refactor`, `security`, `chore` 
+
+Exemplo de commits
+```
+security remove hardcoded token and run-command endpoint from server.js
+fix correct broken import in expandable-card-demo-standard
+refactor move demo components to srcdemo
+feat(i18n) translate admin panel texts to PT-BR
+feat(vet-app) implement clinical attendance flow
+feat(vet-app) add consultation form with Supabase integration
+feat(vet-app) add prescription, vaccine, and exam forms
+feat(vet-app) implement pet timeline in profile screen
+fix add Supabase env vars validation and error handling
+chore add .env.example and update .gitignore
+```
+
+Verificacao da Fase 5
+- [ ] `npm run build` passa sem erros
+- [ ] Nenhum arquivo sensivel no repositorio
+- [ ] `.env.example` criado
+- [ ] Commits organizados e profissionais
+
+---
+
+## FASE 6 - Melhorias de UIUX no Web App
+
+Objetivo Padronizar tema, melhorar performance e responsividade.
+
+### 6.1 - Padronizacao de Tema
+
+- Revisar cores do Tailwind para consistencia (primary, secondary, etc.)
+- Verificar dark mode em todas as paginas admin
+- Padronizar espacamentos e tamanhos de fonte
+
+### 6.2 - Performance
+
+ Acao  Impacto 
+---------------
+ Lazy loading nas rotas do admin  Reduz bundle inicial 
+ Verificar re-renders desnecessarios  React DevTools 
+ Otimizar queries Supabase (select apenas campos necessarios)  Reduz payload 
+
+### 6.3 - Responsividade
+
+- Verificar todas as tabelas em telas  768px
+- Verificar dialogs em mobile
+- Testar portal do tutor em diferentes tamanhos
+
+### 6.4 - Organizacao de Componentes
+
+- Verificar se ha componentes muito grandes (300 linhas) que devem ser divididos
+- Verificar se hooks customizados estao sendo reutilizados corretamente
+
+Verificacao da Fase 6
+- [ ] Tema consistente em todas as paginas
+- [ ] Sem quebra de layout em mobile
+- [ ] Lazy loading implementado
+- [ ] Build final OK
+
+---
+
+## Mapa de Rastreabilidade
+
+ Fase  Arquivos Principais  Verificacao 
+----------------------------------------
+ 1  `server.js`, `expandable-card-demo-standard.tsx`, `supabaseclient.ts`, `.gitignore`  Build + Seguranca 
+ 2  `UserManagement.tsx`, `ManageRequestDialog.tsx`, `AppointmentRequestsTable.tsx`, novo `translations.ts`  Visual + Build 
+ 3  `AgendaVet-Vet-Appapppet.tsx`, `[id].tsx`, `solicitacoes.tsx`, `prontuario.tsx`  Funcional + Supabase 
+ 4  `supabaseclient.ts`, hooks, `AuthProvider.tsx`  Error handling 
+ 5  `package.json`, `.gitignore`, `.env.example`, `tsconfig.json`  Build + Git 
+ 6  Componentes UI, rotas, CSS  Visual + Performance 
