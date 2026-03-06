@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Text, useColorScheme } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { Colors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +15,7 @@ export default function DocumentViewerScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
     const router = useRouter();
+    const insets = useSafeAreaInsets();
 
     const [htmlContent, setHtmlContent] = useState<string>('');
     const [loading, setLoading] = useState(true);
@@ -137,7 +139,7 @@ export default function DocumentViewerScreen() {
             )}
 
             {!loading && (
-                <View style={[styles.footer, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+                <View style={[styles.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
                     <TouchableOpacity style={[styles.printBtn, { backgroundColor: theme.primary }]} onPress={handleShare}>
                         <Ionicons name="print-outline" size={20} color="white" style={{ marginRight: 8 }} />
                         <Text style={styles.printBtnText}>Imprimir / Compartilhar</Text>
@@ -153,20 +155,19 @@ const styles = StyleSheet.create({
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     webContainer: {
         flex: 1,
-        margin: 16,
-        borderRadius: 16,
+        margin: 8,
+        borderRadius: 8,
         overflow: 'hidden',
-        // Sombra leve para o box de documento
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
         shadowRadius: 12,
         elevation: 5,
+        backgroundColor: '#fff',
     },
     webview: { flex: 1, backgroundColor: 'transparent' },
     footer: {
         padding: 16,
-        paddingBottom: 34,
         borderTopWidth: 1,
         alignItems: 'center'
     },

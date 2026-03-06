@@ -18,11 +18,31 @@ export default function ConsultaScreen() {
     const [form, setForm] = useState({
         queixa_principal: '',
         medicamentos: '',
+        sistema_gastrintestinal: '',
+        sistema_genitourinario: '',
+        sistema_cardiorespiratorio: '',
+        sistema_neurologico: '',
+        sistema_musculoesqueletico: '',
+        sistema_ototegumentar: '',
+        alimentacao: '',
+        vacinacao: '',
+        ambiente: '',
+        comportamento: '',
+        vermifugo: '',
+        ectoparasitas: '',
+        mucosas: '',
+        linfonodos: '',
         temperatura: '',
         peso: '',
         fc: '',
         fr: '',
+        tpc: '',
         hidratacao: '',
+        pulso: '',
+        campos_pulmonares: '',
+        bulhas_cardiacas: '',
+        ritmo_cardiaco: '',
+        palpacao_abdominal: '',
         anamnese_texto: '',
     });
 
@@ -43,10 +63,29 @@ export default function ConsultaScreen() {
                 appointment_request_id: appointmentId || null,
                 queixa_principal: form.queixa_principal,
                 medicamentos: form.medicamentos,
+                sistema_gastrintestinal: form.sistema_gastrintestinal ? [form.sistema_gastrintestinal] : null,
+                sistema_genitourinario: form.sistema_genitourinario ? [form.sistema_genitourinario] : null,
+                sistema_cardiorespiratório: form.sistema_cardiorespiratorio ? [form.sistema_cardiorespiratorio] : null,
+                sistema_neurologico: form.sistema_neurologico ? [form.sistema_neurologico] : null,
+                sistema_musculoesqueletico: form.sistema_musculoesqueletico ? [form.sistema_musculoesqueletico] : null,
+                sistema_ototegumentar: form.sistema_ototegumentar ? [form.sistema_ototegumentar] : null,
+                alimentacao: form.alimentacao ? [form.alimentacao] : null,
+                vacinacao: form.vacinacao ? [form.vacinacao] : null,
+                ambiente: form.ambiente ? [form.ambiente] : null,
+                comportamento: form.comportamento ? [form.comportamento] : null,
+                vermifugo: form.vermifugo,
+                mucosas: form.mucosas ? [form.mucosas] : null,
+                linfonodos: form.linfonodos ? [form.linfonodos] : null,
                 temperatura: form.temperatura,
                 fc: form.fc,
                 fr: form.fr,
+                tpc: form.tpc,
                 hidratacao: form.hidratacao,
+                pulso: form.pulso,
+                campos_pulmonares: form.campos_pulmonares,
+                bulhas_cardiacas: form.bulhas_cardiacas,
+                ritmo_cardiaco: form.ritmo_cardiaco,
+                palpacao_abdominal: form.palpacao_abdominal,
             }).select().single();
 
             if (anamnesisError) throw anamnesisError;
@@ -165,7 +204,7 @@ export default function ConsultaScreen() {
                 <View style={styles.sectionContainer}>
                     <View style={styles.sectionHeader}>
                         <Ionicons name="chatbubbles-outline" size={20} color={theme.primary} />
-                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Anamnese</Text>
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Motivo da Consulta e Histórico</Text>
                     </View>
                     <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                         <InputField
@@ -183,11 +222,81 @@ export default function ConsultaScreen() {
                             placeholder="Algum tratamento atual?"
                         />
                         <InputField
-                            label="Histórico e Observações"
+                            label="Alimentação e Água"
+                            value={form.alimentacao}
+                            onChangeText={(t: string) => setForm(f => ({ ...f, alimentacao: t }))}
+                            placeholder="Tipo de ração, apetite..."
+                        />
+                        <InputField
+                            label="Vacinação / Vermifugação"
+                            value={form.vacinacao}
+                            onChangeText={(t: string) => setForm(f => ({ ...f, vacinacao: t }))}
+                            placeholder="Vacinas em dia? Última vermifugação..."
+                        />
+                        <InputField
+                            label="Ambiente e Comportamento"
+                            value={form.ambiente}
+                            onChangeText={(t: string) => setForm(f => ({ ...f, ambiente: t }))}
+                            placeholder="Vive em casa/apt? Tem acesso à rua?"
+                        />
+                        <InputField
+                            label="Histórico Geral e Evolução"
                             value={form.anamnese_texto}
                             onChangeText={(t: string) => setForm(f => ({ ...f, anamnese_texto: t }))}
-                            placeholder="Descreva detalhadamente o quadro evolutivo..."
+                            placeholder="Descreva detalhadamente o quadro evolutivo e observações do tutor..."
                             multiline
+                        />
+                    </View>
+                </View>
+
+                {/* Seção Exame Físico Específico (Sistemas) */}
+                <View style={styles.sectionContainer}>
+                    <View style={styles.sectionHeader}>
+                        <Ionicons name="body-outline" size={20} color={theme.primary} />
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>Exame Físico Sistêmico</Text>
+                    </View>
+                    <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                        <InputField
+                            label="Linfonodos"
+                            value={form.linfonodos}
+                            onChangeText={(t: string) => setForm(f => ({ ...f, linfonodos: t }))}
+                            placeholder="Palpáveis, aumentados, reativos..."
+                        />
+                        <InputField
+                            label="Mucosas / TPC"
+                            value={form.mucosas}
+                            onChangeText={(t: string) => setForm(f => ({ ...f, mucosas: t }))}
+                            placeholder="Normocoradas, TPC < 2 seg..."
+                        />
+                        <InputField
+                            label="Gastrintestinal"
+                            value={form.sistema_gastrintestinal}
+                            onChangeText={(t: string) => setForm(f => ({ ...f, sistema_gastrintestinal: t }))}
+                            placeholder="Vômitos, diarreia, dor à palpação..."
+                        />
+                        <InputField
+                            label="Genitourinário"
+                            value={form.sistema_genitourinario}
+                            onChangeText={(t: string) => setForm(f => ({ ...f, sistema_genitourinario: t }))}
+                            placeholder="Disúria, hematúria, secreções..."
+                        />
+                        <InputField
+                            label="Cardiorrespiratório"
+                            value={form.sistema_cardiorespiratorio}
+                            onChangeText={(t: string) => setForm(f => ({ ...f, sistema_cardiorespiratorio: t }))}
+                            placeholder="Tosse, dispneia, sopro..."
+                        />
+                        <InputField
+                            label="Ototegumentar (Pele/Ouvidos)"
+                            value={form.sistema_ototegumentar}
+                            onChangeText={(t: string) => setForm(f => ({ ...f, sistema_ototegumentar: t }))}
+                            placeholder="Alopecia, prurido, secreção otológica..."
+                        />
+                        <InputField
+                            label="Palpação Abdominal"
+                            value={form.palpacao_abdominal}
+                            onChangeText={(t: string) => setForm(f => ({ ...f, palpacao_abdominal: t }))}
+                            placeholder="Sensibilidade, massas palpáveis..."
                         />
                     </View>
                 </View>
@@ -250,13 +359,26 @@ export default function ConsultaScreen() {
                             </View>
                         </View>
 
-                        <InputField
-                            label="Hidratação"
-                            icon="water-outline"
-                            value={form.hidratacao}
-                            onChangeText={(t: string) => setForm(f => ({ ...f, hidratacao: t }))}
-                            placeholder="Ex: Turgor cutâneo preservado..."
-                        />
+                        <View style={styles.row}>
+                            <View style={styles.col}>
+                                <InputField
+                                    label="Hidratação"
+                                    icon="water-outline"
+                                    value={form.hidratacao}
+                                    onChangeText={(t: string) => setForm(f => ({ ...f, hidratacao: t }))}
+                                    placeholder="Adequada"
+                                />
+                            </View>
+                            <View style={styles.col}>
+                                <InputField
+                                    label="Pulso"
+                                    icon="pulse"
+                                    value={form.pulso}
+                                    onChangeText={(t: string) => setForm(f => ({ ...f, pulso: t }))}
+                                    placeholder="Forte, regular..."
+                                />
+                            </View>
+                        </View>
                     </View>
                 </View>
             </ScrollView>
