@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
@@ -16,6 +16,7 @@ export default function PagamentoScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
     const styles = getStyles(theme);
+    const insets = useSafeAreaInsets();
 
     const [selectedMethod, setSelectedMethod] = useState<'pix' | 'cash' | 'card' | null>(null);
     const [receiptImage, setReceiptImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
@@ -210,7 +211,7 @@ export default function PagamentoScreen() {
 
             </ScrollView>
 
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
                 <TouchableOpacity
                     style={[styles.submitBtn, !selectedMethod && { opacity: 0.5 }]}
                     disabled={!selectedMethod || isSubmitting}
@@ -320,13 +321,13 @@ const getStyles = (theme: any) => StyleSheet.create({
         right: 0,
         padding: 16,
         backgroundColor: theme.surface,
-        borderTopWidth: 1,
+        borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: theme.border,
     },
     submitBtn: {
         backgroundColor: theme.primary,
-        height: 56,
-        borderRadius: 16,
+        height: 46,
+        borderRadius: 14,
         alignItems: 'center',
         justifyContent: 'center',
     },

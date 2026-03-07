@@ -8,12 +8,14 @@ import { supabase } from '@/lib/supabase';
 import { getGenericHtml, getCarteiraVacinaHtml } from '@/lib/pdf/templates';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DocumentViewerScreen() {
     const { historyId } = useLocalSearchParams<{ historyId: string }>();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
     const router = useRouter();
+    const insets = useSafeAreaInsets();
 
     const [htmlContent, setHtmlContent] = useState<string>('');
     const [loading, setLoading] = useState(true);
@@ -135,7 +137,7 @@ export default function DocumentViewerScreen() {
             )}
 
             {!loading && (
-                <View style={[styles.footer, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+                <View style={[styles.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
                     <TouchableOpacity style={[styles.printBtn, { backgroundColor: theme.primary }]} onPress={handleShare}>
                         <Ionicons name="print-outline" size={20} color="white" style={{ marginRight: 8 }} />
                         <Text style={styles.printBtnText}>Imprimir / Compartilhar</Text>
@@ -163,7 +165,6 @@ const styles = StyleSheet.create({
     webview: { flex: 1, backgroundColor: 'transparent' },
     footer: {
         padding: 16,
-        paddingBottom: 34,
         borderTopWidth: 1,
         alignItems: 'center'
     },

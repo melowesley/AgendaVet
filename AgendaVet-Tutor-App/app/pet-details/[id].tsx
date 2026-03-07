@@ -338,20 +338,37 @@ export default function PetDetailsScreen() {
 
                                         <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
                                             {selectedItem.id.startsWith('history-') && selectedItem.module !== 'financeiro' && (
-                                                <TouchableOpacity
-                                                    style={[styles.modalBtn, { backgroundColor: MODULE_COLORS[selectedItem.module] || theme.primary }]}
-                                                    onPress={() => {
-                                                        const historyId = selectedItem.id.replace('history-', '');
-                                                        setSelectedItem(null);
-                                                        router.push({ pathname: '/pet-details/document-viewer', params: { historyId } });
-                                                    }}>
-                                                    <Ionicons name="document-text-outline" size={20} color="white" style={{ marginBottom: 4 }} />
-                                                    <Text style={{ color: 'white', fontWeight: '700', fontSize: 13 }}>Ver Documento</Text>
-                                                </TouchableOpacity>
+                                                <View style={{ flex: 1, gap: 8 }}>
+                                                    {selectedItem.module === 'documento' && dets.status === 'pending_signature' && (
+                                                        <TouchableOpacity
+                                                            style={[styles.modalBtn, { backgroundColor: theme.error, marginBottom: 4 }]}
+                                                            onPress={() => {
+                                                                const historyId = selectedItem.id.replace('history-', '');
+                                                                setSelectedItem(null);
+                                                                // @ts-ignore
+                                                                router.push({ pathname: '/pet-details/assinar-documento', params: { historyId } });
+                                                            }}>
+                                                            <Ionicons name="create-outline" size={20} color="white" style={{ marginBottom: 4 }} />
+                                                            <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Assinar Documento</Text>
+                                                        </TouchableOpacity>
+                                                    )}
+
+                                                    <TouchableOpacity
+                                                        style={[styles.modalBtn, { backgroundColor: MODULE_COLORS[selectedItem.module] || theme.primary }]}
+                                                        onPress={() => {
+                                                            const historyId = selectedItem.id.replace('history-', '');
+                                                            setSelectedItem(null);
+                                                            // @ts-ignore
+                                                            router.push({ pathname: '/pet-details/document-viewer', params: { historyId } });
+                                                        }}>
+                                                        <Ionicons name="document-text-outline" size={20} color="white" style={{ marginBottom: 4 }} />
+                                                        <Text style={{ color: 'white', fontWeight: '700', fontSize: 13 }}>Ver {selectedItem.module === 'documento' ? 'Documento' : selectedItem.module === 'receita' ? 'Receita' : 'Detalhes'}</Text>
+                                                    </TouchableOpacity>
+                                                </View>
                                             )}
 
                                             <TouchableOpacity
-                                                style={[styles.modalBtn, { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }]}
+                                                style={[styles.modalBtn, { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border, flex: selectedItem.id.startsWith('history-') && selectedItem.module !== 'financeiro' ? 0.4 : 1 }]}
                                                 onPress={() => setSelectedItem(null)}>
                                                 <Ionicons name="close" size={20} color={theme.textSecondary} style={{ marginBottom: 4 }} />
                                                 <Text style={{ color: theme.textSecondary, fontWeight: '700', fontSize: 13 }}>Fechar</Text>

@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { logPetAdminHistory } from '@/lib/services/petHistory';
 import { useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // ACCENT removido para usar theme.primary
 
@@ -16,6 +17,7 @@ export default function FotosScreen() {
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
     const router = useRouter();
     const queryClient = useQueryClient();
+    const insets = useSafeAreaInsets();
     const [saving, setSaving] = useState(false);
     const [fotos, setFotos] = useState<string[]>([]);
     const [descricao, setDescricao] = useState('');
@@ -132,10 +134,13 @@ export default function FotosScreen() {
                     </View>
                 )}
 
-                <TouchableOpacity style={[s.saveBtn, { backgroundColor: fotos.length > 0 ? theme.primary : theme.border }]} onPress={handleSave} disabled={saving || fotos.length === 0}>
-                    {saving ? <ActivityIndicator color="white" /> : <><Ionicons name="cloud-upload-outline" size={22} color={fotos.length > 0 ? 'white' : theme.textMuted} style={{ marginRight: 8 }} /><Text style={[s.saveBtnText, { color: fotos.length > 0 ? 'white' : theme.textMuted }]}>Salvar {fotos.length > 0 ? `${fotos.length} foto(s)` : 'Fotos'}</Text></>}
-                </TouchableOpacity>
             </ScrollView>
+
+            <View style={[s.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
+                <TouchableOpacity style={[s.saveBtn, { backgroundColor: fotos.length > 0 ? theme.primary : theme.border }]} onPress={handleSave} disabled={saving || fotos.length === 0}>
+                    {saving ? <ActivityIndicator color="white" /> : <><Ionicons name="checkmark-circle" size={22} color={fotos.length > 0 ? 'white' : theme.textMuted} style={{ marginRight: 8 }} /><Text style={[s.saveBtnText, { color: fotos.length > 0 ? 'white' : theme.textMuted }]}>Salvar {fotos.length > 0 ? `${fotos.length} foto(s)` : 'Fotos'}</Text></>}
+                </TouchableOpacity>
+            </View>
         </KeyboardAvoidingView>
     );
 }
@@ -155,6 +160,7 @@ const s = StyleSheet.create({
     photo: { width: 100, height: 100, borderRadius: 12 },
     photoRemove: { position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 10 },
     emptyBox: { borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 20, alignItems: 'center', justifyContent: 'center', padding: 60 },
-    saveBtn: { height: 56, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10 },
-    saveBtnText: { fontSize: 16, fontWeight: '800' },
+    footer: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
+    saveBtn: { height: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    saveBtnText: { fontSize: 16, fontWeight: '700' },
 });

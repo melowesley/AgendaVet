@@ -87,7 +87,7 @@ export function OwnersContent() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-pulse text-muted-foreground">Loading owners...</div>
+        <div className="animate-pulse text-muted-foreground">Carregando tutores...</div>
       </div>
     )
   }
@@ -96,12 +96,12 @@ export function OwnersContent() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Owners</h1>
-          <p className="text-muted-foreground">Manage your client directory</p>
+          <h1 className="text-2xl font-bold tracking-tight">Tutores</h1>
+          <p className="text-muted-foreground">Gerencie o diretório de clientes</p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="size-4 mr-2" />
-          Add Owner
+          Adicionar Tutor
         </Button>
       </div>
 
@@ -109,13 +109,13 @@ export function OwnersContent() {
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>Client Directory</CardTitle>
-              <CardDescription>{filteredOwners.length} clients registered</CardDescription>
+              <CardTitle>Diretório de Clientes</CardTitle>
+              <CardDescription>{filteredOwners.length} clientes registrados</CardDescription>
             </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search clients..."
+                placeholder="Buscar clientes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 w-full sm:w-64"
@@ -127,9 +127,9 @@ export function OwnersContent() {
           {filteredOwners.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Users className="size-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-medium">No clients found</h3>
+              <h3 className="text-lg font-medium">Nenhum cliente encontrado</h3>
               <p className="text-muted-foreground">
-                {searchQuery ? 'Try adjusting your search' : 'Get started by adding your first client'}
+                {searchQuery ? 'Tente ajustar sua busca' : 'Comece adicionando seu primeiro cliente'}
               </p>
             </div>
           ) : (
@@ -137,9 +137,9 @@ export function OwnersContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
+                    <TableHead>Nome</TableHead>
                     <TableHead className="hidden sm:table-cell">Email</TableHead>
-                    <TableHead className="hidden md:table-cell">Phone</TableHead>
+                    <TableHead className="hidden md:table-cell">Telefone</TableHead>
                     <TableHead>Pets</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
@@ -171,26 +171,26 @@ export function OwnersContent() {
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="size-8">
                               <MoreHorizontal className="size-4" />
-                              <span className="sr-only">Actions</span>
+                              <span className="sr-only">Ações</span>
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
                               <Link href={`/owners/${owner.id}`}>
                                 <Eye className="size-4 mr-2" />
-                                View Details
+                                Ver Detalhes
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleEdit(owner)}>
                               <Edit className="size-4 mr-2" />
-                              Edit
+                              Editar
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleDelete(owner)}
                               className="text-destructive"
                             >
                               <Trash2 className="size-4 mr-2" />
-                              Delete
+                              Excluir
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -209,16 +209,16 @@ export function OwnersContent() {
       <AlertDialog open={!!deletingOwner} onOpenChange={() => setDeletingOwner(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Client</AlertDialogTitle>
+            <AlertDialogTitle>Excluir Cliente</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {deletingOwner?.firstName} {deletingOwner?.lastName}?
-              This action cannot be undone.
+              Tem certeza que deseja excluir {deletingOwner?.firstName} {deletingOwner?.lastName}?
+              Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

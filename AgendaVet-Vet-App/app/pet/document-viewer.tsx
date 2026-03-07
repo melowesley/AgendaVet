@@ -75,7 +75,8 @@ export default function DocumentViewerScreen() {
             setHtmlContent(html);
 
         } catch (error: any) {
-            Alert.alert('Erro', 'Não foi possível carregar o documento.');
+            console.error('[DocumentViewer] Erro ao carregar documento:', error);
+            Alert.alert('Erro', `Não foi possível carregar o documento.\n\nDetalhes: ${error?.message || 'Erro desconhecido'}`);
             router.back();
         } finally {
             setLoading(false);

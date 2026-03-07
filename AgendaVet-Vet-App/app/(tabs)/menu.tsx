@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 export default function MenuScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
-    const { session, isAdmin } = useAuth();
+    const { session, isAdmin, signOut } = useAuth();
     const router = useRouter();
 
     const handleLogout = async () => {
@@ -18,7 +18,7 @@ export default function MenuScreen() {
             'Deseja realmente sair da conta?',
             [
                 { text: 'Cancelar', style: 'cancel' },
-                { text: 'Sair', style: 'destructive', onPress: async () => await supabase.auth.signOut() }
+                { text: 'Sair', style: 'destructive', onPress: async () => await signOut() }
             ]
         );
     };

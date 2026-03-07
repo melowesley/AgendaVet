@@ -59,6 +59,22 @@ const COMMON_STYLES = `
 `;
 
 function gerarReceitaSimples(data: any): string {
+    // Determine if it needs signature visually
+    const isPendingSignature = data.details?.status === 'pending_signature';
+    const hasSignature = !!data.tutorSignature;
+
+    const tutorSigHtml = (isPendingSignature || hasSignature) ? `
+        <div class="footer-center" style="text-align: center; width: 250px;">
+            ${hasSignature
+            ? `<img src="${data.tutorSignature}" style="max-height: 50px; margin-bottom: 5px; opacity: 0.9;" />`
+            : `<div style="height: 50px; margin-bottom: 5px; display:flex; align-items:flex-end; justify-content:center;"><span style="color:#EF4444; font-size:8pt; font-weight:700; border: 1px dashed #EF4444; padding: 4px 8px; border-radius: 4px;">ASSINATURA PENDENTE</span></div>`
+        }
+            <div class="sig-line"></div>
+            <div class="sig-name">${data.ownerName || 'Tutor Responsável'}</div>
+            <div class="sig-sub">Ciência do Tutor</div>
+        </div>
+    ` : '';
+
     return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
     <style>${COMMON_STYLES}</style></head><body><div class="page">
         <div class="header">
@@ -103,6 +119,9 @@ function gerarReceitaSimples(data: any): string {
 
         <div class="footer">
             <div class="footer-left">Emitido em: ${data.dateOfIssue || ''}</div>
+            
+            ${tutorSigHtml}
+
             <div class="footer-right">
                 <div class="sig-line"></div>
                 <div class="sig-name">${data.veterinarian || ''}</div>
@@ -172,7 +191,13 @@ function gerarControleEspecial(data: any): string {
         <div class="special-footer">
             <div>
                 <span class="card-label">Identificação do Comprador</span>
-                <div style="margin-bottom:8px"><div class="form-field"></div><span class="sub-label">Assinatura do Comprador</span></div>
+                <div style="margin-bottom:8px">
+                    ${data.tutorSignature
+            ? `<img src="${data.tutorSignature}" style="max-height: 40px; margin-top: 4px; display: block; filter: grayscale(100%);" />`
+            : `<div class="form-field"></div>`
+        }
+                    <span class="sub-label">Assinatura do Comprador</span>
+                </div>
                 <div style="margin-bottom:8px"><div class="form-field"></div><span class="sub-label">Endereço Completo</span></div>
             </div>
             <div>
@@ -202,6 +227,23 @@ function gerarDocumentoGenerico(data: any, title: string, subtitle: string): str
         `;
     }).join('');
 
+    // Determine if it needs signature visually
+    const isPendingSignature = data.details?.status === 'pending_signature';
+    const hasSignature = !!data.tutorSignature;
+
+    // Add signature footer logic
+    const tutorSigHtml = (isPendingSignature || hasSignature) ? `
+        <div class="footer-center" style="text-align: center; width: 250px;">
+            ${hasSignature
+            ? `<img src="${data.tutorSignature}" style="max-height: 50px; margin-bottom: 5px; opacity: 0.9;" />`
+            : `<div style="height: 50px; margin-bottom: 5px; display:flex; align-items:flex-end; justify-content:center;"><span style="color:#EF4444; font-size:8pt; font-weight:700; border: 1px dashed #EF4444; padding: 4px 8px; border-radius: 4px;">ASSINATURA PENDENTE</span></div>`
+        }
+            <div class="sig-line"></div>
+            <div class="sig-name">${data.ownerName || 'Tutor Responsável'}</div>
+            <div class="sig-sub">Assinatura do Tutor</div>
+        </div>
+    ` : '';
+
     return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
     <style>${COMMON_STYLES}</style></head><body><div class="page">
         <div class="header">
@@ -220,7 +262,7 @@ function gerarDocumentoGenerico(data: any, title: string, subtitle: string): str
 
         <div class="info-grid" style="grid-template-columns: 1fr;">
             <div class="info-card">
-                <span class="card-label">Identificação do Paciente</span>
+                <span class="card-label">Identificação do Paciente & Responsável</span>
                 <div style="display:flex; flex-wrap: wrap; gap:15px">
                     <div class="field" style="min-width: 200px"><span class="label">Animal:</span> <span class="value">${data.petName || '---'}</span></div>
                     <div class="field" style="min-width: 150px"><span class="label">Espécie:</span> <span class="value">${data.petSpecies || '---'}</span></div>
@@ -231,14 +273,17 @@ function gerarDocumentoGenerico(data: any, title: string, subtitle: string): str
         </div>
 
         <div class="content-box">
-            <span class="content-label">Detalhes do Registro</span>
+            <span class="content-label">Transição Clínica</span>
             <div style="margin-top: 10px;">
-                ${detailRows || '<div style="color: #64748B; font-style: italic;">Nenhum detalhe adicional registrado no sistema.</div>'}
+                ${detailRows || '<div style="color: #64748B; font-style: italic;">Documento gerado e validado.</div>'}
             </div>
         </div>
 
-        <div class="footer">
+        <div class="footer" style="padding-top: 30px;">
             <div class="footer-left">Registro de Sistema — Gerado em: ${data.dateOfIssue || new Date().toLocaleDateString('pt-BR')}</div>
+            
+            ${tutorSigHtml}
+
             <div class="footer-right">
                 <div class="sig-line"></div>
                 <div class="sig-name">${data.veterinarian || 'Responsável Técnico'}</div>

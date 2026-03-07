@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { logPetAdminHistory } from '@/lib/services/petHistory';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // ACCENT removido para usar theme.primary
 
@@ -15,6 +16,7 @@ export default function ExameScreen() {
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
     const router = useRouter();
     const queryClient = useQueryClient();
+    const insets = useSafeAreaInsets();
     const [saving, setSaving] = useState(false);
 
     const [tipoExame, setTipoExame] = useState('');
@@ -85,7 +87,7 @@ export default function ExameScreen() {
                     <F label="Observações" value={observacoes} onChangeText={setObservacoes} placeholder="Anotações adicionais..." multiline />
                 </CardComp>
             </ScrollView>
-            <FooterBtn onSave={handleSave} saving={saving} valid={!!tipoExame} color={theme.primary} label="Salvar Exame" theme={theme} />
+            <FooterBtn onSave={handleSave} saving={saving} valid={!!tipoExame} color={theme.primary} label="Salvar Exame" theme={theme} insets={insets} />
         </KeyboardAvoidingView>
     );
 }
@@ -110,9 +112,9 @@ function FieldBase({ label, value, onChangeText, placeholder, keyboardType = 'de
         </View>
     );
 }
-function FooterBtn({ onSave, saving, valid, color, label, theme }: any) {
+function FooterBtn({ onSave, saving, valid, color, label, theme, insets }: any) {
     return (
-        <View style={s.footer}>
+        <View style={[s.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
             <TouchableOpacity style={[s.saveBtn, { backgroundColor: valid ? color : theme.border }]} onPress={onSave} disabled={saving || !valid}>
                 {saving ? <ActivityIndicator color="white" /> : <><Ionicons name="checkmark-circle" size={22} color={valid ? 'white' : theme.textMuted} style={{ marginRight: 8 }} /><Text style={[s.saveBtnText, { color: valid ? 'white' : theme.textMuted }]}>{label}</Text></>}
             </TouchableOpacity>
@@ -135,7 +137,7 @@ const s = StyleSheet.create({
     fieldLabel: { fontSize: 12, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.4 },
     fieldInput: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
     multiline: { paddingTop: 14 },
-    footer: { padding: 16, paddingBottom: 32 },
-    saveBtn: { height: 56, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-    saveBtnText: { fontSize: 16, fontWeight: '800' },
+    footer: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
+    saveBtn: { height: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    saveBtnText: { fontSize: 16, fontWeight: '700' },
 });

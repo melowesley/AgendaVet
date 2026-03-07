@@ -6,6 +6,7 @@ import {
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { logPetAdminHistory } from '@/lib/services/petHistory';
 import { useQueryClient } from '@tanstack/react-query';
@@ -18,6 +19,7 @@ export default function PesoScreen() {
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
     const router = useRouter();
     const queryClient = useQueryClient();
+    const insets = useSafeAreaInsets();
 
     const [saving, setSaving] = useState(false);
     const [peso, setPeso] = useState('');
@@ -197,7 +199,10 @@ export default function PesoScreen() {
                     </View>
                 </View>
 
-                {/* Botão Salvar */}
+            </ScrollView>
+
+            {/* Botão Salvar no Footer */}
+            <View style={[s.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
                 <TouchableOpacity
                     style={[s.saveBtn, { backgroundColor: peso ? theme.primary : theme.border }]}
                     onPress={handleSave}
@@ -207,13 +212,13 @@ export default function PesoScreen() {
                         <ActivityIndicator color="white" />
                     ) : (
                         <>
-                            <Ionicons name="checkmark-circle-outline" size={22} color="white" style={{ marginRight: 8 }} />
-                            <Text style={s.saveBtnText}>Registrar Peso</Text>
+                            <Ionicons name="checkmark-circle" size={22} color={peso ? 'white' : theme.textMuted} style={{ marginRight: 8 }} />
+                            <Text style={[s.saveBtnText, { color: peso ? 'white' : theme.textMuted }]}>Registrar Peso</Text>
                         </>
                     )}
                 </TouchableOpacity>
+            </View>
 
-            </ScrollView>
         </>
     );
 }
@@ -237,6 +242,7 @@ const s = StyleSheet.create({
     escoreText: { fontSize: 18, fontWeight: '900', width: 30 },
     escoreLabel: { flex: 1, fontSize: 14, fontWeight: '600', textAlign: 'right' },
     multiline: { paddingTop: 14 },
-    saveBtn: { height: 60, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-    saveBtnText: { color: 'white', fontSize: 16, fontWeight: '800' },
+    footer: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
+    saveBtn: { height: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    saveBtnText: { fontSize: 16, fontWeight: '700' },
 });

@@ -36,12 +36,12 @@ import Link from 'next/link'
 import { PetFormDialog } from './pet-form-dialog'
 
 const speciesIcons: Record<string, string> = {
-  dog: 'Dog',
-  cat: 'Cat',
-  bird: 'Bird',
-  rabbit: 'Rabbit',
-  reptile: 'Reptile',
-  other: 'Other',
+  dog: 'Cachorro',
+  cat: 'Gato',
+  bird: 'Pássaro',
+  rabbit: 'Coelho',
+  reptile: 'Réptil',
+  other: 'Outro',
 }
 
 type SpeciesFilter = Pet['species'] | 'all'
@@ -58,18 +58,21 @@ export function PetsContent() {
 
   const getOwnerName = (ownerId: string) => {
     const owner = owners.find((o) => o.id === ownerId)
-    return owner ? `${owner.firstName} ${owner.lastName}` : 'Unknown'
+    return owner ? `${owner.firstName} ${owner.lastName}` : 'Desconhecido'
   }
 
   const calculateAge = (dateOfBirth: string) => {
+    if (!dateOfBirth) return 'N/I'
     const today = new Date()
     const birth = new Date(dateOfBirth)
+    if (isNaN(birth.getTime())) return dateOfBirth // Return raw string if not a date (some apps use '3 years')
+
     let age = today.getFullYear() - birth.getFullYear()
     const monthDiff = today.getMonth() - birth.getMonth()
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
       age--
     }
-    return age
+    return `${age} anos`
   }
 
   const filteredPets = pets.filter((pet) => {
@@ -82,13 +85,13 @@ export function PetsContent() {
   })
 
   const speciesOptions: { value: SpeciesFilter; label: string }[] = [
-    { value: 'all', label: 'All Species' },
-    { value: 'dog', label: 'Dogs' },
-    { value: 'cat', label: 'Cats' },
-    { value: 'bird', label: 'Birds' },
-    { value: 'rabbit', label: 'Rabbits' },
-    { value: 'reptile', label: 'Reptiles' },
-    { value: 'other', label: 'Other' },
+    { value: 'all', label: 'Todas Espécies' },
+    { value: 'dog', label: 'Cachorros' },
+    { value: 'cat', label: 'Gatos' },
+    { value: 'bird', label: 'Pássaros' },
+    { value: 'rabbit', label: 'Coelhos' },
+    { value: 'reptile', label: 'Répteis' },
+    { value: 'other', label: 'Outros' },
   ]
 
   const handleEdit = (pet: Pet) => {
@@ -124,15 +127,15 @@ export function PetsContent() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Pets</h1>
-          <p className="text-muted-foreground">Manage your patient records</p>
+          <h1 className="text-2xl font-bold tracking-tight">Pacientes</h1>
+          <p className="text-muted-foreground">Gerencie os registros dos pacientes</p>
         </div>
         <Button
           onClick={() => setDialogOpen(true)}
           className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white border-0 shadow-lg shadow-emerald-500/25 transition-all w-full sm:w-auto"
         >
           <Plus className="size-4 mr-2" />
-          Add Pet
+          Adicionar Pet
         </Button>
       </div>
 
@@ -140,14 +143,14 @@ export function PetsContent() {
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>Patient Records</CardTitle>
-              <CardDescription>{filteredPets.length} pets registered</CardDescription>
+              <CardTitle>Prontuários</CardTitle>
+              <CardDescription>{filteredPets.length} pets registrados</CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search pets..."
+                  placeholder="Buscar pets..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 w-full sm:w-64"
@@ -177,11 +180,11 @@ export function PetsContent() {
           {filteredPets.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <PawPrint className="size-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-medium">No pets found</h3>
+              <h3 className="text-lg font-medium">Nenhum pet encontrado</h3>
               <p className="text-muted-foreground">
                 {searchQuery || speciesFilter !== 'all'
-                  ? 'Try adjusting your filters'
-                  : 'Get started by adding your first pet'}
+                  ? 'Tente ajustar seus filtros'
+                  : 'Comece adicionando seu primeiro pet'}
               </p>
             </div>
           ) : (
@@ -189,12 +192,12 @@ export function PetsContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Species</TableHead>
-                    <TableHead className="hidden md:table-cell">Breed</TableHead>
-                    <TableHead className="hidden sm:table-cell">Age</TableHead>
-                    <TableHead className="hidden lg:table-cell">Weight</TableHead>
-                    <TableHead>Owner</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Espécie</TableHead>
+                    <TableHead className="hidden md:table-cell">Raça</TableHead>
+                    <TableHead className="hidden sm:table-cell">Idade</TableHead>
+                    <TableHead className="hidden lg:table-cell">Peso</TableHead>
+                    <TableHead>Tutor</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -207,7 +210,7 @@ export function PetsContent() {
                             pet.species === 'cat' ? 'border-indigo-500 text-indigo-500' :
                               'border-orange-500 text-orange-500'
                             }`}>
-                            {speciesIcons[pet.species] === 'Dog' ? <PawPrint className="size-5" /> : <div className="font-bold text-sm">{pet.name.charAt(0)}</div>}
+                            {pet.species === 'dog' ? <PawPrint className="size-5" /> : <div className="font-bold text-sm">{pet.name.charAt(0)}</div>}
                           </div>
                           <Link
                             href={`/pets/${pet.id}`}
@@ -219,12 +222,12 @@ export function PetsContent() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="bg-background/50 backdrop-blur-sm whitespace-nowrap">
-                          {pet.species.charAt(0).toUpperCase() + pet.species.slice(1)}
+                          {speciesIcons[pet.species] || pet.species}
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground">{pet.breed}</TableCell>
                       <TableCell className="hidden sm:table-cell text-muted-foreground">
-                        {calculateAge(pet.dateOfBirth)} yrs
+                        {calculateAge(pet.dateOfBirth)}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-muted-foreground">{pet.weight} kg</TableCell>
                       <TableCell>
@@ -252,7 +255,7 @@ export function PetsContent() {
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="size-8">
                                 <MoreHorizontal className="size-4" />
-                                <span className="sr-only">Actions</span>
+                                <span className="sr-only">Ações</span>
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -264,14 +267,14 @@ export function PetsContent() {
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEdit(pet)}>
                                 <Edit className="size-4 mr-2" />
-                                Edit
+                                Editar
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleDelete(pet)}
                                 className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                               >
                                 <Trash2 className="size-4 mr-2" />
-                                Delete
+                                Excluir
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -291,15 +294,15 @@ export function PetsContent() {
       <AlertDialog open={!!deletingPet} onOpenChange={() => setDeletingPet(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Pet</AlertDialogTitle>
+            <AlertDialogTitle>Excluir Pet</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {deletingPet?.name}? This action cannot be undone.
+              Tem certeza que deseja excluir {deletingPet?.name}? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

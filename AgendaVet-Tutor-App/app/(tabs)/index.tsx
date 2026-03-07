@@ -19,7 +19,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Colors } from '@/constants/theme';
-import { useShareIntent } from 'expo-share-intent';
+import * as ImagePicker from 'expo-image-picker';
+import { format } from 'date-fns';
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 interface Pet {
@@ -455,7 +456,6 @@ export default function PetsScreen() {
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
 
   const [pendingInvoices, setPendingInvoices] = useState<any[]>([]);
-  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntent();
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
 
   const userId = session?.user?.id;
@@ -503,47 +503,45 @@ export default function PetsScreen() {
     setRefreshing(false);
   };
 
-  // ─── Share Intent Logic (Upload de Comprovante) ──────────────────────────────
-  useEffect(() => {
-    if (hasShareIntent && shareIntent.value && shareIntent.value.length > 0) {
-      handleSharedFile(shareIntent.value[0]);
-    }
-  }, [hasShareIntent, shareIntent]);
-
-  const handleSharedFile = async (fileIntent: any) => {
-    if (!fileIntent || uploadingReceipt) return;
-
-    // Check if there are pending invoices
+  // ─── Image Picker Logic (Upload de Comprovante) ──────────────────────────────
+  const handlePickReceipt = async () => {
     if (pendingInvoices.length === 0) {
       Alert.alert('Nenhuma Fatura', 'Você não possui faturas pendentes para anexar este comprovante.');
-      resetShareIntent();
       return;
     }
 
-    const latestInvoice = pendingInvoices[0];
-    const petName = latestInvoice.pets?.name || 'seu pet';
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permissão Negada', 'Precisamos de acesso à galeria para enviar o comprovante.');
+      return;
+    }
 
-    Alert.alert(
-      'Anexar Comprovante',
-      `Deseja enviar este arquivo como comprovante Pix para a fatura pendente de ${petName} no valor de R$ ${latestInvoice.total_amount}?`,
-      [
-        { text: 'Cancelar', style: 'cancel', onPress: () => resetShareIntent() },
-        {
-          text: 'Enviar Comprovante',
-          onPress: () => uploadReceipt(fileIntent, latestInvoice.id)
-        }
-      ]
-    );
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const latestInvoice = pendingInvoices[0];
+      const petName = latestInvoice.pets?.name || 'seu pet';
+
+      Alert.alert(
+        'Anexar Comprovante',
+        `Deseja enviar a imagem selecionada como comprovante Pix para a fatura pendente de ${petName} no valor de R$ ${latestInvoice.total_amount}?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Enviar', onPress: () => uploadReceipt(asset, latestInvoice.id) }
+        ]
+      );
+    }
   };
 
-  const uploadReceipt = async (fileIntent: any, invoiceId: string) => {
+  const uploadReceipt = async (asset: any, invoiceId: string) => {
     setUploadingReceipt(true);
     try {
-      const fileUri = fileIntent.path || fileIntent.contentUri || fileIntent.value;
-      if (!fileUri || !fileUri.startsWith('file://') && !fileUri.startsWith('content://')) {
-        console.log(fileIntent);
-      }
-
+      const fileUri = asset.uri;
       const ext = fileUri.split('.').pop() || 'jpg';
       const fileName = `${invoiceId}_${Date.now()}.${ext}`;
 
@@ -551,7 +549,7 @@ export default function PetsScreen() {
       formData.append('file', {
         uri: fileUri,
         name: fileName,
-        type: fileIntent.mimeType || fileIntent.type || 'image/jpeg',
+        type: `image/${ext === 'png' ? 'png' : 'jpeg'}`,
       } as any);
 
       // Aqui faríamos o upload para o Storage Supabase
@@ -560,7 +558,7 @@ export default function PetsScreen() {
         .upload(fileName, formData);
 
       if (uploadError) {
-        // Se a RLS não permitir via FormData, podemos usar base64, mas FormData é o padrão React Native.
+        console.error("Upload error", uploadError);
       }
 
       const publicUrl = supabase.storage.from('receipts').getPublicUrl(fileName).data.publicUrl;
@@ -580,10 +578,9 @@ export default function PetsScreen() {
       Alert.alert('Sucesso!', 'Seu comprovante foi enviado e a fatura foi marcada como Paga.');
       await fetchPetsAndInvoices();
     } catch (error: any) {
-      Alert.alert('Erro', `Não foi possível anexar o comprovante. (Tente abrir os Detalhes do Pet e pagar por lá). Detalhes: ${error.message}`);
+      Alert.alert('Erro', `Não foi possível anexar o comprovante. Detalhes: ${error.message}`);
     } finally {
       setUploadingReceipt(false);
-      resetShareIntent();
     }
   };
 
@@ -730,9 +727,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 24,
-    shadowColor: '#4A9FD8',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -747,8 +744,8 @@ const styles = StyleSheet.create({
 
   // Pet Card
   petCard: {
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: 24,
+    padding: 20,
     marginBottom: 16,
     borderWidth: 1,
     flexDirection: 'row',
@@ -756,9 +753,9 @@ const styles = StyleSheet.create({
     gap: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
   },
   petAvatar: {
     width: 64,

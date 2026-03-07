@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { logPetAdminHistory } from '@/lib/services/petHistory';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ConsultaScreen() {
     const { petId, appointmentId } = useLocalSearchParams<{ petId: string, appointmentId?: string }>();
@@ -13,6 +14,7 @@ export default function ConsultaScreen() {
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
     const router = useRouter();
     const queryClient = useQueryClient();
+    const insets = useSafeAreaInsets();
 
     const [saving, setSaving] = useState(false);
     const [form, setForm] = useState({
@@ -383,7 +385,7 @@ export default function ConsultaScreen() {
                 </View>
             </ScrollView>
 
-            <View style={[styles.footer, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+            <View style={[styles.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
                 <TouchableOpacity
                     style={[styles.mainSaveBtn, { backgroundColor: form.queixa_principal ? theme.primary : theme.border }]}
                     onPress={handleSave}
@@ -401,7 +403,7 @@ export default function ConsultaScreen() {
                     )}
                 </TouchableOpacity>
             </View>
-        </KeyboardAvoidingView>
+        </KeyboardAvoidingView >
     );
 }
 
@@ -436,13 +438,13 @@ const styles = StyleSheet.create({
     row: { flexDirection: 'row', gap: 12 },
     col: { flex: 1 },
     footer: {
-        padding: 20, paddingBottom: 34, borderTopWidth: 1, borderTopLeftRadius: 32, borderTopRightRadius: 32,
+        padding: 20, paddingBottom: 34, borderTopWidth: StyleSheet.hairlineWidth, borderTopLeftRadius: 32, borderTopRightRadius: 32,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -4 },
         shadowOpacity: 0.05,
         shadowRadius: 12,
         elevation: 10,
     },
-    mainSaveBtn: { height: 56, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-    mainSaveBtnText: { fontSize: 16, fontWeight: '800' },
+    mainSaveBtn: { height: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    mainSaveBtnText: { fontSize: 16, fontWeight: '700' },
 });

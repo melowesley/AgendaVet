@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { logPetAdminHistory } from '@/lib/services/petHistory';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // ACCENT removido para usar theme.primary
 
@@ -15,6 +16,7 @@ export default function ObitoScreen() {
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
     const router = useRouter();
     const queryClient = useQueryClient();
+    const insets = useSafeAreaInsets();
     const [saving, setSaving] = useState(false);
     const [confirmado, setConfirmado] = useState(false);
 
@@ -99,7 +101,7 @@ export default function ObitoScreen() {
                     </Text>
                 </TouchableOpacity>
             </ScrollView>
-            <View style={s.footer}>
+            <View style={[s.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
                 <TouchableOpacity style={[s.saveBtn, { backgroundColor: (confirmado && causa) ? theme.primary : theme.border }]} onPress={handleSave} disabled={saving || !confirmado || !causa}>
                     {saving ? <ActivityIndicator color="white" /> : <><Ionicons name="checkmark-circle" size={22} color={(confirmado && causa) ? 'white' : theme.textMuted} style={{ marginRight: 8 }} /><Text style={[s.saveBtnText, { color: (confirmado && causa) ? 'white' : theme.textMuted }]}>Registrar Óbito</Text></>}
                 </TouchableOpacity>
@@ -139,7 +141,7 @@ const s = StyleSheet.create({
     confirmRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderWidth: 1.5, borderRadius: 16, padding: 16 },
     checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
     confirmText: { flex: 1, fontSize: 14, lineHeight: 22 },
-    footer: { padding: 16, paddingBottom: 32 },
-    saveBtn: { height: 56, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-    saveBtnText: { fontSize: 16, fontWeight: '800' },
+    footer: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
+    saveBtn: { height: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    saveBtnText: { fontSize: 16, fontWeight: '700' },
 });

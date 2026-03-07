@@ -8,7 +8,7 @@ import { useAuth } from '@/components/AuthProvider';
 export default function PerfilScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
-    const { session, isAdmin } = useAuth();
+    const { session, isAdmin, signOut } = useAuth();
 
     const handleLogout = async () => {
         Alert.alert(
@@ -16,7 +16,7 @@ export default function PerfilScreen() {
             'Deseja realmente sair da conta?',
             [
                 { text: 'Cancelar', style: 'cancel' },
-                { text: 'Sair', style: 'destructive', onPress: async () => await supabase.auth.signOut() }
+                { text: 'Sair', style: 'destructive', onPress: async () => await signOut() }
             ]
         );
     };

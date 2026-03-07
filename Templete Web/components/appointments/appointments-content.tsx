@@ -74,34 +74,34 @@ export function AppointmentsContent() {
     .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
 
   const statusOptions: { value: StatusFilter; label: string }[] = [
-    { value: 'all', label: 'All Status' },
-    { value: 'scheduled', label: 'Scheduled' },
-    { value: 'confirmed', label: 'Confirmed' },
-    { value: 'in-progress', label: 'In Progress' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'cancelled', label: 'Cancelled' },
+    { value: 'all', label: 'Todos Status' },
+    { value: 'scheduled', label: 'Agendado' },
+    { value: 'confirmed', label: 'Confirmado' },
+    { value: 'in-progress', label: 'Em Andamento' },
+    { value: 'completed', label: 'Concluído' },
+    { value: 'cancelled', label: 'Cancelado' },
   ]
 
   const typeOptions: { value: TypeFilter; label: string }[] = [
-    { value: 'all', label: 'All Types' },
-    { value: 'checkup', label: 'Checkup' },
-    { value: 'vaccination', label: 'Vaccination' },
-    { value: 'surgery', label: 'Surgery' },
-    { value: 'grooming', label: 'Grooming' },
-    { value: 'emergency', label: 'Emergency' },
-    { value: 'follow-up', label: 'Follow-up' },
+    { value: 'all', label: 'Todos Tipos' },
+    { value: 'checkup', label: 'Consulta' },
+    { value: 'vaccination', label: 'Vacinação' },
+    { value: 'surgery', label: 'Cirurgia' },
+    { value: 'grooming', label: 'Banho e Tosa' },
+    { value: 'emergency', label: 'Emergência' },
+    { value: 'follow-up', label: 'Retorno' },
   ]
 
   const getStatusBadge = (status: Appointment['status']) => {
     const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
-      scheduled: { variant: 'secondary', label: 'Scheduled' },
-      confirmed: { variant: 'default', label: 'Confirmed' },
-      'in-progress': { variant: 'outline', label: 'In Progress' },
-      completed: { variant: 'secondary', label: 'Completed' },
-      cancelled: { variant: 'destructive', label: 'Cancelled' },
+      scheduled: { variant: 'secondary', label: 'Agendado' },
+      confirmed: { variant: 'default', label: 'Confirmado' },
+      'in-progress': { variant: 'outline', label: 'Em Andamento' },
+      completed: { variant: 'secondary', label: 'Concluído' },
+      cancelled: { variant: 'destructive', label: 'Cancelado' },
     }
-    const config = variants[status]
-    return <Badge variant={config.variant}>{config.label}</Badge>
+    const config = variants[status] || { variant: 'secondary' as const, label: status }
+    return <Badge variant={config.variant} className={status === 'in-progress' ? "border-emerald-500 text-emerald-500" : ""}>{config.label}</Badge>
   }
 
   const handleEdit = (appointment: Appointment) => {
@@ -133,16 +133,25 @@ export function AppointmentsContent() {
     )
   }
 
+  const typeLabels: Record<string, string> = {
+    checkup: 'Consulta',
+    vaccination: 'Vacinação',
+    surgery: 'Cirurgia',
+    grooming: 'Banho e Tosa',
+    emergency: 'Emergência',
+    'follow-up': 'Retorno',
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Appointments</h1>
-          <p className="text-muted-foreground">Schedule and manage appointments</p>
+          <h1 className="text-2xl font-bold tracking-tight">Agenda</h1>
+          <p className="text-muted-foreground">Agende e gerencie seus compromissos</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setDialogOpen(true)} className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white border-0 shadow-lg shadow-emerald-500/25 transition-all">
           <Plus className="size-4 mr-2" />
-          New Appointment
+          Novo Agendamento
         </Button>
       </div>
 
@@ -150,8 +159,8 @@ export function AppointmentsContent() {
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>Appointment Schedule</CardTitle>
-              <CardDescription>{filteredAppointments.length} appointments</CardDescription>
+              <CardTitle>Cronograma de Atendimentos</CardTitle>
+              <CardDescription>{filteredAppointments.length} agendamentos encontrados</CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <div className="flex gap-1 flex-wrap">
@@ -163,8 +172,8 @@ export function AppointmentsContent() {
                       setStatusFilter(option.value === statusFilter ? 'all' : option.value)
                     }
                     className={`px-3 py-1.5 text-sm rounded-full transition-colors ${statusFilter === option.value
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
                       }`}
                   >
                     {option.label}
@@ -180,8 +189,8 @@ export function AppointmentsContent() {
                 type="button"
                 onClick={() => setTypeFilter(option.value === typeFilter ? 'all' : option.value)}
                 className={`px-3 py-1.5 text-sm rounded-full transition-colors ${typeFilter === option.value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   }`}
               >
                 {option.label}
@@ -193,11 +202,11 @@ export function AppointmentsContent() {
           {filteredAppointments.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Calendar className="size-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-medium">No appointments found</h3>
+              <h3 className="text-lg font-medium">Nenhum agendamento encontrado</h3>
               <p className="text-muted-foreground">
                 {statusFilter !== 'all' || typeFilter !== 'all'
-                  ? 'Try adjusting your filters'
-                  : 'Schedule your first appointment'}
+                  ? 'Tente ajustar seus filtros'
+                  : 'Agende seu primeiro atendimento'}
               </p>
             </div>
           ) : (
@@ -205,11 +214,11 @@ export function AppointmentsContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date & Time</TableHead>
-                    <TableHead>Pet</TableHead>
-                    <TableHead className="hidden sm:table-cell">Owner</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="hidden md:table-cell">Veterinarian</TableHead>
+                    <TableHead>Data e Hora</TableHead>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead className="hidden sm:table-cell">Tutor</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead className="hidden md:table-cell">Veterinário</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
@@ -220,18 +229,19 @@ export function AppointmentsContent() {
                       <TableCell>
                         <div>
                           <p className="font-medium">
-                            {new Date(apt.date).toLocaleDateString('en-US', {
+                            {new Date(apt.date).toLocaleDateString('pt-BR', {
                               month: 'short',
                               day: 'numeric',
+                              weekday: 'short',
                             })}
                           </p>
-                          <p className="text-sm text-muted-foreground">{apt.time}</p>
+                          <p className="text-sm text-muted-foreground font-mono">{apt.time}</p>
                         </div>
                       </TableCell>
                       <TableCell>
                         <Link
                           href={`/pets/${apt.petId}`}
-                          className="font-medium hover:text-primary transition-colors"
+                          className="font-medium hover:text-emerald-500 transition-colors"
                         >
                           {getPetName(apt.petId)}
                         </Link>
@@ -239,30 +249,30 @@ export function AppointmentsContent() {
                       <TableCell className="hidden sm:table-cell">
                         <Link
                           href={`/owners/${apt.ownerId}`}
-                          className="hover:text-primary transition-colors"
+                          className="hover:text-emerald-500 transition-colors"
                         >
                           {getOwnerName(apt.ownerId)}
                         </Link>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {apt.type.replace('-', ' ')}
+                        <Badge variant="outline" className="bg-background/50">
+                          {typeLabels[apt.type] || apt.type}
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">{apt.veterinarian}</TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground">{apt.veterinarian}</TableCell>
                       <TableCell>{getStatusBadge(apt.status)}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="size-8">
                               <MoreHorizontal className="size-4" />
-                              <span className="sr-only">Actions</span>
+                              <span className="sr-only">Ações</span>
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleEdit(apt)}>
                               <Edit className="size-4 mr-2" />
-                              Edit
+                              Editar
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -270,28 +280,28 @@ export function AppointmentsContent() {
                               disabled={apt.status === 'confirmed'}
                             >
                               <Check className="size-4 mr-2" />
-                              Confirm
+                              Confirmar
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleStatusChange(apt.id, 'in-progress')}
                               disabled={apt.status === 'in-progress'}
                             >
                               <Play className="size-4 mr-2" />
-                              Start
+                              Iniciar
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleStatusChange(apt.id, 'completed')}
                               disabled={apt.status === 'completed'}
                             >
                               <Clock className="size-4 mr-2" />
-                              Complete
+                              Concluir
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleStatusChange(apt.id, 'cancelled')}
                               disabled={apt.status === 'cancelled'}
                             >
                               <X className="size-4 mr-2" />
-                              Cancel
+                              Cancelar
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -299,7 +309,7 @@ export function AppointmentsContent() {
                               className="text-destructive"
                             >
                               <Trash2 className="size-4 mr-2" />
-                              Delete
+                              Excluir
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -322,15 +332,15 @@ export function AppointmentsContent() {
       <AlertDialog open={!!deletingAppointment} onOpenChange={() => setDeletingAppointment(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Appointment</AlertDialogTitle>
+            <AlertDialogTitle>Excluir Agendamento</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this appointment? This action cannot be undone.
+              Tem certeza que deseja excluir este agendamento? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

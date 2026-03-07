@@ -72,6 +72,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="financeiro"
+        options={{
+          title: 'Financeiro',
+          tabBarLabel: 'Financeiro',
+          headerTitle: '💳 Financeiro',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="card" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="perfil"
         options={{
           title: 'Perfil',

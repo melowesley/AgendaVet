@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
@@ -15,6 +15,7 @@ export default function NovaCobrancaScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
     const styles = getStyles(theme);
+    const insets = useSafeAreaInsets();
 
     const [selectedServices, setSelectedServices] = useState<any[]>([]);
     const [customItemDesc, setCustomItemDesc] = useState('');
@@ -67,6 +68,10 @@ export default function NovaCobrancaScreen() {
     };
 
     const handleGenerateInvoice = async () => {
+        if (!ownerId) {
+            Alert.alert('Erro', 'Não foi possível identificar o tutor responsável para gerar a cobrança.');
+            return;
+        }
         if (selectedServices.length === 0) {
             Alert.alert('Erro', 'Adicione pelo menos um item para gerar a cobrança.');
             return;
@@ -210,7 +215,7 @@ export default function NovaCobrancaScreen() {
 
             </ScrollView>
 
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
                 <TouchableOpacity
                     style={[styles.submitBtn, selectedServices.length === 0 && { opacity: 0.5 }]}
                     disabled={selectedServices.length === 0 || isSubmitting}
@@ -310,13 +315,13 @@ const getStyles = (theme: any) => StyleSheet.create({
         right: 0,
         padding: 16,
         backgroundColor: theme.surface,
-        borderTopWidth: 1,
+        borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: theme.border,
     },
     submitBtn: {
         backgroundColor: theme.success,
-        height: 56,
-        borderRadius: 16,
+        height: 46,
+        borderRadius: 14,
         alignItems: 'center',
         justifyContent: 'center',
     },

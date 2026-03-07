@@ -11,6 +11,7 @@ import { ptBR } from 'date-fns/locale';
 import { logPetAdminHistory } from '@/lib/services/petHistory';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const MODULE_COLORS: Record<string, string> = {
     consulta: '#0284C7',          // sky-600
@@ -60,8 +61,10 @@ export default function PetDetailScreen() {
     const { id: petId } = useLocalSearchParams<{ id: string }>();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+    const isDark = colorScheme === 'dark';
     const router = useRouter();
     const queryClient = useQueryClient();
+    const insets = useSafeAreaInsets();
 
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuSearch, setMenuSearch] = useState('');
@@ -144,21 +147,52 @@ export default function PetDetailScreen() {
         });
     };
 
-    const ActionButton = ({ icon, label, onPress, color }: any) => (
-        <View style={styles.bubbleRow}>
-            <TouchableOpacity
-                style={[styles.bubbleBtn, { backgroundColor: color, shadowColor: color }]}
-                onPressIn={() => Haptics.selectionAsync()}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onPress(); }}
-                activeOpacity={0.7}
-            >
-                <Ionicons name={icon} size={24} color="#fff" />
-            </TouchableOpacity>
-            <View style={[styles.bubbleLabelContainer, { backgroundColor: theme.surface }]}>
-                <Text style={[styles.bubbleLabel, { color: theme.text }]}>{label}</Text>
+    const ActionButton = ({ icon, label, onPress, color }: any) => {
+        const [showTooltip, setShowTooltip] = useState(false);
+        const timeoutRef = React.useRef<NodeJS.Timeout>();
+
+        const handlePressIn = () => {
+            timeoutRef.current = setTimeout(() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                setShowTooltip(true);
+            }, 300); // 300ms = long press to show text
+        };
+
+        const handlePressOut = () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            setShowTooltip(false);
+        };
+
+        const handlePress = () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            setShowTooltip(false);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            onPress();
+        };
+
+        return (
+            <View style={[styles.gridItem, { zIndex: showTooltip ? 100 : 1 }]}>
+                {showTooltip && (
+                    <View style={styles.tooltipBubble}>
+                        <Text style={styles.tooltipText}>{label}</Text>
+                        <View style={styles.tooltipArrow} />
+                    </View>
+                )}
+                <TouchableOpacity
+                    onPressIn={handlePressIn}
+                    onPressOut={handlePressOut}
+                    onPress={handlePress}
+                    activeOpacity={0.7}
+                    style={{ alignItems: 'center' }}
+                >
+                    <View style={[styles.gridIcon, { backgroundColor: showTooltip ? color + '40' : color + '20' }]}>
+                        <Ionicons name={icon} size={28} color={color} />
+                    </View>
+                    {/* The static label is now hidden, keeping the clean look, only shown on long press via Tooltip */}
+                </TouchableOpacity>
             </View>
-        </View>
-    );
+        );
+    };
 
     if (petLoading || timelineLoading) {
         return (
@@ -384,47 +418,55 @@ export default function PetDetailScreen() {
                                             )
                                         )}
 
-                                        <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
-                                            {selectedItem.id.startsWith('history-') && selectedItem.module !== 'cobranca' && (
-                                                <TouchableOpacity
-                                                    style={[styles.modalBtn, { backgroundColor: MODULE_COLORS[selectedItem.module] || theme.primary }]}
-                                                    onPress={() => {
-                                                        const historyId = selectedItem.id.replace('history-', '');
-                                                        setSelectedItem(null);
-                                                        router.push({ pathname: '/pet/document-viewer', params: { historyId } });
-                                                    }}>
-                                                    <Ionicons name="document-text-outline" size={20} color="white" style={{ marginBottom: 4 }} />
-                                                    <Text style={{ color: 'white', fontWeight: '700', fontSize: 13 }}>Ver Documento</Text>
-                                                </TouchableOpacity>
-                                            )}
+                                        <View style={[styles.modalFooterStrip, { paddingBottom: insets.bottom > 0 ? insets.bottom + 8 : 24, backgroundColor: colorScheme === 'dark' ? '#0F172A' : '#1E293B' }]}>
+                                            <View style={{ flexDirection: 'row', gap: 12, flex: 1 }}>
+                                                {selectedItem.id.startsWith('history-') && selectedItem.module !== 'cobranca' && (
+                                                    <TouchableOpacity
+                                                        style={[styles.modalPremiumBtn, { backgroundColor: MODULE_COLORS[selectedItem.module] || theme.primary }]}
+                                                        activeOpacity={0.8}
+                                                        onPress={() => {
+                                                            const historyId = selectedItem.id.replace('history-', '');
+                                                            setSelectedItem(null);
+                                                            router.push({ pathname: '/pet/document-viewer', params: { historyId } });
+                                                        }}>
+                                                        <Ionicons name="document-text-outline" size={18} color="white" />
+                                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Ver Doc.</Text>
+                                                    </TouchableOpacity>
+                                                )}
 
-                                            {selectedItem.module === 'cobranca' && dets.status !== 'paid' && (
-                                                <TouchableOpacity
-                                                    style={[styles.modalBtn, { backgroundColor: theme.primary }]}
-                                                    onPress={() => {
-                                                        setSelectedItem(null);
-                                                        router.push({ pathname: '/pet/pagamento', params: { invoiceId: dets.invoiceId, petId } });
-                                                    }}>
-                                                    <Ionicons name="card-outline" size={20} color="white" style={{ marginBottom: 4 }} />
-                                                    <Text style={{ color: 'white', fontWeight: '700', fontSize: 13 }}>Pagar Ágora</Text>
-                                                </TouchableOpacity>
-                                            )}
+                                                {selectedItem.module === 'cobranca' && dets.status !== 'paid' && (
+                                                    <TouchableOpacity
+                                                        style={[styles.modalPremiumBtn, { backgroundColor: theme.primary }]}
+                                                        activeOpacity={0.8}
+                                                        onPress={() => {
+                                                            setSelectedItem(null);
+                                                            router.push({ pathname: '/pet/pagamento', params: { invoiceId: dets.invoiceId, petId } });
+                                                        }}>
+                                                        <Ionicons name="card-outline" size={18} color="white" />
+                                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Pagar</Text>
+                                                    </TouchableOpacity>
+                                                )}
 
-                                            {selectedItem.module === 'cobranca' && dets.status === 'paid' && dets.receipt_url && (
-                                                <TouchableOpacity
-                                                    style={[styles.modalBtn, { backgroundColor: theme.success }]}
-                                                    onPress={() => Linking.openURL(dets.receipt_url)}>
-                                                    <Ionicons name="receipt-outline" size={20} color="white" style={{ marginBottom: 4 }} />
-                                                    <Text style={{ color: 'white', fontWeight: '700', fontSize: 13 }}>Ver Comprovante</Text>
-                                                </TouchableOpacity>
-                                            )}
+                                                {selectedItem.module === 'cobranca' && dets.status === 'paid' && dets.receipt_url && (
+                                                    <TouchableOpacity
+                                                        style={[styles.modalPremiumBtn, { backgroundColor: theme.success }]}
+                                                        activeOpacity={0.8}
+                                                        onPress={() => Linking.openURL(dets.receipt_url)}>
+                                                        <Ionicons name="receipt-outline" size={18} color="white" />
+                                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Ver Comp.</Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
 
-                                            <TouchableOpacity
-                                                style={[styles.modalBtn, { backgroundColor: theme.surfaceElevated, borderWidth: 1, borderColor: theme.border }]}
-                                                onPress={() => setSelectedItem(null)}>
-                                                <Ionicons name="close" size={20} color={theme.textSecondary} style={{ marginBottom: 4 }} />
-                                                <Text style={{ color: theme.textSecondary, fontWeight: '700', fontSize: 13 }}>Fechar</Text>
-                                            </TouchableOpacity>
+                                            <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                                                <TouchableOpacity
+                                                    style={[styles.modalPremiumBtn, { backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }]}
+                                                    activeOpacity={0.8}
+                                                    onPress={() => setSelectedItem(null)}>
+                                                    <Ionicons name="close" size={18} color={'white'} />
+                                                    <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Fechar</Text>
+                                                </TouchableOpacity>
+                                            </View>
                                         </View>
                                     </>)
                             })()}
@@ -433,38 +475,47 @@ export default function PetDetailScreen() {
                 </Modal>
             </ScrollView>
 
-            {/* FAB Actions */}
+            {/* FAB Actions (Grid Bottom Sheet) */}
             <Modal visible={menuOpen} animationType="fade" transparent presentationStyle="overFullScreen">
-                <BlurView experimentalBlurMethod="dimezisBlurView" intensity={40} tint={colorScheme === 'dark' ? 'dark' : 'light'} style={styles.menuOverlayBubble}>
+                <View style={styles.modalOverlay}>
                     <TouchableOpacity style={StyleSheet.absoluteFillObject} onPress={handleCloseMenu} />
 
-                    <View style={styles.bubbleSidebar}>
-                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 40, paddingLeft: 16, paddingRight: 32, gap: 16 }}>
-                            {[
-                                { icon: 'cash-outline', label: 'Cobrança', desc: 'Gerar fatura para o tutor', color: '#10B981', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/cobrar', params: { petId, ownerId: pet?.user_id } }); } },
-                                { icon: 'medkit', label: 'Consulta', desc: 'Atendimento clínico com anamnese', color: '#3B82F6', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/consulta', params: { petId } }); } },
-                                { icon: 'clipboard-outline', label: 'Avaliação Cirúrgica', desc: 'Avaliação pré-operatória', color: '#8B5CF6', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/avaliacao_cirurgica', params: { petId } }); } },
-                                { icon: 'cut-outline', label: 'Cirurgia', desc: 'Procedimento cirúrgico', color: '#EF4444', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/cirurgia', params: { petId } }); } },
-                                { icon: 'refresh-outline', label: 'Retorno', desc: 'Retorno de consulta anterior', color: '#10B981', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/retorno', params: { petId, userId: pet?.user_id } }); } },
-                                { icon: 'scale-outline', label: 'Peso', desc: 'Registro de peso corporal', color: '#6366F1', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/peso', params: { petId } }); } },
-                                { icon: 'bandage-outline', label: 'Patologia', desc: 'Registro de patologias', color: '#6D28D9', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/patologia', params: { petId } }); } },
-                                { icon: 'document-attach-outline', label: 'Documento', desc: 'Anexar documentos clínicos', color: '#0D9488', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/documento', params: { petId } }); } },
-                                { icon: 'flask-outline', label: 'Exame', desc: 'Registro de exames laboratoriais', color: '#14B8A6', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/exame', params: { petId } }); } },
-                                { icon: 'camera-outline', label: 'Fotos', desc: 'Registro fotográfico', color: '#D946EF', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/fotos', params: { petId } }); } },
-                                { icon: 'medical-outline', label: 'Aplicações', desc: 'Vacinas e medicações', color: '#EC4899', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/vacina', params: { petId } }); } },
-                                { icon: 'document-text-outline', label: 'Receita', desc: 'Prescrições', color: '#F59E0B', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/receita', params: { petId, petName: pet?.name } }); } },
-                                { icon: 'chatbox-ellipses-outline', label: 'Observações', desc: 'Anotações clínicas', color: '#64748B', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/observacao', params: { petId } }); } },
-                                { icon: 'videocam-outline', label: 'Gravações', desc: 'Vídeos', color: '#047857', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/gravacoes', params: { petId } }); } },
-                                { icon: 'bed-outline', label: 'Internação', desc: 'Internação hospitalar', color: '#64748B', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/internacao', params: { petId } }); } },
-                                { icon: 'pulse-outline', label: 'Diagnóstico', desc: 'Diagnóstico clínico', color: '#059669', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/diagnostico', params: { petId } }); } },
-                                { icon: 'water-outline', label: 'Banho/Tosa', desc: 'Serviço de estética', color: '#06B6D4', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/banho_tosa', params: { petId } }); } },
-                                { icon: 'skull-outline', label: 'Óbito', desc: 'Registro de óbito', color: '#374151', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/obito', params: { petId, petName: pet?.name } }); } },
-                            ].map(item => (
-                                <ActionButton key={item.label} icon={item.icon} label={item.label} color={item.color} onPress={item.onPress} />
-                            ))}
+                    <View style={[styles.menuContainer, { backgroundColor: theme.surface }]}>
+                        <View style={styles.menuHeaderDark}>
+                            <View style={styles.menuHandleContainer}>
+                                <View style={[styles.menuHandle, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
+                            </View>
+                            <Text style={[styles.menuTitle, { color: 'white', textAlign: 'center', marginBottom: 12 }]}>Novo Registro</Text>
+                        </View>
+
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 20 }}>
+                            <View style={styles.gridContainer}>
+                                {[
+                                    { icon: 'cash-outline', label: 'Cobrança', color: '#10B981', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/cobrar', params: { petId, ownerId: owner?.id || pet?.user_id } }); } },
+                                    { icon: 'medkit', label: 'Consulta', color: '#3B82F6', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/consulta', params: { petId } }); } },
+                                    { icon: 'clipboard-outline', label: 'Avaliação Cirúrgica', color: '#8B5CF6', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/avaliacao_cirurgica', params: { petId } }); } },
+                                    { icon: 'cut-outline', label: 'Cirurgia', color: '#EF4444', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/cirurgia', params: { petId } }); } },
+                                    { icon: 'refresh-outline', label: 'Retorno', color: '#10B981', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/retorno', params: { petId, userId: pet?.user_id } }); } },
+                                    { icon: 'scale-outline', label: 'Peso', color: '#6366F1', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/peso', params: { petId } }); } },
+                                    { icon: 'bandage-outline', label: 'Patologia', color: '#6D28D9', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/patologia', params: { petId } }); } },
+                                    { icon: 'document-attach-outline', label: 'Documento', color: '#0D9488', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/documento', params: { petId } }); } },
+                                    { icon: 'flask-outline', label: 'Exame', color: '#14B8A6', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/exame', params: { petId } }); } },
+                                    { icon: 'camera-outline', label: 'Fotos', color: '#D946EF', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/fotos', params: { petId } }); } },
+                                    { icon: 'medical-outline', label: 'Aplicações', color: '#EC4899', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/vacina', params: { petId } }); } },
+                                    { icon: 'document-text-outline', label: 'Receita', color: '#F59E0B', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/receita', params: { petId, petName: pet?.name } }); } },
+                                    { icon: 'chatbox-ellipses-outline', label: 'Observações', color: '#64748B', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/observacao', params: { petId } }); } },
+                                    { icon: 'videocam-outline', label: 'Gravações', color: '#047857', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/gravacoes', params: { petId } }); } },
+                                    { icon: 'bed-outline', label: 'Internação', color: '#64748B', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/internacao', params: { petId } }); } },
+                                    { icon: 'pulse-outline', label: 'Diagnóstico', color: '#059669', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/diagnostico', params: { petId } }); } },
+                                    { icon: 'water-outline', label: 'Banho/Tosa', color: '#06B6D4', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/banho_tosa', params: { petId } }); } },
+                                    { icon: 'skull-outline', label: 'Óbito', color: '#374151', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/obito', params: { petId, petName: pet?.name } }); } },
+                                ].map(item => (
+                                    <ActionButton key={item.label} icon={item.icon} label={item.label} color={item.color} onPress={item.onPress} />
+                                ))}
+                            </View>
                         </ScrollView>
                     </View>
-                </BlurView>
+                </View>
             </Modal>
 
 
@@ -517,14 +568,42 @@ const styles = StyleSheet.create({
     chip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
     chipText: { fontSize: 12, fontWeight: '600' },
     // Modal
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalBox: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, paddingBottom: 40 },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end', margin: 0 },
+    modalBox: {
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        paddingTop: 24,
+        paddingHorizontal: 20,
+        paddingBottom: 0,
+        overflow: 'hidden'
+    },
     modalHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16, paddingBottom: 16, borderBottomWidth: 1 },
     modalTitle: { fontSize: 16, fontWeight: '800' },
     modalRow: { paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
     modalLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginBottom: 4 },
     modalValue: { fontSize: 14, lineHeight: 22 },
-    modalCloseBtn: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
+
+    modalFooterStrip: {
+        marginTop: 20,
+        marginHorizontal: -20,
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+    },
+    modalPremiumBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 16,
+        height: 46,
+        borderRadius: 23,
+        gap: 6,
+    },
+
     timelineItem: { flexDirection: 'row', marginBottom: 16 },
     timelineLeft: { width: 30, alignItems: 'center', paddingTop: 10 },
     timelineDot: { width: 10, height: 10, borderRadius: 5, zIndex: 1 },
@@ -552,84 +631,72 @@ const styles = StyleSheet.create({
         shadowRadius: 16,
         elevation: 8,
     },
-    menuOverlayBubble: {
-        flex: 1,
-        flexDirection: 'row',
-    },
-    bubbleSidebar: {
-        width: '100%',
-        height: '100%',
-        alignItems: 'flex-start',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        justifyContent: 'center',
-    },
-    bubbleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    bubbleBtn: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 6,
-        marginRight: 16,
-    },
-    bubbleLabelContainer: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    bubbleLabel: {
-        fontSize: 14,
-        fontWeight: '800',
-    },
-    menuOverlay: {
-        flex: 1,
-        justifyContent: 'flex-end',
-    },
     menuContainer: {
         borderTopLeftRadius: 36,
         borderTopRightRadius: 36,
-        padding: 24,
-        paddingTop: 8,
-        height: '85%',
+        height: '80%',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -10 },
-        shadowOpacity: 0.15,
+        shadowOpacity: 0.2,
         shadowRadius: 20,
         elevation: 20,
+        overflow: 'hidden'
     },
-    menuHandleContainer: { width: '100%', alignItems: 'center', paddingVertical: 12 },
+    menuHeaderDark: {
+        backgroundColor: '#0F172A',
+        paddingTop: 12,
+        paddingBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.1)'
+    },
+    menuHandleContainer: { width: '100%', alignItems: 'center', paddingBottom: 12 },
     menuHandle: { width: 40, height: 5, borderRadius: 3 },
-    menuTitle: { fontSize: 24, fontWeight: '800' },
+    menuTitle: { fontSize: 20, fontWeight: '800' },
 
-    gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 },
+    gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: '3%' },
     gridItem: {
-        width: '31%', // 3 columns
-        aspectRatio: 1,
+        width: '22%', // ~4 columns
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        marginBottom: 20,
+    },
+    gridIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+    gridLabel: { fontSize: 10, fontWeight: '700', textAlign: 'center', paddingHorizontal: 2, lineHeight: 14 },
+
+    // FAB Tooltip Styles
+    tooltipBubble: {
+        position: 'absolute',
+        top: -46,
+        backgroundColor: '#1E293B',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 6,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 8,
-        borderRadius: 20,
-        backgroundColor: 'rgba(0,0,0,0.02)'
+        minWidth: 80,
     },
-    gridIcon: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-    gridLabel: { fontSize: 11, fontWeight: '700', textAlign: 'center', paddingHorizontal: 4 },
+    tooltipText: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        fontWeight: '800',
+        textAlign: 'center',
+    },
+    tooltipArrow: {
+        position: 'absolute',
+        bottom: -6,
+        width: 12,
+        height: 12,
+        backgroundColor: '#1E293B',
+        transform: [{ rotate: '45deg' }],
+    },
 
     menuSearch: { height: 48, borderRadius: 12, borderWidth: 1, paddingHorizontal: 16, fontSize: 16 },
     modalInput: { height: 56, borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, fontSize: 18, marginBottom: 20 },
     modalButtons: { flexDirection: 'row', gap: 12 },
-    modalBtn: { flex: 1, height: 50, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+    modalBtn: { flex: 1, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
 });
