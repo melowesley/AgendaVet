@@ -6,13 +6,22 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+error.log
 
 node_modules
 dist
 dist-ssr
 .env*
+!.env.example
 *.local
 
+# Temp files
+tmp/
+
+# Sensitive / unnecessary files
+Prompts.txt
+codex-edictor-dialogo.txt
+bun.lockb
 
 # Editor directories and files
 .vscode/*

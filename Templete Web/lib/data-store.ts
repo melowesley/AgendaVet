@@ -22,68 +22,78 @@ Always be professional, empathetic, and accurate in your responses.`,
 const mapSupabasePet = (p: any): Pet => ({
   id: p.id,
   name: p.name,
-  species: p.type as Pet['species'],
+  species: (p.type || 'other') as Pet['species'],
   breed: p.breed || '',
-  dateOfBirth: p.age || '', // Mapping age string to dateOfBirth for now
+  dateOfBirth: p.age || '',
   weight: parseFloat(p.weight) || 0,
   ownerId: p.user_id,
   notes: p.notes || '',
-  imageUrl: undefined, // Add mapping if there's an image field
+  imageUrl: p.imageUrl,
   createdAt: p.created_at,
 })
 
 const mapSupabaseOwner = (p: any): Owner => {
-  const names = (p.full_name || '').split(' ')
+  const parts = (p.full_name || '').split(' ')
   return {
     id: p.id,
-    firstName: names[0] || '',
-    lastName: names.slice(1).join(' ') || '',
-    email: '', // Email not in profiles table directly, usually in auth.users
+    firstName: parts[0] || '',
+    lastName: parts.slice(1).join(' ') || '',
+    email: p.email || '',
     phone: p.phone || '',
     address: p.address || '',
-    petIds: [], // Will be filled if needed or fetched separately
+    petIds: [],
     createdAt: p.created_at,
   }
 }
 
-const mapSupabaseAppointment = (a: any): Appointment => ({
-  id: a.id,
-  petId: a.pet_id,
-  ownerId: a.user_id,
-  date: a.scheduled_date || a.preferred_date,
-  time: a.scheduled_time || a.preferred_time,
-  type: (a.service_id ? 'checkup' : 'follow-up') as Appointment['type'], // Loose mapping
-  status: (a.status === 'confirmed' ? 'confirmed' : a.status === 'pending' ? 'scheduled' : 'cancelled') as Appointment['status'],
-  notes: a.notes || '',
-  veterinarian: a.veterinarian || 'Unassigned',
-  createdAt: a.created_at,
-})
+const mapSupabaseAppointment = (a: any): Appointment => {
+  // Use scheduled_date if available, otherwise preferred_date
+  const date = a.scheduled_date || a.preferred_date || ''
+  const time = a.scheduled_time || a.preferred_time || ''
+
+  return {
+    id: a.id,
+    petId: a.pet_id,
+    ownerId: a.user_id,
+    date,
+    time,
+    type: (a.reason?.toLowerCase() === 'vaccination' ? 'vaccination' :
+      a.reason?.toLowerCase() === 'surgery' ? 'surgery' : 'checkup') as Appointment['type'],
+    status: (a.status === 'confirmed' ? 'confirmed' :
+      a.status === 'completed' ? 'completed' :
+        a.status === 'cancelled' ? 'cancelled' : 'scheduled') as Appointment['status'],
+    notes: a.notes || '',
+    veterinarian: a.veterinarian || 'Não definido',
+    createdAt: a.created_at,
+  }
+}
 
 // Fetchers
 const petsFetcher = async () => {
-  const { data, error } = await supabase.from('pets').select('*')
+  const { data, error } = await supabase.from('pets').select('*').order('created_at', { ascending: false })
   if (error) throw error
   return (data || []).map(mapSupabasePet)
 }
 
 const ownersFetcher = async () => {
-  const { data, error } = await supabase.from('profiles').select('*')
+  const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
   if (error) throw error
   return (data || []).map(mapSupabaseOwner)
 }
 
 const appointmentsFetcher = async () => {
-  const { data, error } = await supabase.from('appointment_requests').select('*')
+  const { data, error } = await supabase.from('appointment_requests').select('*').order('created_at', { ascending: false })
   if (error) throw error
   return (data || []).map(mapSupabaseAppointment)
 }
 
 const medicalRecordsFetcher = async () => {
   // Combining different record types from Supabase
-  const [exams, vaccines, observations] = await Promise.all([
+  const [exams, vaccines, observations, prescriptions] = await Promise.all([
     supabase.from('pet_exams').select('*'),
     supabase.from('pet_vaccines').select('*'),
     supabase.from('pet_observations').select('*'),
+    supabase.from('pet_prescriptions').select('*'),
   ])
 
   const records: MedicalRecord[] = [
@@ -112,10 +122,20 @@ const medicalRecordsFetcher = async () => {
       petId: o.pet_id,
       date: o.observation_date,
       type: 'note' as const,
-      title: o.title || 'Observation',
+      title: o.title || 'Observação',
       description: o.observation,
       veterinarian: '',
       createdAt: o.created_at,
+    })),
+    ...(prescriptions.data || []).map(p => ({
+      id: p.id,
+      petId: p.pet_id,
+      date: p.created_at, // Use creation date for prescriptions
+      type: 'prescription' as const,
+      title: 'Receita Médica',
+      description: p.medication_name || '',
+      veterinarian: p.veterinarian || '',
+      createdAt: p.created_at,
     })),
   ]
 
@@ -249,7 +269,7 @@ export async function addAppointment(appointment: Omit<Appointment, 'id' | 'crea
     user_id: appointment.ownerId,
     preferred_date: appointment.date,
     preferred_time: appointment.time,
-    reason: appointment.type || 'Consultation', // Added required field
+    reason: appointment.type || 'Consultation',
     notes: appointment.notes,
     status: appointment.status === 'scheduled' ? 'pending' : appointment.status,
     veterinarian: appointment.veterinarian,
@@ -265,7 +285,7 @@ export async function updateAppointment(id: string, updates: Partial<Appointment
   const supabaseUpdates: any = {}
   if (updates.date) supabaseUpdates.scheduled_date = updates.date
   if (updates.time) supabaseUpdates.scheduled_time = updates.time
-  if (updates.type) supabaseUpdates.reason = updates.type // Mapping type to reason
+  if (updates.type) supabaseUpdates.reason = updates.type
   if (updates.status) {
     supabaseUpdates.status = updates.status === 'scheduled' ? 'pending' : updates.status
   }

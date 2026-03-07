@@ -5,10 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { HapticTab } from '@/components/haptic-tab';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -20,9 +22,9 @@ export default function TabLayout() {
           backgroundColor: theme.background,
           borderTopColor: theme.border,
           borderTopWidth: 1,
-          paddingBottom: Platform.OS === 'ios' ? 32 : 16,
+          paddingBottom: Platform.OS === 'ios' ? insets.bottom : Math.max(insets.bottom, 12),
           paddingTop: 8,
-          height: Platform.OS === 'ios' ? 96 : 76,
+          height: Platform.OS === 'ios' ? 64 + insets.bottom : 68 + Math.max(insets.bottom, 12),
           elevation: 10,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
@@ -66,6 +68,17 @@ export default function TabLayout() {
           headerTitle: '📅 Agendamentos',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="financeiro"
+        options={{
+          title: 'Financeiro',
+          tabBarLabel: 'Financeiro',
+          headerTitle: '💳 Financeiro',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="card" size={size} color={color} />
           ),
         }}
       />

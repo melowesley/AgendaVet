@@ -11,6 +11,7 @@ import { Plus, UserPlus, Shield, History } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { translateRole } from '@/shared/utils/translations';
 
 interface AdminUser {
   user_id: string;
@@ -105,7 +106,7 @@ export const UserManagement = () => {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Ocorreu um erro inesperado';
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+      toast({ title: 'Erro', description: message, variant: 'destructive' });
     } finally {
       setCreating(false);
     }
@@ -142,76 +143,76 @@ export const UserManagement = () => {
           </div>
 
           <div className="overflow-x-auto -mx-2 sm:mx-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Criado em</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {admins.map((admin) => (
-                <TableRow key={admin.user_id}>
-                  <TableCell>
-                    <p className="font-medium">{admin.profile?.full_name || 'Sem nome'}</p>
-                    <p className="text-sm text-muted-foreground">{admin.user_id.slice(0, 8)}...</p>
-                  </TableCell>
-                  <TableCell>
-                    <Badge>Admin</Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {format(new Date(admin.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {admins.length === 0 && (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                    Nenhum administrador encontrado.
-                  </TableCell>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Função</TableHead>
+                  <TableHead>Criado em</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {admins.map((admin) => (
+                  <TableRow key={admin.user_id}>
+                    <TableCell>
+                      <p className="font-medium">{admin.profile?.full_name || 'Sem nome'}</p>
+                      <p className="text-sm text-muted-foreground">{admin.user_id.slice(0, 8)}...</p>
+                    </TableCell>
+                    <TableCell>
+                      <Badge>{translateRole(admin.role)}</Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {format(new Date(admin.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {admins.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                      Nenhum administrador encontrado.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
         </TabsContent>
 
         <TabsContent value="audit" className="space-y-4">
           <div className="overflow-x-auto -mx-2 sm:mx-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Usuário</TableHead>
-                <TableHead>Ação</TableHead>
-                <TableHead>Descrição</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {auditLogs.map((log) => (
-                <TableRow key={log.id}>
-                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                    {format(new Date(log.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                  </TableCell>
-                  <TableCell className="text-sm">{log.user_email || '—'}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{log.action}</Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                    {log.description || '—'}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {auditLogs.length === 0 && (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                    Nenhum registro de auditoria.
-                  </TableCell>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Usuário</TableHead>
+                  <TableHead>Ação</TableHead>
+                  <TableHead>Descrição</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {auditLogs.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                      {format(new Date(log.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                    </TableCell>
+                    <TableCell className="text-sm">{log.user_email || '—'}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{log.action}</Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                      {log.description || '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {auditLogs.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      Nenhum registro de auditoria.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
         </TabsContent>
       </Tabs>

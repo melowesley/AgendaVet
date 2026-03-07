@@ -58,16 +58,22 @@ export function initializeAuth(): () => void {
     // Evita loop duplo de re-renderização durante o boot inicial no Android
     if (isInitializing && event === 'INITIAL_SESSION') return;
 
-    const user = session?.user ?? null;
+    try {
+      const user = session?.user ?? null;
 
-    // Se fez logout de propósito, atualizar na hora
-    if (event === 'SIGNED_OUT') {
-      useAuthStore.setState({ user: null, isAdmin: false, isLoading: false });
-      return;
+      // Se fez logout de propósito, atualizar na hora
+      if (event === 'SIGNED_OUT') {
+        useAuthStore.setState({ user: null, isAdmin: false, isLoading: false });
+        return;
+      }
+
+      const isAdmin = user ? await checkAdminRole(user.id) : false;
+      useAuthStore.setState({ user, isAdmin, isLoading: false });
+    } catch (error) {
+      console.error('[Auth] Erro em onAuthStateChange:', error);
+      const user = session?.user ?? null;
+      useAuthStore.setState({ user, isAdmin: false, isLoading: false });
     }
-
-    const isAdmin = user ? await checkAdminRole(user.id) : false;
-    useAuthStore.setState({ user, isAdmin, isLoading: false });
   });
 
   return () => subscription.unsubscribe();

@@ -216,18 +216,40 @@ export default function AgendaScreen() {
                                         </View>
 
                                         {/* Col Paciente/Status */}
-                                        <TouchableOpacity
-                                            style={s.infoCol}
-                                            onPress={() => toggleExpand(item)}
-                                            activeOpacity={0.6}
-                                        >
-                                            <Text style={[s.petName, { color: theme.text }]}>{item.pet?.name || '---'}</Text>
-                                            <Text style={[s.ownerName, { color: theme.textSecondary }]}>{item.profile?.full_name || '---'}</Text>
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                                                <Text style={[s.statusLabel, { color: statusColor }]}>{STATUS_LABEL[item.status]}</Text>
-                                                {item.quick_notes && !isExpanded && <Ionicons name="document-text" size={12} color={theme.textMuted} />}
-                                            </View>
-                                        </TouchableOpacity>
+                                        <View style={s.infoCol}>
+                                            <TouchableOpacity onPress={() => toggleExpand(item)} activeOpacity={0.6}>
+                                                <Text style={[s.petName, { color: theme.text }]}>{item.pet?.name || '---'}</Text>
+                                                <Text style={[s.ownerName, { color: theme.textSecondary }]}>{item.profile?.full_name || '---'}</Text>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                                                    <Text style={[s.statusLabel, { color: statusColor }]}>{STATUS_LABEL[item.status]}</Text>
+                                                </View>
+                                            </TouchableOpacity>
+
+                                            {/* Persistent Notes display */}
+                                            {item.quick_notes && !isExpanded && (
+                                                <TouchableOpacity
+                                                    style={{ marginTop: 8, padding: 8, backgroundColor: theme.surfaceElevated, borderRadius: 8, borderWidth: 1, borderColor: theme.border }}
+                                                    onPress={() => toggleExpand(item)}
+                                                >
+                                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 }}>
+                                                        <Text style={{ fontSize: 10, fontWeight: '700', color: theme.textMuted, textTransform: 'uppercase' }}>Anotações Rápidas</Text>
+                                                        <Ionicons name="pencil" size={12} color={theme.textMuted} />
+                                                    </View>
+                                                    <Text style={{ fontSize: 13, color: theme.text, lineHeight: 18 }} numberOfLines={3}>{item.quick_notes}</Text>
+                                                </TouchableOpacity>
+                                            )}
+
+                                            {/* Add Note Button if empty */}
+                                            {!item.quick_notes && !isExpanded && (
+                                                <TouchableOpacity
+                                                    style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 4 }}
+                                                    onPress={() => toggleExpand(item)}
+                                                >
+                                                    <Ionicons name="add-circle-outline" size={14} color={theme.textMuted} />
+                                                    <Text style={{ fontSize: 11, fontWeight: '600', color: theme.textMuted }}>Adicionar Nota</Text>
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
 
                                         {/* Col Ações */}
                                         <View style={s.actionCol}>

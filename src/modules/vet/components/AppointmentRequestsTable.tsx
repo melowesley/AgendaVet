@@ -13,6 +13,7 @@ import { ManageRequestDialog } from './ManageRequestDialog';
 import { PetHistoryDialog } from './PetHistoryDialog';
 import { StatusBadge } from '@/shared/components/StatusBadge';
 import { AppointmentStatus, APPOINTMENT_STATUS } from '@/core/types/appointment';
+import { translatePetType, NA_TEXT } from '@/shared/utils/translations';
 
 interface AppointmentRequest {
   id: string;
@@ -200,14 +201,14 @@ export const AppointmentRequestsTable = ({ onUpdate }: AppointmentRequestsTableP
                 <TableRow key={request.id}>
                   <TableCell>
                     <div>
-                      <p className="font-medium">{request.profile?.full_name || 'N/A'}</p>
+                      <p className="font-medium">{request.profile?.full_name || NA_TEXT}</p>
                       <p className="text-sm text-muted-foreground">{request.profile?.phone || 'Sem telefone'}</p>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div>
                       <p className="font-medium">{request.pet?.name}</p>
-                      <p className="text-sm text-muted-foreground capitalize">{request.pet?.type} - {request.pet?.breed || 'SRD'}</p>
+                      <p className="text-sm text-muted-foreground capitalize">{translatePetType(request.pet?.type)} - {request.pet?.breed || 'SRD'}</p>
                     </div>
                   </TableCell>
                   <TableCell className="max-w-[200px] truncate">{request.reason}</TableCell>

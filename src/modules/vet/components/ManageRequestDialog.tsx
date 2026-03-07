@@ -14,6 +14,7 @@ import { Sparkles, Loader2, AlertCircle, CheckCircle2, ChevronDown, ChevronUp, A
 import { AppointmentStatus, APPOINTMENT_STATUS } from '@/core/types/appointment';
 import { isValidTransition, getNextPossibleActions } from '@/modules/vet/services/appointmentFlow.service';
 import { Alert, AlertDescription } from '@/shared/components/ui/alert';
+import { translatePetType, translateAppointmentStatus, NA_TEXT } from '@/shared/utils/translations';
 
 interface Service {
   id: string;
@@ -178,9 +179,9 @@ export const ManageRequestDialog = ({ request, open, onClose }: ManageRequestDia
         <div className="space-y-4">
           <div className="bg-muted p-4 rounded-lg space-y-2">
             <h4 className="font-semibold">Informações do Cliente</h4>
-            <p><span className="text-muted-foreground">Nome:</span> {request.profile?.full_name || 'N/A'}</p>
-            <p><span className="text-muted-foreground">Telefone:</span> {request.profile?.phone || 'N/A'}</p>
-            <p><span className="text-muted-foreground">Pet:</span> {request.pet?.name} ({request.pet?.type} - {request.pet?.breed || 'SRD'})</p>
+            <p><span className="text-muted-foreground">Nome:</span> {request.profile?.full_name || NA_TEXT}</p>
+            <p><span className="text-muted-foreground">Telefone:</span> {request.profile?.phone || NA_TEXT}</p>
+            <p><span className="text-muted-foreground">Pet:</span> {request.pet?.name} ({translatePetType(request.pet?.type)} - {request.pet?.breed || 'SRD'})</p>
             <p><span className="text-muted-foreground">Motivo:</span> {request.reason}</p>
             <p><span className="text-muted-foreground">Data preferida:</span> {format(new Date(request.preferred_date), "dd/MM/yyyy", { locale: ptBR })} às {request.preferred_time}</p>
             {request.notes && (
@@ -199,10 +200,10 @@ export const ManageRequestDialog = ({ request, open, onClose }: ManageRequestDia
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Status Atual: {currentStatus}</div>
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Status Atual: {translateAppointmentStatus(currentStatus)}</div>
                   {Object.entries(APPOINTMENT_STATUS).map(([key, value]) => (
                     <SelectItem key={value} value={value}>
-                      {value.charAt(0).toUpperCase() + value.slice(1).replace('_', ' ')}
+                      {translateAppointmentStatus(value)}
                       {nextActions.includes(value) && " (Recomendado)"}
                     </SelectItem>
                   ))}
@@ -357,7 +358,7 @@ export const ManageRequestDialog = ({ request, open, onClose }: ManageRequestDia
                                         : 'bg-red-100 text-red-700'
                                       }`}
                                   >
-                                    Score: {s.efficiencyScore}
+                                    Pontuação: {s.efficiencyScore}
                                   </span>
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-0.5 leading-snug">

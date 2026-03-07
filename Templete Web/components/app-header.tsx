@@ -60,7 +60,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search patients, appointments..."
+            placeholder="Buscar pacientes, agendamentos..."
             className="w-full rounded-full bg-muted/50 pl-9 pr-12 text-sm border-border/50 focus-visible:ring-emerald-500"
           />
           <kbd className="pointer-events-none absolute right-2.5 top-2.5 hidden h-5 select-none items-center gap-1 rounded border border-border/50 bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 sm:flex">

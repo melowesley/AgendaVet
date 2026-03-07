@@ -280,7 +280,7 @@ export default function ReceitaScreen() {
                 </ScrollView>
 
                 {/* FOOTER com Prévia e Salvar */}
-                <View style={[s.footer, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+                <View style={[s.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
                     <TouchableOpacity style={[s.previewBtn, { borderColor: accentColor }]} onPress={handlePreview} activeOpacity={0.8}>
                         <Ionicons name="eye-outline" size={20} color={accentColor} />
                         <Text style={[s.previewBtnText, { color: accentColor }]}>Pré-visualizar</Text>
@@ -292,7 +292,7 @@ export default function ReceitaScreen() {
                     >
                         {saving ? <ActivityIndicator color="white" /> : (
                             <>
-                                <Ionicons name="document-attach-outline" size={20}
+                                <Ionicons name="document-attach" size={22}
                                     color={(titulo && prescricao) ? 'white' : theme.textMuted} style={{ marginRight: 6 }} />
                                 <Text style={[s.saveBtnText, { color: (titulo && prescricao) ? 'white' : theme.textMuted }]}>Salvar e Gerar PDF</Text>
                             </>
@@ -321,9 +321,9 @@ export default function ReceitaScreen() {
                         </View>
                     )}
                     <View style={[s.previewFooter, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
-                        <TouchableOpacity style={[s.saveBtn, { backgroundColor: accentColor }]}
+                        <TouchableOpacity style={[s.modalSaveBtn, { backgroundColor: accentColor }]}
                             onPress={() => { setPreviewHtml(null); handleSaveAndPrint(); }}>
-                            <Ionicons name="download-outline" size={20} color="white" style={{ marginRight: 6 }} />
+                            <Ionicons name="download" size={22} color="white" style={{ marginRight: 8 }} />
                             <Text style={[s.saveBtnText, { color: 'white' }]}>Salvar e Imprimir</Text>
                         </TouchableOpacity>
                     </View>
@@ -342,11 +342,12 @@ const s = StyleSheet.create({
     card: { borderRadius: 20, borderWidth: 1, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
     row: { flexDirection: 'row', gap: 12 },
     col: { flex: 1 },
-    footer: { padding: 16, paddingBottom: 32, borderTopWidth: 1, flexDirection: 'row', gap: 10, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 10 },
+    footer: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 10, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 10 },
     previewBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 14, gap: 6 },
     previewBtnText: { fontSize: 14, fontWeight: '700' },
-    saveBtn: { height: 52, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-    saveBtnText: { fontSize: 15, fontWeight: '800' },
+    saveBtn: { height: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    modalSaveBtn: { height: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    saveBtnText: { fontSize: 16, fontWeight: '700' },
     // Preview Modal
     previewModal: { flex: 1 },
     previewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1 },

@@ -11,6 +11,7 @@ import { logPetAdminHistory } from '@/lib/services/petHistory';
 import { useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { Video, Audio, ResizeMode } from 'expo-av';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Cor de destaque padrão será injetada pelo tema
 
@@ -20,6 +21,7 @@ export default function GravacoesScreen() {
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
     const router = useRouter();
     const queryClient = useQueryClient();
+    const insets = useSafeAreaInsets();
 
     const [saving, setSaving] = useState(false);
     const [titulo, setTitulo] = useState('');
@@ -263,6 +265,11 @@ export default function GravacoesScreen() {
                 </View>
 
                 {/* Botão salvar */}
+
+            </ScrollView>
+
+            {/* Botão salvar no Footer */}
+            <View style={[s.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
                 <TouchableOpacity
                     style={[s.saveBtn, { backgroundColor: (titulo && (videoUri || link)) ? theme.primary : theme.border }]}
                     onPress={handleSave}
@@ -274,16 +281,16 @@ export default function GravacoesScreen() {
                         </View>
                     ) : (
                         <>
-                            <Ionicons name="cloud-upload-outline" size={22} color={(titulo && (videoUri || link)) ? 'white' : theme.textMuted} style={{ marginRight: 8 }} />
+                            <Ionicons name="cloud-upload" size={22} color={(titulo && (videoUri || link)) ? 'white' : theme.textMuted} style={{ marginRight: 8 }} />
                             <Text style={[s.saveBtnText, { color: (titulo && (videoUri || link)) ? 'white' : theme.textMuted }]}>
                                 {videoUri ? 'Fazer Upload e Salvar' : 'Salvar Gravação'}
                             </Text>
                         </>
                     )}
                 </TouchableOpacity>
+            </View>
 
-            </ScrollView>
-        </KeyboardAvoidingView>
+        </KeyboardAvoidingView >
     );
 }
 
@@ -311,6 +318,7 @@ const s = StyleSheet.create({
     fieldInput: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
     multiline: { paddingTop: 14 },
     tipText: { fontSize: 11, marginTop: 6 },
-    saveBtn: { height: 60, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-    saveBtnText: { fontSize: 16, fontWeight: '800' },
+    footer: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
+    saveBtn: { height: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    saveBtnText: { fontSize: 16, fontWeight: '700' },
 });

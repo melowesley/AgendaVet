@@ -16,13 +16,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setLoading(false);
-        });
+        const initializeAuth = async () => {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (error) {
+                    if (error.message.includes('refresh_token_not_found') || error.message.includes('Invalid Refresh Token')) {
+                        await supabase.auth.signOut();
+                    }
+                    throw error;
+                }
+                setSession(session);
+            } catch (error) {
+                console.error('[AuthProvider] Erro ao inicializar auth:', error);
+                setSession(null);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        initializeAuth();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             setSession(session);
+            if (event === 'SIGNED_OUT') {
+                setSession(null);
+            }
         });
 
         return () => {

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgendaVet - Live Control</title>
+  <style>
+    body { font-family: 'Inter', sans-serif; padding: 20px; background: #0f172a; color: #f8fafc; margin: 0; }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { font-size: 1.25rem; color: #2dd4bf; display: flex; align-items: center; gap: 8px; }
+    .card { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
+    input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+    button { background: #0d9488; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    button:active { transform: scale(0.98); }
+    #terminal {
+      background: #000;
+      color: #10b981;
+      padding: 15px;
+      border-radius: 8px;
+      height: 300px;
+      overflow-y: auto;
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+      border: 1px solid #065f46;
+      white-space: pre-wrap;
+    }
+    .status { font-size: 10px; color: #94a3b8; text-align: right; margin-top: 4px; }
+    .log-entry { color: #38bdf8; border-left: 2px solid #0369a1; padding-left: 8px; margin-bottom: 4px; border-bottom: 1px solid #33415555; padding-bottom: 2px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 AgendaVet Live Terminal</h1>
+
+    <div class="card">
+      <label>Token de Acesso:</label>
+      <input type="password" id="token" placeholder="Digite o token de seguranca" />
+      <label>Mensagem para a IA:</label>
+      <input type="text" id="message" placeholder="Ex: iniciar build, verificar status..." />
+      <button onclick="sendMessage()">Enviar Mensagem</button>
+    </div>
+
+    <div id="terminal">Aguardando conexão...</div>
+    <div class="status" id="ws-status">Desconectado</div>
+  </div>
+
+  <script>
+    const terminal = document.getElementById('terminal');
+    const status = document.getElementById('ws-status');
+    let ws;
+
+    function connect() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(protocol + '//' + window.location.host);
+
+      ws.onopen = () => {
+        status.innerText = 'Conectado em tempo real';
+        status.style.color = '#2dd4bf';
+        terminal.innerHTML += '\\n[SISTEMA] Painel remoto sincronizado.\\n';
+      };
+
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'stdout' || msg.type === 'stderr' || msg.type === 'log') {
+          const div = document.createElement('div');
+          if (msg.type === 'stdout') div.style.color = '#10b981';
+          if (msg.type === 'stderr') div.style.color = '#f43f5e';
+          if (msg.type === 'log') div.className = 'log-entry';
+          div.innerText = msg.data;
+          terminal.appendChild(div);
+          terminal.scrollTop = terminal.scrollHeight;
+        }
+      };
+
+      ws.onclose = () => {
+        status.innerText = 'Desconectado - Reconectando...';
+        status.style.color = '#f43f5e';
+        setTimeout(connect, 3000);
+      };
+    }
+
+    async function sendMessage() {
+      const token = document.getElementById('token').value;
+      const message = document.getElementById('message').value;
+
+      if (!message) return;
+
+      terminal.innerHTML += '\\n\\n> ' + message + '\\n';
+      terminal.scrollTop = terminal.scrollHeight;
+
+      try {
+        const resp = await fetch('/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-auth-token': token,
+          },
+          body: JSON.stringify({ message })
+        });
+
+        if (resp.status === 401) {
+          alert('Token de acesso incorreto!');
+        } else {
+          document.getElementById('message').value = '';
+        }
+      } catch (e) {
+        terminal.innerHTML += '\\n[ERRO] Falha ao enviar mensagem.\\n';
+      }
+    }
+
+    connect();
+  </script>
+</body>
+</html>

@@ -19,6 +19,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Colors } from '@/constants/theme';
+import * as ImagePicker from 'expo-image-picker';
+import { format } from 'date-fns';
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 interface Pet {
@@ -453,31 +455,133 @@ export default function PetsScreen() {
   const [scheduleVisible, setScheduleVisible] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
 
+  const [pendingInvoices, setPendingInvoices] = useState<any[]>([]);
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
+
   const userId = session?.user?.id;
 
-  const fetchPets = useCallback(async () => {
+  const fetchPetsAndInvoices = useCallback(async () => {
     if (!userId) return;
-    const { data, error } = await supabase
+    // 1. Fetch Pets
+    const { data: petsData, error: petsError } = await supabase
       .from('pets')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Erro ao buscar pets:', error.message);
-    } else {
-      setPets(data as Pet[]);
+    if (!petsError && petsData) {
+      setPets(petsData as Pet[]);
+    }
+
+    // 2. Fetch Pending Invoices for these pets
+    const { data: invoicesData, error: invError } = await supabase
+      .from('invoices')
+      .select(`
+        id,
+        total_amount,
+        status,
+        created_at,
+        pets ( id, name )
+      `)
+      .eq('status', 'pending');
+
+    if (!invError && invoicesData) {
+      // Filter those that belong to the user's pets (RLS should already do this, but just in case)
+      const userPetIds = (petsData || []).map(p => p.id);
+      const userInvoices = invoicesData.filter(i => i.pets && userPetIds.includes(i.pets.id));
+      setPendingInvoices(userInvoices);
     }
   }, [userId]);
 
   useEffect(() => {
-    fetchPets().finally(() => setLoading(false));
-  }, [fetchPets]);
+    fetchPetsAndInvoices().finally(() => setLoading(false));
+  }, [fetchPetsAndInvoices]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchPets();
+    await fetchPetsAndInvoices();
     setRefreshing(false);
+  };
+
+  // ─── Image Picker Logic (Upload de Comprovante) ──────────────────────────────
+  const handlePickReceipt = async () => {
+    if (pendingInvoices.length === 0) {
+      Alert.alert('Nenhuma Fatura', 'Você não possui faturas pendentes para anexar este comprovante.');
+      return;
+    }
+
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permissão Negada', 'Precisamos de acesso à galeria para enviar o comprovante.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const latestInvoice = pendingInvoices[0];
+      const petName = latestInvoice.pets?.name || 'seu pet';
+
+      Alert.alert(
+        'Anexar Comprovante',
+        `Deseja enviar a imagem selecionada como comprovante Pix para a fatura pendente de ${petName} no valor de R$ ${latestInvoice.total_amount}?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Enviar', onPress: () => uploadReceipt(asset, latestInvoice.id) }
+        ]
+      );
+    }
+  };
+
+  const uploadReceipt = async (asset: any, invoiceId: string) => {
+    setUploadingReceipt(true);
+    try {
+      const fileUri = asset.uri;
+      const ext = fileUri.split('.').pop() || 'jpg';
+      const fileName = `${invoiceId}_${Date.now()}.${ext}`;
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri: fileUri,
+        name: fileName,
+        type: `image/${ext === 'png' ? 'png' : 'jpeg'}`,
+      } as any);
+
+      // Aqui faríamos o upload para o Storage Supabase
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('receipts')
+        .upload(fileName, formData);
+
+      if (uploadError) {
+        console.error("Upload error", uploadError);
+      }
+
+      const publicUrl = supabase.storage.from('receipts').getPublicUrl(fileName).data.publicUrl;
+
+      // Update invoice as paid
+      const { error: updateError } = await supabase
+        .from('invoices')
+        .update({
+          status: 'paid',
+          payment_method: 'pix',
+          receipt_url: uploadData ? publicUrl : null, // MOCK: if error, save null
+        })
+        .eq('id', invoiceId);
+
+      if (updateError) throw updateError;
+
+      Alert.alert('Sucesso!', 'Seu comprovante foi enviado e a fatura foi marcada como Paga.');
+      await fetchPetsAndInvoices();
+    } catch (error: any) {
+      Alert.alert('Erro', `Não foi possível anexar o comprovante. Detalhes: ${error.message}`);
+    } finally {
+      setUploadingReceipt(false);
+    }
   };
 
   const handlePetAdded = (newPet: Pet) => {
@@ -504,6 +608,34 @@ export default function PetsScreen() {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
       >
+        {/* Faturas Pendentes Globais */}
+        {pendingInvoices.length > 0 && (
+          <View style={[styles.pendingInvoicesBox, { backgroundColor: theme.error + '10', borderColor: theme.error + '30' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <Ionicons name="alert-circle" size={24} color={theme.error} style={{ marginRight: 8 }} />
+              <Text style={{ fontSize: 18, fontWeight: '800', color: theme.error }}>Faturas Pendentes</Text>
+            </View>
+            {pendingInvoices.map((inv) => (
+              <View key={inv.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.surface, padding: 12, borderRadius: 12, marginBottom: 8 }}>
+                <View>
+                  <Text style={{ fontSize: 13, color: theme.textSecondary }}>{inv.pets?.name}</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '800', color: theme.text }}>
+                    R$ {Number(inv.total_amount).toFixed(2)}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={{ backgroundColor: theme.error, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16 }}
+                  onPress={() => router.push({ pathname: '/pet-details/[id]', params: { id: inv.pets?.id } })}>
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>Pagar Ágora</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+            <Text style={{ fontSize: 12, color: theme.error, marginTop: 4, fontStyle: 'italic' }}>
+              Dica: Você pode compartilhar o comprovante Pix do app do seu banco direto para o AgendaVet!
+            </Text>
+          </View>
+        )}
+
         {/* Saudação */}
         <View style={styles.greetingRow}>
           <Text style={[styles.greetingText, { color: theme.text }]}>
@@ -595,18 +727,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 24,
-    shadowColor: '#4A9FD8',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
   },
   addBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
+  pendingInvoicesBox: {
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: 24,
+  },
+
   // Pet Card
   petCard: {
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: 24,
+    padding: 20,
     marginBottom: 16,
     borderWidth: 1,
     flexDirection: 'row',
@@ -614,9 +753,9 @@ const styles = StyleSheet.create({
     gap: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
   },
   petAvatar: {
     width: 64,

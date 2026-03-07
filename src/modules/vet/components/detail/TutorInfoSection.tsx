@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Clock, User, PawPrint, FileText, MapPin } from 'lucide-react';
 import { AppointmentRequest } from '@/modules/vet/hooks/useAppointmentRequests';
+import { translatePetType, NA_TEXT } from '@/shared/utils/translations';
 
 interface TutorInfoSectionProps {
   request: AppointmentRequest;
@@ -27,7 +28,7 @@ export const TutorInfoSection = ({ request, date, time }: TutorInfoSectionProps)
       <div className="flex items-start gap-3">
         <User className="h-4 w-4 mt-0.5 text-muted-foreground" />
         <div>
-          <p className="text-sm font-medium">{request.profile?.full_name || 'N/A'}</p>
+          <p className="text-sm font-medium">{request.profile?.full_name || NA_TEXT}</p>
           <p className="text-sm text-muted-foreground">{request.profile?.phone || 'Sem telefone'}</p>
         </div>
       </div>
@@ -44,7 +45,7 @@ export const TutorInfoSection = ({ request, date, time }: TutorInfoSectionProps)
         <PawPrint className="h-4 w-4 mt-0.5 text-muted-foreground" />
         <div>
           <p className="text-sm font-medium">{request.pet?.name}</p>
-          <p className="text-sm text-muted-foreground capitalize">{request.pet?.type} — {request.pet?.breed || 'SRD'}</p>
+          <p className="text-sm text-muted-foreground capitalize">{translatePetType(request.pet?.type)} — {request.pet?.breed || 'SRD'}</p>
         </div>
       </div>
       <div className="flex items-start gap-3">
