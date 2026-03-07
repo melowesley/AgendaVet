@@ -10,6 +10,7 @@ import {
   FileText,
   MessageSquare,
   Settings,
+  Stethoscope,
 } from 'lucide-react'
 import {
   Sidebar,

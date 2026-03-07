@@ -5,7 +5,7 @@ import { MedicalRecordsContent } from '@/components/medical-records/medical-reco
 
 export default function MedicalRecordsPage() {
   return (
-    <AppLayout breadcrumbs={[{ label: 'Medical Records' }]}>
+    <AppLayout breadcrumbs={[{ label: 'Prontuários' }]}>
       <MedicalRecordsContent />
     </AppLayout>
   )

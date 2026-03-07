@@ -5,7 +5,7 @@ import { SettingsContent } from '@/components/settings/settings-content'
 
 export default function SettingsPage() {
   return (
-    <AppLayout breadcrumbs={[{ label: 'Settings' }]}>
+    <AppLayout breadcrumbs={[{ label: 'Configurações' }]}>
       <SettingsContent />
     </AppLayout>
   )

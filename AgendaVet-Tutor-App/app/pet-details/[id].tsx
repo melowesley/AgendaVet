@@ -201,17 +201,39 @@ export default function PetDetailsScreen() {
                             onPress={() => setFilterType(null)}>
                             <Text style={[styles.chipText, { color: !filterType ? '#fff' : theme.textSecondary }]}>Todos</Text>
                         </TouchableOpacity>
-                        {moduleTypes.map(mod => (
-                            <TouchableOpacity key={mod}
-                                style={[styles.chip, filterType === mod && { backgroundColor: MODULE_COLORS[mod] || theme.primary }]}
-                                onPress={() => setFilterType(filterType === mod ? null : mod)}>
-                                <Ionicons name={MODULE_ICONS[mod] || 'document-text-outline'} size={12}
-                                    color={filterType === mod ? '#fff' : theme.textSecondary} style={{ marginRight: 4 }} />
-                                <Text style={[styles.chipText, { color: filterType === mod ? '#fff' : theme.textSecondary, textTransform: 'capitalize' }]}>
-                                    {mod.replace('_', ' ')}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
+                        {moduleTypes.map(mod => {
+                            const labels: Record<string, string> = {
+                                consulta: 'Consulta',
+                                avaliacao_cirurgica: 'Avaliação Cirúrgica',
+                                cirurgia: 'Cirurgia',
+                                retorno: 'Retorno',
+                                peso: 'Peso',
+                                patologia: 'Patologia',
+                                documento: 'Documento',
+                                exame: 'Exame',
+                                fotos: 'Fotos',
+                                vacina: 'Vacina',
+                                receita: 'Receitário',
+                                observacoes: 'Observações',
+                                video: 'Vídeo/Gravação',
+                                internacao: 'Internação',
+                                diagnostico: 'Diagnóstico',
+                                financeiro: 'Financeiro',
+                            };
+                            const label = labels[mod] || mod.replace('_', ' ');
+
+                            return (
+                                <TouchableOpacity key={mod}
+                                    style={[styles.chip, filterType === mod && { backgroundColor: MODULE_COLORS[mod] || theme.primary }]}
+                                    onPress={() => setFilterType(filterType === mod ? null : mod)}>
+                                    <Ionicons name={MODULE_ICONS[mod] || 'document-text-outline'} size={12}
+                                        color={filterType === mod ? '#fff' : theme.textSecondary} style={{ marginRight: 4 }} />
+                                    <Text style={[styles.chipText, { color: filterType === mod ? '#fff' : theme.textSecondary, textTransform: labels[mod] ? 'none' : 'capitalize' }]}>
+                                        {label}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </ScrollView>
                 </View>
 

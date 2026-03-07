@@ -49,7 +49,8 @@
         {
           "microphonePermission": "Microfone necessário para gravar vídeos dos seus pets."
         }
-      ]
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,

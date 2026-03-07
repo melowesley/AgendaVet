@@ -5,7 +5,7 @@ import { PetsContent } from '@/components/pets/pets-content'
 
 export default function PetsPage() {
   return (
-    <AppLayout breadcrumbs={[{ label: 'Pets' }]}>
+    <AppLayout breadcrumbs={[{ label: 'Pacientes' }]}>
       <PetsContent />
     </AppLayout>
   )

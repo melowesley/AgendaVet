@@ -55,6 +55,11 @@ export default function MenuScreen() {
             </View>
 
             <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Assistente IA</Text>
+                <MenuItem icon="medical" label="Vet Copilot" route="/vet-copilot" color="#10B981" />
+            </View>
+
+            <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Gestão da Clínica</Text>
                 <MenuItem icon="calendar" label="Calendário Geral" route="/menu/calendario" color="#3B82F6" />
                 <MenuItem icon="people" label="Tutores e Clientes" route="/menu/tutores" color="#10B981" />

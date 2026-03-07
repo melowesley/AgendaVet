@@ -5,7 +5,7 @@ import { OwnersContent } from '@/components/owners/owners-content'
 
 export default function OwnersPage() {
   return (
-    <AppLayout breadcrumbs={[{ label: 'Owners' }]}>
+    <AppLayout breadcrumbs={[{ label: 'Tutores' }]}>
       <OwnersContent />
     </AppLayout>
   )

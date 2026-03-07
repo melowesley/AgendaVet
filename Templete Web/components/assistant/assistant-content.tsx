@@ -10,10 +10,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { MessageSquare, Send, Bot, User, Settings, Loader2 } from 'lucide-react'
+import { MessageSquare, Send, Bot, User, Settings, Loader2, Stethoscope } from 'lucide-react'
 import { AgentSettingsDialog } from './agent-settings-dialog'
 import { cn } from '@/lib/utils'
 import ReactMarkdown from 'react-markdown'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 // Helper to extract text from UIMessage parts
 function getMessageText(message: { parts?: Array<{ type: string; text?: string }> }): string {
@@ -31,6 +40,8 @@ export function AssistantContent() {
   const { appointments } = useAppointments()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [input, setInput] = useState('')
+  const [clinicalMode, setClinicalMode] = useState(false)
+  const [selectedPetId, setSelectedPetId] = useState<string>('none')
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Build context about the clinic data
@@ -49,9 +60,13 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
     transport: new DefaultChatTransport({ 
       api: '/api/chat',
       body: {
-        model: settings.model,
-        temperature: settings.temperature,
-        systemPrompt: settings.systemPrompt + '\n\n' + clinicContext,
+        model: clinicalMode ? 'gemini-1.5-pro' : settings.model,
+        temperature: clinicalMode ? 0.3 : settings.temperature,
+        systemPrompt: clinicalMode 
+          ? 'Você é o Vet Copilot, assistente clínico veterinário.' 
+          : settings.systemPrompt + '\n\n' + clinicContext,
+        mode: clinicalMode ? 'clinical' : 'admin',
+        petId: clinicalMode && selectedPetId !== 'none' ? selectedPetId : undefined,
       },
     }),
   })
@@ -66,6 +81,11 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
 
   const clearChat = () => {
     setMessages([])
+  }
+
+  const toggleClinicalMode = () => {
+    setClinicalMode(!clinicalMode)
+    setMessages([]) // Limpa o chat ao trocar de modo
   }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -91,9 +111,22 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm md:text-base min-w-0">
               <Bot className="size-4 md:size-5 text-primary shrink-0" />
-              <span className="truncate">{settings.model.split('/').pop()}</span>
+              <span className="truncate">
+                {clinicalMode ? 'Vet Copilot (Clínico)' : settings.model.split('/').pop()}
+              </span>
+              {clinicalMode && <Stethoscope className="size-4 text-green-500" />}
             </div>
-            <div className="flex gap-1 shrink-0">
+            <div className="flex gap-1 shrink-0 items-center">
+              <div className="flex items-center gap-2 mr-2">
+                <Switch
+                  id="clinical-mode"
+                  checked={clinicalMode}
+                  onCheckedChange={toggleClinicalMode}
+                />
+                <Label htmlFor="clinical-mode" className="text-xs hidden md:inline">
+                  Modo Clínico
+                </Label>
+              </div>
               <Button variant="ghost" size="icon" className="size-8" onClick={clearChat} disabled={messages.length === 0}>
                 <MessageSquare className="size-4" />
                 <span className="sr-only">Clear Chat</span>
@@ -110,12 +143,49 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-8 md:py-12 px-2">
                 <MessageSquare className="size-10 md:size-12 text-muted-foreground/50 mb-3 md:mb-4" />
-                <h3 className="text-base md:text-lg font-medium">How can I help you today?</h3>
+                <h3 className="text-base md:text-lg font-medium">
+                  {clinicalMode ? 'Modo Clínico Ativado' : 'How can I help you today?'}
+                </h3>
                 <p className="text-sm text-muted-foreground max-w-md mt-1">
-                  I can help with patient info, appointments, medical records, and veterinary questions.
+                  {clinicalMode 
+                    ? 'Selecione um paciente para consultar dados clínicos, histórico médico, vacinas e mais.'
+                    : 'I can help with patient info, appointments, medical records, and veterinary questions.'}
                 </p>
+                {clinicalMode && (
+                  <div className="w-full max-w-xs mt-4">
+                    <Select value={selectedPetId} onValueChange={setSelectedPetId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um paciente..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Selecione um paciente...</SelectItem>
+                        {pets.map((pet) => (
+                          <SelectItem key={pet.id} value={pet.id}>
+                            {pet.name} ({pet.species})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="flex flex-wrap justify-center gap-2 mt-4 md:mt-6">
-                  {[
+                  {clinicalMode ? [
+                    "Histórico médico",
+                    "Status vacinal", 
+                    "Medicações atuais",
+                    "Calcular dose",
+                  ].map((suggestion) => (
+                    <Button
+                      key={suggestion}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs md:text-sm bg-transparent"
+                      onClick={() => setInput(suggestion)}
+                      disabled={selectedPetId === 'none'}
+                    >
+                      {suggestion}
+                    </Button>
+                  )) : [
                     "How many pets?",
                     "Today's appointments",
                     "Anxious pet tips",
@@ -188,11 +258,28 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
             onSubmit={handleSubmit}
             className="border-t p-3 md:p-4 flex gap-2"
           >
+            {clinicalMode && (
+              <div className="shrink-0">
+                <Select value={selectedPetId} onValueChange={setSelectedPetId}>
+                  <SelectTrigger className="w-[140px] md:w-[180px]">
+                    <SelectValue placeholder="Paciente..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Paciente...</SelectItem>
+                    {pets.map((pet) => (
+                      <SelectItem key={pet.id} value={pet.id}>
+                        {pet.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about your clinic..."
+              placeholder={clinicalMode ? "Pergunte sobre o paciente..." : "Ask about your clinic..."}
               className="min-h-[44px] max-h-24 md:max-h-32 resize-none text-sm md:text-base"
               rows={1}
               disabled={isLoading}
@@ -201,7 +288,7 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
               type="submit" 
               size="icon" 
               className="shrink-0" 
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || !input.trim() || (clinicalMode && selectedPetId === 'none')}
             >
               <Send className="size-4" />
               <span className="sr-only">Send message</span>

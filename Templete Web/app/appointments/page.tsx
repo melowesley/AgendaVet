@@ -5,7 +5,7 @@ import { AppointmentsContent } from '@/components/appointments/appointments-cont
 
 export default function AppointmentsPage() {
   return (
-    <AppLayout breadcrumbs={[{ label: 'Appointments' }]}>
+    <AppLayout breadcrumbs={[{ label: 'Agenda' }]}>
       <AppointmentsContent />
     </AppLayout>
   )
