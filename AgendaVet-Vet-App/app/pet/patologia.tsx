@@ -10,6 +10,28 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // ACCENT removido para usar theme.primary
 
+const ChipGroup = ({ options, value, onSelect, theme }: any) => (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+        {options.map((o: string) => (
+            <TouchableOpacity key={o} style={[s.chip, { backgroundColor: theme.surfaceElevated }, value === o && { backgroundColor: theme.primary }]} onPress={() => onSelect(o === value ? '' : o)}>
+                <Text style={[s.chipText, { color: value === o ? 'white' : theme.textSecondary }]}>{o}</Text>
+            </TouchableOpacity>
+        ))}
+    </ScrollView>
+);
+
+function FieldBase({ label, value, onChangeText, placeholder, keyboardType = 'default', multiline = false, minHeight = 52, theme, required }: any) {
+    return (
+        <View style={s.fieldWrap}>
+            <Text style={[s.fieldLabel, { color: theme.textSecondary }]}>{label}{required ? ' *' : ''}</Text>
+            <TextInput style={[s.fieldInput, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border, minHeight }, multiline && s.multiline]}
+                value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={theme.textMuted}
+                keyboardType={keyboardType} multiline={multiline} scrollEnabled={false}
+                textAlignVertical={multiline ? 'top' : 'center'} autoCapitalize="sentences" autoCorrect />
+        </View>
+    );
+}
+
 export default function PatologiaScreen() {
     const { petId } = useLocalSearchParams<{ petId: string }>();
     const colorScheme = useColorScheme();
@@ -52,15 +74,6 @@ export default function PatologiaScreen() {
     };
 
     const F = (p: any) => <FieldBase {...p} theme={theme} />;
-    const ChipGroup = ({ options, value, onSelect, theme }: any) => (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
-            {options.map((o: string) => (
-                <TouchableOpacity key={o} style={[s.chip, { backgroundColor: theme.surfaceElevated }, value === o && { backgroundColor: theme.primary }]} onPress={() => onSelect(o === value ? '' : o)}>
-                    <Text style={[s.chipText, { color: value === o ? 'white' : theme.textSecondary }]}>{o}</Text>
-                </TouchableOpacity>
-            ))}
-        </ScrollView>
-    );
 
     return (
         <KeyboardAvoidingView style={[s.container, { backgroundColor: theme.background }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -95,18 +108,6 @@ export default function PatologiaScreen() {
                 </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>
-    );
-}
-
-function FieldBase({ label, value, onChangeText, placeholder, keyboardType = 'default', multiline = false, minHeight = 52, theme, required }: any) {
-    return (
-        <View style={s.fieldWrap}>
-            <Text style={[s.fieldLabel, { color: theme.textSecondary }]}>{label}{required ? ' *' : ''}</Text>
-            <TextInput style={[s.fieldInput, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border, minHeight }, multiline && s.multiline]}
-                value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={theme.textMuted}
-                keyboardType={keyboardType} multiline={multiline} scrollEnabled={false}
-                textAlignVertical={multiline ? 'top' : 'center'} autoCapitalize="sentences" autoCorrect />
-        </View>
     );
 }
 

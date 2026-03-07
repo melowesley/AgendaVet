@@ -10,6 +10,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // ACCENT removido para usar theme.primary
 
+function Field({ label, value, onChangeText, placeholder, keyboardType = 'default', multiline = false, minHeight = 52, theme, required }: any) {
+    return (
+        <View style={s.fieldWrap}>
+            <Text style={[s.fieldLabel, { color: theme.textSecondary }]}>{label}{required ? ' *' : ''}</Text>
+            <TextInput style={[s.fieldInput, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border, minHeight }, multiline && s.multiline]}
+                value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={theme.textMuted}
+                keyboardType={keyboardType} multiline={multiline} scrollEnabled={false}
+                textAlignVertical={multiline ? 'top' : 'center'} autoCapitalize="sentences" autoCorrect />
+        </View>
+    );
+}
+
 export default function ObitoScreen() {
     const { petId, petName } = useLocalSearchParams<{ petId: string; petName: string }>();
     const colorScheme = useColorScheme();
@@ -107,18 +119,6 @@ export default function ObitoScreen() {
                 </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>
-    );
-}
-
-function Field({ label, value, onChangeText, placeholder, keyboardType = 'default', multiline = false, minHeight = 52, theme, required }: any) {
-    return (
-        <View style={s.fieldWrap}>
-            <Text style={[s.fieldLabel, { color: theme.textSecondary }]}>{label}{required ? ' *' : ''}</Text>
-            <TextInput style={[s.fieldInput, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border, minHeight }, multiline && s.multiline]}
-                value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={theme.textMuted}
-                keyboardType={keyboardType} multiline={multiline} scrollEnabled={false}
-                textAlignVertical={multiline ? 'top' : 'center'} autoCapitalize="sentences" autoCorrect />
-        </View>
     );
 }
 

@@ -8,6 +8,45 @@ import { logPetAdminHistory } from '@/lib/services/petHistory';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const InputField = ({ label, icon, value, onChangeText, placeholder, keyboardType = 'default', multiline = false, suffix, autoCapitalize = 'sentences', theme }: any) => (
+    <View style={styles.inputContainer}>
+        <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>
+        <View style={[
+            styles.inputWrapper,
+            { backgroundColor: theme.surface, borderColor: theme.border },
+            multiline && styles.textAreaWrapper
+        ]}>
+            {icon && (
+                <View style={styles.inputIcon}>
+                    <Ionicons name={icon} size={20} color={theme.textMuted} />
+                </View>
+            )}
+            <TextInput
+                style={[
+                    styles.input,
+                    { color: theme.text },
+                    multiline && styles.textArea,
+                    icon && { paddingLeft: 8 }
+                ]}
+                value={value}
+                onChangeText={onChangeText}
+                placeholder={placeholder}
+                placeholderTextColor={theme.textMuted}
+                keyboardType={keyboardType}
+                multiline={multiline}
+                numberOfLines={multiline ? 5 : 1}
+                textAlignVertical={multiline ? 'top' : 'center'}
+                autoCapitalize={autoCapitalize}
+            />
+            {suffix && (
+                <View style={styles.suffixContainer}>
+                    <Text style={[styles.suffixText, { color: theme.textMuted }]}>{suffix}</Text>
+                </View>
+            )}
+        </View>
+    </View>
+);
+
 export default function ConsultaScreen() {
     const { petId, appointmentId } = useLocalSearchParams<{ petId: string, appointmentId?: string }>();
     const colorScheme = useColorScheme();
@@ -138,45 +177,6 @@ export default function ConsultaScreen() {
         }
     };
 
-    const InputField = ({ label, icon, value, onChangeText, placeholder, keyboardType = 'default', multiline = false, suffix, autoCapitalize = 'sentences' }: any) => (
-        <View style={styles.inputContainer}>
-            <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>
-            <View style={[
-                styles.inputWrapper,
-                { backgroundColor: theme.surface, borderColor: theme.border },
-                multiline && styles.textAreaWrapper
-            ]}>
-                {icon && (
-                    <View style={styles.inputIcon}>
-                        <Ionicons name={icon} size={20} color={theme.textMuted} />
-                    </View>
-                )}
-                <TextInput
-                    style={[
-                        styles.input,
-                        { color: theme.text },
-                        multiline && styles.textArea,
-                        icon && { paddingLeft: 8 }
-                    ]}
-                    value={value}
-                    onChangeText={onChangeText}
-                    placeholder={placeholder}
-                    placeholderTextColor={theme.textMuted}
-                    keyboardType={keyboardType}
-                    multiline={multiline}
-                    numberOfLines={multiline ? 5 : 1}
-                    textAlignVertical={multiline ? 'top' : 'center'}
-                    autoCapitalize={autoCapitalize}
-                />
-                {suffix && (
-                    <View style={styles.suffixContainer}>
-                        <Text style={[styles.suffixText, { color: theme.textMuted }]}>{suffix}</Text>
-                    </View>
-                )}
-            </View>
-        </View>
-    );
-
     return (
         <KeyboardAvoidingView
             style={[styles.container, { backgroundColor: theme.background }]}
@@ -189,7 +189,7 @@ export default function ConsultaScreen() {
                 headerStyle: { backgroundColor: theme.background },
             }} />
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
                 {/* Cabeçalho da página */}
                 <View style={styles.pageHeader}>
@@ -215,6 +215,7 @@ export default function ConsultaScreen() {
                             value={form.queixa_principal}
                             onChangeText={(t: string) => setForm(f => ({ ...f, queixa_principal: t }))}
                             placeholder="Motivo da consulta..."
+                            theme={theme}
                         />
                         <InputField
                             label="Medicamentos em Uso"
@@ -222,24 +223,28 @@ export default function ConsultaScreen() {
                             value={form.medicamentos}
                             onChangeText={(t: string) => setForm(f => ({ ...f, medicamentos: t }))}
                             placeholder="Algum tratamento atual?"
+                            theme={theme}
                         />
                         <InputField
                             label="Alimentação e Água"
                             value={form.alimentacao}
                             onChangeText={(t: string) => setForm(f => ({ ...f, alimentacao: t }))}
                             placeholder="Tipo de ração, apetite..."
+                            theme={theme}
                         />
                         <InputField
                             label="Vacinação / Vermifugação"
                             value={form.vacinacao}
                             onChangeText={(t: string) => setForm(f => ({ ...f, vacinacao: t }))}
                             placeholder="Vacinas em dia? Última vermifugação..."
+                            theme={theme}
                         />
                         <InputField
                             label="Ambiente e Comportamento"
                             value={form.ambiente}
                             onChangeText={(t: string) => setForm(f => ({ ...f, ambiente: t }))}
                             placeholder="Vive em casa/apt? Tem acesso à rua?"
+                            theme={theme}
                         />
                         <InputField
                             label="Histórico Geral e Evolução"
@@ -247,6 +252,7 @@ export default function ConsultaScreen() {
                             onChangeText={(t: string) => setForm(f => ({ ...f, anamnese_texto: t }))}
                             placeholder="Descreva detalhadamente o quadro evolutivo e observações do tutor..."
                             multiline
+                            theme={theme}
                         />
                     </View>
                 </View>
@@ -263,42 +269,49 @@ export default function ConsultaScreen() {
                             value={form.linfonodos}
                             onChangeText={(t: string) => setForm(f => ({ ...f, linfonodos: t }))}
                             placeholder="Palpáveis, aumentados, reativos..."
+                            theme={theme}
                         />
                         <InputField
                             label="Mucosas / TPC"
                             value={form.mucosas}
                             onChangeText={(t: string) => setForm(f => ({ ...f, mucosas: t }))}
                             placeholder="Normocoradas, TPC < 2 seg..."
+                            theme={theme}
                         />
                         <InputField
                             label="Gastrintestinal"
                             value={form.sistema_gastrintestinal}
                             onChangeText={(t: string) => setForm(f => ({ ...f, sistema_gastrintestinal: t }))}
                             placeholder="Vômitos, diarreia, dor à palpação..."
+                            theme={theme}
                         />
                         <InputField
                             label="Genitourinário"
                             value={form.sistema_genitourinario}
                             onChangeText={(t: string) => setForm(f => ({ ...f, sistema_genitourinario: t }))}
                             placeholder="Disúria, hematúria, secreções..."
+                            theme={theme}
                         />
                         <InputField
                             label="Cardiorrespiratório"
                             value={form.sistema_cardiorespiratorio}
                             onChangeText={(t: string) => setForm(f => ({ ...f, sistema_cardiorespiratorio: t }))}
                             placeholder="Tosse, dispneia, sopro..."
+                            theme={theme}
                         />
                         <InputField
                             label="Ototegumentar (Pele/Ouvidos)"
                             value={form.sistema_ototegumentar}
                             onChangeText={(t: string) => setForm(f => ({ ...f, sistema_ototegumentar: t }))}
                             placeholder="Alopecia, prurido, secreção otológica..."
+                            theme={theme}
                         />
                         <InputField
                             label="Palpação Abdominal"
                             value={form.palpacao_abdominal}
                             onChangeText={(t: string) => setForm(f => ({ ...f, palpacao_abdominal: t }))}
                             placeholder="Sensibilidade, massas palpáveis..."
+                            theme={theme}
                         />
                     </View>
                 </View>
@@ -321,6 +334,7 @@ export default function ConsultaScreen() {
                                     placeholder="38.5"
                                     keyboardType="decimal-pad"
                                     suffix="°C"
+                                    theme={theme}
                                 />
                             </View>
                             <View style={styles.col}>
@@ -332,6 +346,7 @@ export default function ConsultaScreen() {
                                     placeholder="10.5"
                                     keyboardType="decimal-pad"
                                     suffix="kg"
+                                    theme={theme}
                                 />
                             </View>
                         </View>
@@ -346,6 +361,7 @@ export default function ConsultaScreen() {
                                     placeholder="120"
                                     keyboardType="numeric"
                                     suffix="bpm"
+                                    theme={theme}
                                 />
                             </View>
                             <View style={styles.col}>
@@ -357,6 +373,7 @@ export default function ConsultaScreen() {
                                     placeholder="24"
                                     keyboardType="numeric"
                                     suffix="mpm"
+                                    theme={theme}
                                 />
                             </View>
                         </View>
@@ -369,6 +386,7 @@ export default function ConsultaScreen() {
                                     value={form.hidratacao}
                                     onChangeText={(t: string) => setForm(f => ({ ...f, hidratacao: t }))}
                                     placeholder="Adequada"
+                                    theme={theme}
                                 />
                             </View>
                             <View style={styles.col}>
@@ -378,6 +396,7 @@ export default function ConsultaScreen() {
                                     value={form.pulso}
                                     onChangeText={(t: string) => setForm(f => ({ ...f, pulso: t }))}
                                     placeholder="Forte, regular..."
+                                    theme={theme}
                                 />
                             </View>
                         </View>

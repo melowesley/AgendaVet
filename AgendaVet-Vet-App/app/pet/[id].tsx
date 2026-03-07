@@ -456,6 +456,26 @@ export default function PetDetailScreen() {
                                                         <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Ver Comp.</Text>
                                                     </TouchableOpacity>
                                                 )}
+
+                                                {selectedItem.module === 'video' && dets.link && (
+                                                    <TouchableOpacity
+                                                        style={[styles.modalPremiumBtn, { backgroundColor: MODULE_COLORS.video }]}
+                                                        activeOpacity={0.8}
+                                                        onPress={() => Linking.openURL(dets.link)}>
+                                                        <Ionicons name="play-circle-outline" size={18} color="white" />
+                                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Ver Vídeo</Text>
+                                                    </TouchableOpacity>
+                                                )}
+
+                                                {selectedItem.module === 'fotos' && dets.fotos && dets.fotos.length > 0 && (
+                                                    <TouchableOpacity
+                                                        style={[styles.modalPremiumBtn, { backgroundColor: MODULE_COLORS.fotos }]}
+                                                        activeOpacity={0.8}
+                                                        onPress={() => Linking.openURL(dets.fotos[0])}>
+                                                        <Ionicons name="image-outline" size={18} color="white" />
+                                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Ver Foto</Text>
+                                                    </TouchableOpacity>
+                                                )}
                                             </View>
 
                                             <View style={{ flex: 1, alignItems: 'flex-end' }}>
@@ -468,7 +488,21 @@ export default function PetDetailScreen() {
                                                 </TouchableOpacity>
                                             </View>
                                         </View>
-                                    </>)
+
+                                        {/* Foto Preview if applicable */}
+                                        {selectedItem.module === 'fotos' && dets.fotos && dets.fotos.length > 0 && (
+                                            <View style={{ padding: 20, paddingTop: 10 }}>
+                                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+                                                    {dets.fotos.map((url: string, i: number) => (
+                                                        <TouchableOpacity key={i} onPress={() => Linking.openURL(url)} activeOpacity={0.7}>
+                                                            <Image source={{ uri: url }} style={{ width: 140, height: 140, borderRadius: 16 }} />
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </ScrollView>
+                                            </View>
+                                        )}
+                                    </>
+                                );
                             })()}
                         </View>
                     </View>
@@ -526,7 +560,7 @@ export default function PetDetailScreen() {
             >
                 <Ionicons name="add" size={32} color="white" />
             </TouchableOpacity>
-        </View>
+        </View >
     );
 }
 

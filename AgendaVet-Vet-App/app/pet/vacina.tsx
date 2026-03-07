@@ -10,6 +10,39 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // ACCENT removido para usar theme.primary
 
+function Card({ theme, title, icon, color, children }: any) {
+    return (
+        <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <View style={s.cardHeader}><Ionicons name={icon} size={18} color={color} /><Text style={[s.cardTitle, { color: theme.text }]}>{title}</Text></View>
+            {children}
+        </View>
+    );
+}
+function Row({ children }: any) { return <View style={s.row}>{children}</View>; }
+function FieldBase({ label, value, onChangeText, placeholder, keyboardType = 'default', multiline = false, minHeight = 52, theme, required }: any) {
+    return (
+        <View style={s.fieldWrap}>
+            <Text style={[s.fieldLabel, { color: theme.textSecondary }]}>{label}{required ? ' *' : ''}</Text>
+            <TextInput
+                style={[s.fieldInput, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border, minHeight }, multiline && s.multiline]}
+                value={value} onChangeText={onChangeText} placeholder={placeholder}
+                placeholderTextColor={theme.textMuted} keyboardType={keyboardType}
+                multiline={multiline} scrollEnabled={false} textAlignVertical={multiline ? 'top' : 'center'}
+                autoCapitalize="sentences" autoCorrect
+            />
+        </View>
+    );
+}
+function FooterBtn({ onSave, saving, valid, color, label, theme, insets }: any) {
+    return (
+        <View style={[s.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
+            <TouchableOpacity style={[s.saveBtn, { backgroundColor: valid ? color : theme.border }]} onPress={onSave} disabled={saving || !valid}>
+                {saving ? <ActivityIndicator color="white" /> : <><Ionicons name="checkmark-circle" size={22} color={valid ? 'white' : theme.textMuted} style={{ marginRight: 8 }} /><Text style={[s.saveBtnText, { color: valid ? 'white' : theme.textMuted }]}>{label}</Text></>}
+            </TouchableOpacity>
+        </View>
+    );
+}
+
 export default function VacinaScreen() {
     const { petId } = useLocalSearchParams<{ petId: string }>();
     const colorScheme = useColorScheme();
@@ -96,39 +129,6 @@ export default function VacinaScreen() {
             </ScrollView>
             <FooterBtn onSave={handleSave} saving={saving} valid={!!nomeVacina} color={theme.primary} label="Registrar Vacina" theme={theme} insets={insets} />
         </KeyboardAvoidingView>
-    );
-}
-
-function Card({ theme, title, icon, color, children }: any) {
-    return (
-        <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={s.cardHeader}><Ionicons name={icon} size={18} color={color} /><Text style={[s.cardTitle, { color: theme.text }]}>{title}</Text></View>
-            {children}
-        </View>
-    );
-}
-function Row({ children }: any) { return <View style={s.row}>{children}</View>; }
-function FieldBase({ label, value, onChangeText, placeholder, keyboardType = 'default', multiline = false, minHeight = 52, theme, required }: any) {
-    return (
-        <View style={s.fieldWrap}>
-            <Text style={[s.fieldLabel, { color: theme.textSecondary }]}>{label}{required ? ' *' : ''}</Text>
-            <TextInput
-                style={[s.fieldInput, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border, minHeight }, multiline && s.multiline]}
-                value={value} onChangeText={onChangeText} placeholder={placeholder}
-                placeholderTextColor={theme.textMuted} keyboardType={keyboardType}
-                multiline={multiline} scrollEnabled={false} textAlignVertical={multiline ? 'top' : 'center'}
-                autoCapitalize="sentences" autoCorrect
-            />
-        </View>
-    );
-}
-function FooterBtn({ onSave, saving, valid, color, label, theme, insets }: any) {
-    return (
-        <View style={[s.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
-            <TouchableOpacity style={[s.saveBtn, { backgroundColor: valid ? color : theme.border }]} onPress={onSave} disabled={saving || !valid}>
-                {saving ? <ActivityIndicator color="white" /> : <><Ionicons name="checkmark-circle" size={22} color={valid ? 'white' : theme.textMuted} style={{ marginRight: 8 }} /><Text style={[s.saveBtnText, { color: valid ? 'white' : theme.textMuted }]}>{label}</Text></>}
-            </TouchableOpacity>
-        </View>
     );
 }
 

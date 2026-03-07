@@ -31,7 +31,7 @@ export default function DocumentViewerScreen() {
             // Buscamos o histórico
             const { data: history, error: hError } = await supabase
                 .from('pet_admin_history')
-                .select('*, pets(name, type, breed, sex, profiles(full_name))')
+                .select('*, pets(*)')
                 .eq('id', historyId)
                 .single();
 
@@ -40,12 +40,23 @@ export default function DocumentViewerScreen() {
             const details = typeof history.details === 'string' ? JSON.parse(history.details) : history.details || {};
             const pet = history.pets;
 
+            // Buscamos o tutor separadamente para evitar erro de relacionamento
+            let ownerName = 'Desconhecido';
+            if (pet?.user_id) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('full_name')
+                    .eq('user_id', pet.user_id)
+                    .single();
+                if (profile) ownerName = profile.full_name;
+            }
+
             // Montando o data object esperado pelos templates HTML
             const docData = {
                 petName: pet?.name,
                 petSpecies: pet?.type === 'cat' ? 'Felino' : 'Canino',
                 petBreed: pet?.breed || 'SRD',
-                ownerName: pet?.profiles?.full_name || 'Desconhecido',
+                ownerName: ownerName,
                 veterinarian: details.veterinario || details.veterinarian || details.responsavel || 'Clínica AgendaVet',
                 dateOfIssue: new Date(history.created_at).toLocaleDateString('pt-BR'),
                 crmv: details.crmv || '',

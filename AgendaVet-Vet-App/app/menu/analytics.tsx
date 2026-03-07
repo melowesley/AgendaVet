@@ -23,20 +23,26 @@ export default function AnalyticsScreen() {
 
             const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-            const [pets, clients, appointments, payments] = await Promise.all([
+            const [petsRes, clientsRes, appointmentsRes, paymentsRes] = await Promise.all([
                 supabase.from('pets').select('id', { count: 'exact' }),
                 supabase.from('profiles').select('id', { count: 'exact' }),
                 supabase.from('appointment_requests').select('status, id, created_at'),
                 supabase.from('payments').select('amount, status, payment_date')
             ]);
 
-            const completed = appointments.data?.filter(a => a.status === 'completed').length || 0;
-            const cancelled = appointments.data?.filter(a => a.status === 'cancelled').length || 0;
+            if (paymentsRes.error) {
+                console.warn('Analytics: Could not fetch payments. Table might be missing.', paymentsRes.error);
+            }
 
-            const todayAppointments = appointments.data?.filter(a => new Date(a.created_at) >= today).length || 0;
-            const monthAppointments = appointments.data?.filter(a => new Date(a.created_at) >= firstDayOfMonth).length || 0;
+            const appointmentsData = appointmentsRes.data || [];
+            const completed = appointmentsData.filter(a => a.status === 'completed').length;
+            const cancelled = appointmentsData.filter(a => a.status === 'cancelled').length;
 
-            const paidPayments = payments.data?.filter(p => p.status === 'paid') || [];
+            const todayAppointments = appointmentsData.filter(a => new Date(a.created_at) >= today).length;
+            const monthAppointments = appointmentsData.filter(a => new Date(a.created_at) >= firstDayOfMonth).length;
+
+            const paymentsData = paymentsRes.data || [];
+            const paidPayments = paymentsData.filter(p => p.status === 'paid');
 
             const todayRevenue = paidPayments
                 .filter(p => p.payment_date && new Date(p.payment_date) >= today)
@@ -49,8 +55,8 @@ export default function AnalyticsScreen() {
             const ticketMedio = paidPayments.length > 0 ? (monthRevenue / paidPayments.length) : 0;
 
             return {
-                totalPets: pets.count || 0,
-                totalClients: clients.count || 0,
+                totalPets: petsRes.count || 0,
+                totalClients: clientsRes.count || 0,
                 completedAppointments: completed,
                 cancelledAppointments: cancelled,
                 todayAppointments,
@@ -209,10 +215,10 @@ export default function AnalyticsScreen() {
                     {activeSection === 'overview' && (
                         <View style={styles.sectionContent}>
                             <View style={styles.grid}>
-                                <MetricCard title="Agendados Hoje" value={metrics?.todayAppointments} icon="today" color="#3B82F6" />
-                                <MetricCard title="Agendados no Mês" value={metrics?.monthAppointments} icon="calendar-number" color="#8B5CF6" />
-                                <MetricCard title="Total de Pets" value={metrics?.totalPets} icon="paw" color="#10B981" />
-                                <MetricCard title="Cancelamentos" value={metrics?.cancelledAppointments} icon="close-circle" color="#EF4444" />
+                                <MetricCard title="Agendados Hoje" value={metrics?.todayAppointments ?? 0} icon="today" color="#3B82F6" />
+                                <MetricCard title="Agendados no Mês" value={metrics?.monthAppointments ?? 0} icon="calendar-number" color="#8B5CF6" />
+                                <MetricCard title="Total de Pets" value={metrics?.totalPets ?? 0} icon="paw" color="#10B981" />
+                                <MetricCard title="Cancelamentos" value={metrics?.cancelledAppointments ?? 0} icon="close-circle" color="#EF4444" />
                             </View>
 
                             <View style={[styles.chartContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -261,7 +267,7 @@ export default function AnalyticsScreen() {
                                 />
                                 <MetricCard
                                     title="Consultas Pagas"
-                                    value={metrics?.completedAppointments}
+                                    value={metrics?.completedAppointments ?? 0}
                                     icon="checkmark-done-circle"
                                     color="#3B82F6"
                                 />

@@ -20,7 +20,8 @@
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#f0f9ff"
       },
-      "package": "com.agendavet.vet"
+      "package": "com.agendavet.vet",
+      "versionCode": 2
     },
     "web": {
       "bundler": "metro",
