@@ -23,39 +23,39 @@ export function SettingsContent() {
 
   const settingsSections = [
     {
-      title: 'AI Assistant',
-      description: 'Configure the AI chatbot behavior, model, and system prompt',
+      title: 'Assistente IA',
+      description: 'Configure o comportamento, modelo e prompt do sistema do chatbot IA',
       icon: Bot,
       badge: settings.model.split('/').pop(),
       onClick: () => setAgentSettingsOpen(true),
     },
     {
-      title: 'Clinic Information',
-      description: 'Update your clinic name, address, and contact details',
+      title: 'Informações da Clínica',
+      description: 'Atualize o nome, endereço e detalhes de contato da sua clínica',
       icon: Building2,
       badge: null,
       onClick: () => {},
       disabled: true,
     },
     {
-      title: 'Notifications',
-      description: 'Manage email and SMS notification preferences',
+      title: 'Notificações',
+      description: 'Gerencie preferências de notificação por email e SMS',
       icon: Bell,
       badge: null,
       onClick: () => {},
       disabled: true,
     },
     {
-      title: 'Security',
-      description: 'Password, two-factor authentication, and session management',
+      title: 'Segurança',
+      description: 'Senha, autenticação de dois fatores e gerenciamento de sessão',
       icon: Shield,
       badge: null,
       onClick: () => {},
       disabled: true,
     },
     {
-      title: 'Data & Storage',
-      description: 'Backup, export, and manage your clinic data',
+      title: 'Dados e Armazenamento',
+      description: 'Backup, exportação e gerenciamento dos dados da sua clínica',
       icon: Database,
       badge: null,
       onClick: () => {},
@@ -66,18 +66,18 @@ export function SettingsContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">Manage your clinic and application settings</p>
+        <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
+        <p className="text-muted-foreground">Gerencie as configurações da sua clínica e aplicação</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="size-5" />
-            Application Settings
+            Configurações do Aplicativo
           </CardTitle>
           <CardDescription>
-            Configure your VetCRM application preferences
+            Configure suas preferências do aplicativo VetCRM
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -103,7 +103,7 @@ export function SettingsContent() {
                     )}
                     {section.disabled && (
                       <Badge variant="outline" className="text-xs">
-                        Coming Soon
+                        Em Breve
                       </Badge>
                     )}
                   </div>
@@ -118,25 +118,25 @@ export function SettingsContent() {
 
       <Card>
         <CardHeader>
-          <CardTitle>About VetCRM</CardTitle>
+          <CardTitle>Sobre o VetCRM</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Version</span>
+            <span className="text-muted-foreground">Versão</span>
             <span className="font-medium">1.0.0</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Environment</span>
-            <Badge variant="secondary">Development</Badge>
+            <span className="text-muted-foreground">Ambiente</span>
+            <Badge variant="secondary">Desenvolvimento</Badge>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Data Storage</span>
-            <span className="font-medium">In-Memory (Demo)</span>
+            <span className="text-muted-foreground">Armazenamento de Dados</span>
+            <span className="font-medium">Em Memória (Demo)</span>
           </div>
           <Separator />
           <p className="text-sm text-muted-foreground">
-            VetCRM is a complete veterinary clinic management solution. Connect a database integration
-            to enable persistent data storage.
+            VetCRM é uma solução completa de gestão para clínicas veterinárias. Conecte uma integração com banco de dados
+            para habilitar o armazenamento persistente de dados.
           </p>
         </CardContent>
       </Card>

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Search } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -75,6 +76,13 @@ export function AppointmentFormDialog({
     veterinarian: veterinarians[0],
   })
 
+  const [petSearch, setPetSearch] = useState('')
+
+  const filteredPets = pets.filter(pet =>
+    pet.name.toLowerCase().includes(petSearch.toLowerCase()) ||
+    pet.species.toLowerCase().includes(petSearch.toLowerCase())
+  )
+
   useEffect(() => {
     if (open) {
       if (appointment) {
@@ -91,8 +99,8 @@ export function AppointmentFormDialog({
       } else {
         const today = new Date().toISOString().split('T')[0]
         setFormData({
-          petId: pets[0]?.id || '',
-          ownerId: pets[0]?.ownerId || owners[0]?.id || '',
+          petId: filteredPets[0]?.id || '',
+          ownerId: filteredPets[0]?.ownerId || owners[0]?.id || '',
           date: today,
           time: '09:00',
           type: 'checkup',
@@ -101,8 +109,9 @@ export function AppointmentFormDialog({
           veterinarian: veterinarians[0],
         })
       }
+      setPetSearch('')
     }
-  }, [open, appointment?.id, pets.length, owners.length])
+  }, [open, appointment?.id, filteredPets.length, owners.length])
 
   const handlePetChange = (petId: string) => {
     const pet = pets.find((p) => p.id === petId)
@@ -141,18 +150,35 @@ export function AppointmentFormDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="pet">Paciente (Pet)</Label>
-              <Select value={formData.petId} onValueChange={handlePetChange}>
-                <SelectTrigger id="pet">
-                  <SelectValue placeholder="Selecionar pet" />
-                </SelectTrigger>
-                <SelectContent>
-                  {pets.map((pet) => (
-                    <SelectItem key={pet.id} value={pet.id}>
-                      {pet.name} ({pet.species})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground size-4" />
+                  <Input
+                    placeholder="Buscar por nome ou espécie..."
+                    value={petSearch}
+                    onChange={(e) => setPetSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Select value={formData.petId} onValueChange={handlePetChange}>
+                  <SelectTrigger id="pet">
+                    <SelectValue placeholder="Selecionar pet" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60 overflow-y-auto">
+                    {filteredPets.length === 0 ? (
+                      <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                        Nenhum pet encontrado
+                      </div>
+                    ) : (
+                      filteredPets.map((pet) => (
+                        <SelectItem key={pet.id} value={pet.id}>
+                          {pet.name} ({pet.species})
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="space-y-2">
