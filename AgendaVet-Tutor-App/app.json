@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "AgendaVet-Tutor-App",
+    "name": "AgendaVet - Tutor",
     "slug": "AgendaVet-Tutor-App",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -35,6 +35,19 @@
           "dark": {
             "backgroundColor": "#000000"
           }
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Acesso à galeria para selecionar fotos dos seus pets.",
+          "cameraPermission": "Câmera para tirar fotos dos seus pets."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Microfone necessário para gravar vídeos dos seus pets."
         }
       ]
     ],
