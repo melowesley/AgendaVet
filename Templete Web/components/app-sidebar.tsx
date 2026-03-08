@@ -11,6 +11,7 @@ import {
   MessageSquare,
   Settings,
   Stethoscope,
+  BarChart3,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -31,6 +32,7 @@ const navItems = [
   { title: 'Tutores', href: '/owners', icon: Users },
   { title: 'Agenda', href: '/appointments', icon: Calendar },
   { title: 'Prontuários', href: '/medical-records', icon: FileText },
+  { title: 'Analytics', href: '/analytics', icon: BarChart3 },
   { title: 'Assistente IA', href: '/assistant', icon: MessageSquare },
 ]
 

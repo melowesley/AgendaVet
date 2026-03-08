@@ -254,3 +254,76 @@ export interface DosageCalculatorProps {
   species: string;
   onCalculate: (result: DosageCalculation) => void;
 }
+
+// ============================================
+// Backend / AI Module Types
+// ============================================
+
+export type ProviderName = 'google' | 'openai' | 'anthropic' | 'deepseek';
+
+export type ModelTier = 'premium' | 'standard' | 'economy';
+
+export type ClinicPlan = 'basic' | 'pro' | 'enterprise';
+
+export type ActionStatus = 'pending_confirmation' | 'confirmed' | 'rejected';
+
+export type ConversationRole = 'user' | 'assistant' | 'system' | 'tool';
+
+export type RagSourceType = 'protocol' | 'literature' | 'drug_reference' | 'clinical_doc';
+
+export type RagDocumentStatus = 'pending' | 'processing' | 'ready' | 'error';
+
+export interface ModelConfig {
+  provider: ProviderName;
+  modelId: string;
+  inputCostPer1k: number;
+  outputCostPer1k: number;
+  maxTokens: number;
+  tier: ModelTier;
+}
+
+export interface PlanQuota {
+  tokensPerMonth: number;
+  conversationsPerMonth: number;
+  ragDocuments: number;
+  allowedModels: string[];
+  requestsPerMinute: number;
+}
+
+export interface UsageEvent {
+  clinicId: string;
+  userId: string;
+  conversationId?: string;
+  model: string;
+  provider: string;
+  promptTokens: number;
+  completionTokens: number;
+  latencyMs: number;
+  fallbackFrom?: string;
+  error?: any;
+  toolsUsed?: string[];
+  clinicalAction?: string;
+}
+
+export interface ClinicalActionPreview {
+  status: ActionStatus;
+  confirmationRequired: boolean;
+  actionType: string;
+  preview: Record<string, any>;
+  message: string;
+}
+
+export interface ConversationMessage {
+  role: ConversationRole;
+  content: string;
+  model?: string;
+  token_count?: number;
+  latency_ms?: number;
+  tool_calls?: any;
+  clinical_action?: any;
+}
+
+export interface ClinicMembership {
+  clinic_id: string;
+  role: string;
+}

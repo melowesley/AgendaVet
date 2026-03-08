@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, useColorScheme, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,17 @@ export default function MenuScreen() {
     const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
     const { session, isAdmin, signOut } = useAuth();
     const router = useRouter();
+    const [vetName, setVetName] = useState('Veterinário');
+    const [vetCrmv, setVetCrmv] = useState('');
+
+    useEffect(() => {
+        if (!session?.user?.id) return;
+        supabase.from('profiles').select('full_name, crmv').eq('user_id', session.user.id).single()
+            .then(({ data }) => {
+                if (data?.full_name) setVetName(data.full_name);
+                if (data?.crmv) setVetCrmv(data.crmv);
+            });
+    }, [session?.user?.id]);
 
     const handleLogout = async () => {
         Alert.alert(
@@ -44,7 +55,8 @@ export default function MenuScreen() {
                     <Ionicons name="person" size={40} color={theme.primary} />
                 </View>
                 <View style={styles.profileInfo}>
-                    <Text style={[styles.profileName, { color: theme.text }]}>Veterinário</Text>
+                    <Text style={[styles.profileName, { color: theme.text }]}>{vetName}</Text>
+                    {vetCrmv ? <Text style={[styles.profileCrmv, { color: theme.primary }]}>CRMV {vetCrmv}</Text> : null}
                     <Text style={[styles.profileEmail, { color: theme.textSecondary }]}>{session?.user?.email}</Text>
                     {isAdmin && (
                         <View style={[styles.badge, { backgroundColor: theme.primary + '15' }]}>
@@ -64,11 +76,12 @@ export default function MenuScreen() {
                 <MenuItem icon="calendar" label="Calendário Geral" route="/menu/calendario" color="#3B82F6" />
                 <MenuItem icon="people" label="Tutores e Clientes" route="/menu/tutores" color="#10B981" />
                 <MenuItem icon="list" label="Tipos de Serviços" route="/menu/servicos" color="#8B5CF6" />
-                <MenuItem icon="bar-chart" label="Analytics e Faturamento" route="/menu/analytics" color="#F59E0B" />
+                {/* Analytics disponível apenas no app web */}
             </View>
 
             <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Conta</Text>
+                <MenuItem icon="person-circle" label="Meu Perfil" route="/menu/perfil" color="#6366F1" />
                 <TouchableOpacity
                     style={[styles.menuItem, { backgroundColor: theme.surface, borderColor: theme.border }]}
                     onPress={handleLogout}
@@ -91,6 +104,7 @@ const styles = StyleSheet.create({
     avatar: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
     profileInfo: { flex: 1, alignItems: 'flex-start' },
     profileName: { fontSize: 20, fontWeight: '800', marginBottom: 2 },
+    profileCrmv: { fontSize: 12, fontWeight: '700', marginBottom: 2 },
     profileEmail: { fontSize: 13, marginBottom: 8 },
     badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
     badgeText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },

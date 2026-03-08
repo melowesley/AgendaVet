@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, useColorScheme, ScrollView, TextInput,
     TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal, Dimensions
@@ -13,6 +13,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { gerarECompartilharPDF } from '@/lib/pdf/pdfService';
 import { getReceitaHtml } from '@/lib/pdf/templates';
 import { WebView } from 'react-native-webview';
+import { useAttendanceAutoFill } from '@/hooks/useAttendanceAutoFill';
+import AutoFillHeader from '@/components/AutoFillHeader';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -78,6 +80,7 @@ export default function ReceitaScreen() {
     const [tipoReceita, setTipoReceita] = useState<'simples' | 'controle'>('simples');
     const [saving, setSaving] = useState(false);
     const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+    const { vetProfile, petData: autoFillPet, tutorData, loading: autoFillLoading } = useAttendanceAutoFill(petId);
 
     // Campos do formulário
     const [titulo, setTitulo] = useState('');
@@ -91,6 +94,14 @@ export default function ReceitaScreen() {
     const [vetUF, setVetUF] = useState('');
     const [ownerNameManual, setOwnerNameManual] = useState('');
     const [ownerAddress, setOwnerAddress] = useState('');
+
+    useEffect(() => {
+        if (vetProfile) {
+            if (!veterinario) setVeterinario(vetProfile.full_name || '');
+            if (!crmv && vetProfile.crmv) setCrmv(vetProfile.crmv);
+            if (!vetPhone && vetProfile.phone) setVetPhone(vetProfile.phone);
+        }
+    }, [vetProfile]);
 
     const { data: pet } = useQuery({
         queryKey: ['pet', petId],
@@ -229,6 +240,8 @@ export default function ReceitaScreen() {
                             );
                         })}
                     </View>
+
+                    <AutoFillHeader vetProfile={vetProfile} petData={autoFillPet} tutorData={tutorData} loading={autoFillLoading} theme={theme} />
 
                     {/* DADOS DO EMITENTE */}
                     <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>

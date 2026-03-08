@@ -7,6 +7,9 @@ import { supabase } from '@/lib/supabase';
 import { logPetAdminHistory } from '@/lib/services/petHistory';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAttendanceAutoFill } from '@/hooks/useAttendanceAutoFill';
+import AutoFillHeader from '@/components/AutoFillHeader';
+import { printAttendancePdf } from '@/utils/printPdf';
 
 const InputField = ({ label, icon, value, onChangeText, placeholder, keyboardType = 'default', multiline = false, suffix, autoCapitalize = 'sentences', theme }: any) => (
     <View style={styles.inputContainer}>
@@ -56,6 +59,8 @@ export default function ConsultaScreen() {
     const insets = useSafeAreaInsets();
 
     const [saving, setSaving] = useState(false);
+    const [printing, setPrinting] = useState(false);
+    const { vetProfile, petData, tutorData, loading: autoFillLoading, buildPdfData } = useAttendanceAutoFill(petId, appointmentId);
     const [form, setForm] = useState({
         queixa_principal: '',
         medicamentos: '',
@@ -201,6 +206,8 @@ export default function ConsultaScreen() {
                         <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]}>Preencha os dados do atendimento</Text>
                     </View>
                 </View>
+
+                <AutoFillHeader vetProfile={vetProfile} petData={petData} tutorData={tutorData} loading={autoFillLoading} theme={theme} />
 
                 {/* Seção Anamnese */}
                 <View style={styles.sectionContainer}>
@@ -406,7 +413,22 @@ export default function ConsultaScreen() {
 
             <View style={[styles.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
                 <TouchableOpacity
-                    style={[styles.mainSaveBtn, { backgroundColor: form.queixa_principal ? theme.primary : theme.border }]}
+                    style={[styles.pdfBtn, { borderColor: theme.primary }]}
+                    onPress={async () => {
+                        setPrinting(true);
+                        try { await printAttendancePdf(buildPdfData('consulta', form)); } finally { setPrinting(false); }
+                    }}
+                    disabled={printing}
+                >
+                    {printing ? <ActivityIndicator color={theme.primary} size="small" /> : (
+                        <>
+                            <Ionicons name="document-text-outline" size={20} color={theme.primary} />
+                            <Text style={[styles.pdfBtnText, { color: theme.primary }]}>PDF</Text>
+                        </>
+                    )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.mainSaveBtn, { backgroundColor: form.queixa_principal ? theme.primary : theme.border, flex: 1 }]}
                     onPress={handleSave}
                     disabled={saving || !form.queixa_principal}
                 >
@@ -458,12 +480,15 @@ const styles = StyleSheet.create({
     col: { flex: 1 },
     footer: {
         padding: 20, paddingBottom: 34, borderTopWidth: StyleSheet.hairlineWidth, borderTopLeftRadius: 32, borderTopRightRadius: 32,
+        flexDirection: 'row', gap: 10,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -4 },
         shadowOpacity: 0.05,
         shadowRadius: 12,
         elevation: 10,
     },
+    pdfBtn: { height: 46, borderRadius: 14, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, gap: 6 },
+    pdfBtnText: { fontSize: 14, fontWeight: '700' },
     mainSaveBtn: { height: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
     mainSaveBtnText: { fontSize: 16, fontWeight: '700' },
 });

@@ -1,15 +1,6 @@
 'use client'
 
-/**
- * VetCopilotContent - Componente principal do Assistente Clínico Veterinário
- * 
- * Interface de chat especializada com:
- * - Seleção de pet para contexto
- * - Sugestões contextuais clínicas
- * - Integração com tools do copilot
- */
-
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import { usePets, useOwners } from '@/lib/data-store'
@@ -19,20 +10,20 @@ import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { MessageSquare, Send, Bot, User, Stethoscope, FileText, Syringe, Pill, AlertCircle, Loader2 } from 'lucide-react'
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { MessageSquare, Send, Bot, User, Stethoscope, FileText, Syringe, Pill, AlertCircle, Loader2, PanelLeftOpen, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ReactMarkdown from 'react-markdown'
+import { ConversationSidebar } from './conversation-sidebar'
 
-// Sugestões contextuais para veterinários
 const CLINICAL_SUGGESTIONS = [
-  { icon: FileText, label: 'Resumir histórico', prompt: 'Resuma o histórico clínico completo deste paciente' },
-  { icon: Stethoscope, label: 'Diagnósticos diferenciais', prompt: 'Quais os principais diagnósticos diferenciais para os sintomas apresentados?' },
-  { icon: Syringe, label: 'Vacinas pendentes', prompt: 'Quais vacinas estão pendentes ou próximas do vencimento?' },
-  { icon: Pill, label: 'Calcular dose', prompt: 'Calcule a dose de [medicação] para este paciente' },
-  { icon: AlertCircle, label: 'Interações', prompt: 'Verifique interações medicamentosas com as medicações atuais' },
+  { icon: FileText, label: 'Resumir historico', prompt: 'Resuma o historico clinico completo deste paciente' },
+  { icon: Stethoscope, label: 'Diagnosticos diferenciais', prompt: 'Quais os principais diagnosticos diferenciais para os sintomas apresentados?' },
+  { icon: Syringe, label: 'Vacinas pendentes', prompt: 'Quais vacinas estao pendentes ou proximas do vencimento?' },
+  { icon: Pill, label: 'Calcular dose', prompt: 'Calcule a dose de [medicacao] para este paciente' },
+  { icon: AlertCircle, label: 'Interacoes', prompt: 'Verifique interacoes medicamentosas com as medicacoes atuais' },
 ]
 
-// Helper para extrair texto das mensagens
 function getMessageText(message: { parts?: Array<{ type: string; text?: string }> }): string {
   if (!message.parts || !Array.isArray(message.parts)) return ''
   return message.parts
@@ -42,7 +33,7 @@ function getMessageText(message: { parts?: Array<{ type: string; text?: string }
 }
 
 interface VetCopilotContentProps {
-  initialPetId?: string;
+  initialPetId?: string
 }
 
 export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
@@ -50,31 +41,54 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
   const { owners } = useOwners()
   const [selectedPetId, setSelectedPetId] = useState<string | null>(initialPetId || null)
   const [input, setInput] = useState('')
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Configura chat com transport customizado
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({
       api: '/api/vet-copilot',
       body: {
-        model: 'anthropic/claude-sonnet-4',
-        temperature: 0.3,
         petId: selectedPetId,
+        conversationId,
       },
     }),
   })
 
   const isLoading = status === 'streaming' || status === 'submitted'
 
-  // Auto-scroll para última mensagem
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [messages])
 
-  // Limpa chat quando troca de pet
+  const loadConversation = useCallback(async (convId: string) => {
+    try {
+      const res = await fetch(`/api/vet-copilot/conversations?conversationId=${convId}`)
+      if (!res.ok) return
+      const data = await res.json()
+      const loaded = (data.messages || []).map((m: any, i: number) => ({
+        id: m.id || `msg-${i}`,
+        role: m.role,
+        parts: [{ type: 'text' as const, text: m.content }],
+      }))
+      setMessages(loaded)
+      setConversationId(convId)
+      setSidebarOpen(false)
+    } catch {
+      // silently fail
+    }
+  }, [setMessages])
+
+  const startNewConversation = useCallback(() => {
+    setConversationId(null)
+    setMessages([])
+    setSidebarOpen(false)
+  }, [setMessages])
+
   useEffect(() => {
+    setConversationId(null)
     setMessages([])
   }, [selectedPetId, setMessages])
 
@@ -97,26 +111,49 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
     }
   }
 
-  const clearChat = () => {
-    setMessages([])
-  }
-
   const applySuggestion = (prompt: string) => {
     setInput(prompt)
   }
 
+  const sidebarContent = (
+    <ConversationSidebar
+      activeId={conversationId}
+      petId={selectedPetId}
+      onSelect={loadConversation}
+      onNew={startNewConversation}
+    />
+  )
+
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)] p-3 md:p-6">
+    <div className="flex h-[calc(100vh-3.5rem)] p-3 md:p-6 gap-3">
+      {/* Sidebar desktop */}
+      <Card className="hidden lg:flex w-72 flex-col min-h-0 overflow-hidden">
+        {sidebarContent}
+      </Card>
+
+      {/* Chat principal */}
       <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <CardHeader className="border-b py-2 md:py-3 px-3 md:px-6">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
+              {/* Sidebar toggle mobile */}
+              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="size-8 lg:hidden">
+                    <PanelLeftOpen className="size-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="p-0 w-72">
+                  {sidebarContent}
+                </SheetContent>
+              </Sheet>
+
               <div className="flex items-center gap-2 text-primary">
                 <Stethoscope className="size-5" />
-                <span className="font-semibold">AgentVet Clinical Copilot</span>
+                <span className="font-semibold hidden sm:inline">Clinical Copilot</span>
               </div>
               <Badge variant="outline" className="text-xs hidden sm:inline-flex">
-                Claude Sonnet 4
+                AI
               </Badge>
             </div>
             <div className="flex items-center gap-2">
@@ -124,40 +161,39 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
                 value={selectedPetId || 'none'}
                 onValueChange={(value) => setSelectedPetId(value === 'none' ? null : value)}
               >
-                <SelectTrigger className="w-[200px] text-sm">
+                <SelectTrigger className="w-[160px] md:w-[200px] text-sm">
                   <SelectValue placeholder="Selecionar paciente..." />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Nenhum paciente</SelectItem>
                   {pets.map((pet) => (
                     <SelectItem key={pet.id} value={pet.id}>
-                      {pet.name} ({pet.species === 'dog' ? 'Cão' : pet.species === 'cat' ? 'Gato' : pet.species})
+                      {pet.name} ({pet.species === 'dog' ? 'Cao' : pet.species === 'cat' ? 'Gato' : pet.species})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="size-8" 
-                onClick={clearChat} 
-                disabled={messages.length === 0}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                onClick={startNewConversation}
+                title="Nova conversa"
               >
-                <MessageSquare className="size-4" />
+                <Plus className="size-4" />
               </Button>
             </div>
           </CardTitle>
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col p-0 min-h-0 overflow-hidden">
-          {/* Contexto do paciente */}
           {selectedPet && (
             <div className="border-b bg-muted/50 px-3 md:px-4 py-2">
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2 text-sm flex-wrap">
                 <span className="font-medium">Paciente:</span>
                 <span className="text-primary">{selectedPet.name}</span>
                 <span className="text-muted-foreground">|</span>
-                <span>{selectedPet.name} ({selectedPet.species === 'dog' ? 'Cão' : selectedPet.species === 'cat' ? 'Gato' : selectedPet.species})</span>
+                <span>{selectedPet.species === 'dog' ? 'Cao' : selectedPet.species === 'cat' ? 'Gato' : selectedPet.species}</span>
                 {selectedPet.weight > 0 && (
                   <>
                     <span className="text-muted-foreground">|</span>
@@ -180,23 +216,21 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
                 <div className="size-12 md:size-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                   <Stethoscope className="size-6 md:size-8 text-primary" />
                 </div>
-                <h3 className="text-base md:text-lg font-medium">Assistente Clínico Veterinário</h3>
+                <h3 className="text-base md:text-lg font-medium">Assistente Clinico Veterinario</h3>
                 <p className="text-sm text-muted-foreground max-w-md mt-2">
-                  Apoio clínico baseado em evidências para auxiliar nas suas consultas.
-                  Selecione um paciente para carregar o contexto automático.
+                  Apoio clinico baseado em evidencias para auxiliar nas suas consultas.
+                  Selecione um paciente para carregar o contexto automatico.
                 </p>
-                
-                {/* Disclaimer de segurança */}
+
                 <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg max-w-md">
                   <p className="text-xs text-amber-800">
-                    <strong>⚠️ Aviso:</strong> Este assistente é uma ferramenta de apoio clínico. 
-                    A decisão final sempre é do veterinário responsável.
+                    <strong>Aviso:</strong> Este assistente e uma ferramenta de apoio clinico.
+                    A decisao final sempre e do veterinario responsavel.
                   </p>
                 </div>
 
-                {/* Sugestões contextuais */}
                 <div className="mt-6">
-                  <p className="text-xs text-muted-foreground mb-3">Sugestões rápidas:</p>
+                  <p className="text-xs text-muted-foreground mb-3">Sugestoes rapidas:</p>
                   <div className="flex flex-wrap justify-center gap-2">
                     {CLINICAL_SUGGESTIONS.map((suggestion) => (
                       <Button
@@ -266,25 +300,24 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
             )}
           </ScrollArea>
 
-          {/* Input area */}
           <form onSubmit={handleSubmit} className="border-t p-3 md:p-4 flex gap-2">
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={selectedPetId 
-                ? "Pergunte sobre o paciente..." 
-                : "Selecione um paciente primeiro"
+              placeholder={selectedPetId
+                ? 'Pergunte sobre o paciente...'
+                : 'Pergunte qualquer coisa sobre medicina veterinaria...'
               }
               className="min-h-[44px] max-h-24 md:max-h-32 resize-none text-sm md:text-base"
               rows={1}
-              disabled={isLoading || !selectedPetId}
+              disabled={isLoading}
             />
-            <Button 
-              type="submit" 
-              size="icon" 
-              className="shrink-0" 
-              disabled={isLoading || !input.trim() || !selectedPetId}
+            <Button
+              type="submit"
+              size="icon"
+              className="shrink-0"
+              disabled={isLoading || !input.trim()}
             >
               <Send className="size-4" />
             </Button>

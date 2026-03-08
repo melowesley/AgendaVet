@@ -7,6 +7,9 @@ import { supabase } from '@/lib/supabase';
 import { logPetAdminHistory } from '@/lib/services/petHistory';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAttendanceAutoFill } from '@/hooks/useAttendanceAutoFill';
+import AutoFillHeader from '@/components/AutoFillHeader';
+import { printAttendancePdf } from '@/utils/printPdf';
 
 // ACCENT removido para usar theme.primary
 
@@ -51,6 +54,8 @@ export default function VacinaScreen() {
     const queryClient = useQueryClient();
     const insets = useSafeAreaInsets();
     const [saving, setSaving] = useState(false);
+    const [printing, setPrinting] = useState(false);
+    const { vetProfile, petData, tutorData, loading: autoFillLoading, buildPdfData } = useAttendanceAutoFill(petId);
 
     const [nomeVacina, setNomeVacina] = useState('');
     const [fabricante, setFabricante] = useState('');
@@ -98,6 +103,8 @@ export default function VacinaScreen() {
                     </View>
                 </View>
 
+                <AutoFillHeader vetProfile={vetProfile} petData={petData} tutorData={tutorData} loading={autoFillLoading} theme={theme} />
+
                 <Card theme={theme} title="Identificação" icon="shield-checkmark-outline" color={theme.primary}>
                     <F label="Nome da Vacina / Medicação *" value={nomeVacina} onChangeText={setNomeVacina} placeholder="Ex: V10, Antirrábica, Ivermectina..." required />
                     <Row>
@@ -127,7 +134,14 @@ export default function VacinaScreen() {
                     <F label="Observações Adicionais" value={observacoes} onChangeText={setObservacoes} placeholder="Anotações livres..." multiline />
                 </Card>
             </ScrollView>
-            <FooterBtn onSave={handleSave} saving={saving} valid={!!nomeVacina} color={theme.primary} label="Registrar Vacina" theme={theme} insets={insets} />
+            <View style={[s.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24), flexDirection: 'row', gap: 10 }]}>
+                <TouchableOpacity style={[s.pdfBtn, { borderColor: theme.primary }]} onPress={async () => { setPrinting(true); try { await printAttendancePdf(buildPdfData('vacina', { nomeVacina, fabricante, lote, validade, dose, viaAdm, veterinario, proximaDose, reacao, descReacao, observacoes })); } finally { setPrinting(false); } }} disabled={printing}>
+                    {printing ? <ActivityIndicator color={theme.primary} size="small" /> : <><Ionicons name="document-text-outline" size={20} color={theme.primary} /><Text style={[s.pdfBtnText, { color: theme.primary }]}>PDF</Text></>}
+                </TouchableOpacity>
+                <TouchableOpacity style={[s.saveBtn, { backgroundColor: nomeVacina ? theme.primary : theme.border, flex: 1 }]} onPress={handleSave} disabled={saving || !nomeVacina}>
+                    {saving ? <ActivityIndicator color="white" /> : <><Ionicons name="checkmark-circle" size={22} color={nomeVacina ? 'white' : theme.textMuted} style={{ marginRight: 8 }} /><Text style={[s.saveBtnText, { color: nomeVacina ? 'white' : theme.textMuted }]}>Registrar Vacina</Text></>}
+                </TouchableOpacity>
+            </View>
         </KeyboardAvoidingView>
     );
 }
@@ -147,4 +161,6 @@ const s = StyleSheet.create({
     footer: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
     saveBtn: { height: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
     saveBtnText: { fontSize: 16, fontWeight: '700' },
+    pdfBtn: { height: 46, borderRadius: 14, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, gap: 6 },
+    pdfBtnText: { fontSize: 14, fontWeight: '700' },
 });

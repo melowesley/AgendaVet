@@ -7,8 +7,9 @@ import { supabase } from '@/lib/supabase';
 import { logPetAdminHistory } from '@/lib/services/petHistory';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-// ACCENT removido para usar theme.primary
+import { useAttendanceAutoFill } from '@/hooks/useAttendanceAutoFill';
+import AutoFillHeader from '@/components/AutoFillHeader';
+import { printAttendancePdf } from '@/utils/printPdf';
 
 function Field({ label, value, onChangeText, placeholder, keyboardType = 'default', multiline = false, minHeight = 52, theme, required }: any) {
     return (
@@ -31,6 +32,8 @@ export default function CirurgiaScreen() {
     const queryClient = useQueryClient();
     const insets = useSafeAreaInsets();
     const [saving, setSaving] = useState(false);
+    const [printing, setPrinting] = useState(false);
+    const { vetProfile, petData, tutorData, loading: autoFillLoading, buildPdfData } = useAttendanceAutoFill(petId);
 
     const [procedimento, setProcedimento] = useState('');
     const [cirurgiao, setCirurgiao] = useState('');
@@ -77,6 +80,8 @@ export default function CirurgiaScreen() {
                     <View style={{ marginLeft: 14 }}><Text style={[s.heroTitle, { color: theme.text }]}>Relatório Cirúrgico</Text><Text style={[s.heroSub, { color: theme.textSecondary }]}>Registro completo do procedimento</Text></View>
                 </View>
 
+                <AutoFillHeader vetProfile={vetProfile} petData={petData} tutorData={tutorData} loading={autoFillLoading} theme={theme} />
+
                 <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                     <View style={s.cardHeader}><Ionicons name="cut-outline" size={18} color={theme.primary} /><Text style={[s.cardTitle, { color: theme.text }]}>Identificação</Text></View>
                     <F label="Procedimento Cirúrgico *" value={procedimento} onChangeText={setProcedimento} placeholder="Ex: Ovariosalpingohisterectomia..." required />
@@ -101,8 +106,11 @@ export default function CirurgiaScreen() {
                     <F label="Observações" value={observacoes} onChangeText={setObservacoes} placeholder="Anotações adicionais..." multiline />
                 </View>
             </ScrollView>
-            <View style={[s.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
-                <TouchableOpacity style={[s.saveBtn, { backgroundColor: procedimento ? theme.primary : theme.border }]} onPress={handleSave} disabled={saving || !procedimento}>
+            <View style={[s.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24), flexDirection: 'row', gap: 10 }]}>
+                <TouchableOpacity style={[s.pdfBtn, { borderColor: theme.primary }]} onPress={async () => { setPrinting(true); try { await printAttendancePdf(buildPdfData('cirurgia', { procedimento, cirurgiao, anestesista, anestesia, duracao, achados, tecnica, complicacoes, posOperatorio, resultado, observacoes })); } finally { setPrinting(false); } }} disabled={printing}>
+                    {printing ? <ActivityIndicator color={theme.primary} size="small" /> : <><Ionicons name="document-text-outline" size={20} color={theme.primary} /><Text style={[s.pdfBtnText, { color: theme.primary }]}>PDF</Text></>}
+                </TouchableOpacity>
+                <TouchableOpacity style={[s.saveBtn, { backgroundColor: procedimento ? theme.primary : theme.border, flex: 1 }]} onPress={handleSave} disabled={saving || !procedimento}>
                     {saving ? <ActivityIndicator color="white" /> : <><Ionicons name="checkmark-circle" size={22} color={procedimento ? 'white' : theme.textMuted} style={{ marginRight: 8 }} /><Text style={[s.saveBtnText, { color: procedimento ? 'white' : theme.textMuted }]}>Salvar Relatório Cirúrgico</Text></>}
                 </TouchableOpacity>
             </View>
@@ -128,4 +136,6 @@ const s = StyleSheet.create({
     footer: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
     saveBtn: { height: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
     saveBtnText: { fontSize: 16, fontWeight: '700' },
+    pdfBtn: { height: 46, borderRadius: 14, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, gap: 6 },
+    pdfBtnText: { fontSize: 14, fontWeight: '700' },
 });

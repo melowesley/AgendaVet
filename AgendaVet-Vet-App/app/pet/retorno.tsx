@@ -7,8 +7,9 @@ import { supabase } from '@/lib/supabase';
 import { logPetAdminHistory } from '@/lib/services/petHistory';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-// ACCENT removido para usar theme.primary
+import { useAttendanceAutoFill } from '@/hooks/useAttendanceAutoFill';
+import AutoFillHeader from '@/components/AutoFillHeader';
+import { printAttendancePdf } from '@/utils/printPdf';
 
 export default function RetornoScreen() {
     const { petId } = useLocalSearchParams<{ petId: string }>();
@@ -18,6 +19,8 @@ export default function RetornoScreen() {
     const queryClient = useQueryClient();
     const insets = useSafeAreaInsets();
     const [saving, setSaving] = useState(false);
+    const [printing, setPrinting] = useState(false);
+    const { vetProfile, petData, tutorData, loading: autoFillLoading, buildPdfData } = useAttendanceAutoFill(petId);
 
     const [evolucao, setEvolucao] = useState('');
     const [conduta, setConduta] = useState('');
@@ -56,6 +59,8 @@ export default function RetornoScreen() {
                     </View>
                 </View>
 
+                <AutoFillHeader vetProfile={vetProfile} petData={petData} tutorData={tutorData} loading={autoFillLoading} theme={theme} />
+
                 <Card theme={theme} title="Exame Físico" icon="pulse-outline" color={theme.primary}>
                     <Row>
                         <Field label="Temperatura (°C)" value={temperatura} onChangeText={setTemperatura} placeholder="38.5" keyboardType="decimal-pad" theme={theme} />
@@ -70,7 +75,14 @@ export default function RetornoScreen() {
                     <Field label="Observações Adicionais" value={observacoes} onChangeText={setObservacoes} placeholder="Anotações livres..." theme={theme} multiline />
                 </Card>
             </ScrollView>
-            <Footer onSave={handleSave} saving={saving} valid={!!evolucao} color={theme.primary} theme={theme} insets={insets} />
+            <View style={[s.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24), flexDirection: 'row', gap: 10 }]}>
+                <TouchableOpacity style={[s.pdfBtn, { borderColor: theme.primary }]} onPress={async () => { setPrinting(true); try { await printAttendancePdf(buildPdfData('retorno', { evolucao, conduta, temperatura, peso, veterinario, observacoes })); } finally { setPrinting(false); } }} disabled={printing}>
+                    {printing ? <ActivityIndicator color={theme.primary} size="small" /> : <><Ionicons name="document-text-outline" size={20} color={theme.primary} /><Text style={[s.pdfBtnText, { color: theme.primary }]}>PDF</Text></>}
+                </TouchableOpacity>
+                <TouchableOpacity style={[s.saveBtn, { backgroundColor: evolucao ? theme.primary : theme.border, flex: 1 }]} onPress={handleSave} disabled={saving || !evolucao}>
+                    {saving ? <ActivityIndicator color="white" /> : <><Ionicons name="checkmark-circle" size={22} color={evolucao ? "white" : theme.textMuted} style={{ marginRight: 8 }} /><Text style={[s.saveBtnText, { color: evolucao ? "white" : theme.textMuted }]}>Finalizar e Salvar</Text></>}
+                </TouchableOpacity>
+            </View>
         </KeyboardAvoidingView>
     );
 }
@@ -127,4 +139,6 @@ const s = StyleSheet.create({
     footer: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
     saveBtn: { height: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
     saveBtnText: { fontSize: 16, fontWeight: '700' },
+    pdfBtn: { height: 46, borderRadius: 14, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, gap: 6 },
+    pdfBtnText: { fontSize: 14, fontWeight: '700' },
 });

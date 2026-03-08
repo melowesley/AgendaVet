@@ -7,8 +7,9 @@ import { supabase } from '@/lib/supabase';
 import { logPetAdminHistory } from '@/lib/services/petHistory';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-// ACCENT removido para usar theme.primary
+import { useAttendanceAutoFill } from '@/hooks/useAttendanceAutoFill';
+import AutoFillHeader from '@/components/AutoFillHeader';
+import { printAttendancePdf } from '@/utils/printPdf';
 
 function CardComp({ theme, title, icon, color, children }: any) {
     return (
@@ -48,6 +49,8 @@ export default function ExameScreen() {
     const queryClient = useQueryClient();
     const insets = useSafeAreaInsets();
     const [saving, setSaving] = useState(false);
+    const [printing, setPrinting] = useState(false);
+    const { vetProfile, petData, tutorData, loading: autoFillLoading, buildPdfData } = useAttendanceAutoFill(petId);
 
     const [tipoExame, setTipoExame] = useState('');
     const [laboratorio, setLaboratorio] = useState('');
@@ -91,6 +94,8 @@ export default function ExameScreen() {
                     <View style={{ marginLeft: 14 }}><Text style={[s.heroTitle, { color: theme.text }]}>Registro de Exame</Text><Text style={[s.heroSub, { color: theme.textSecondary }]}>Laboratorial, imagem ou patológico</Text></View>
                 </View>
 
+                <AutoFillHeader vetProfile={vetProfile} petData={petData} tutorData={tutorData} loading={autoFillLoading} theme={theme} />
+
                 <CardComp theme={theme} title="Identificação do Exame" icon="flask-outline" color={theme.primary}>
                     <Text style={[s.subLabel, { color: theme.textSecondary }]}>Tipo de Exame *</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
@@ -117,7 +122,14 @@ export default function ExameScreen() {
                     <F label="Observações" value={observacoes} onChangeText={setObservacoes} placeholder="Anotações adicionais..." multiline />
                 </CardComp>
             </ScrollView>
-            <FooterBtn onSave={handleSave} saving={saving} valid={!!tipoExame} color={theme.primary} label="Salvar Exame" theme={theme} insets={insets} />
+            <View style={[s.footer, { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 16, 24), flexDirection: 'row', gap: 10 }]}>
+                <TouchableOpacity style={[s.pdfBtn, { borderColor: theme.primary }]} onPress={async () => { setPrinting(true); try { await printAttendancePdf(buildPdfData('exame', { tipoExame, laboratorio, dataColeta, dataResultado, resultado, interpretacao, veterinario, observacoes })); } finally { setPrinting(false); } }} disabled={printing}>
+                    {printing ? <ActivityIndicator color={theme.primary} size="small" /> : <><Ionicons name="document-text-outline" size={20} color={theme.primary} /><Text style={[s.pdfBtnText, { color: theme.primary }]}>PDF</Text></>}
+                </TouchableOpacity>
+                <TouchableOpacity style={[s.saveBtn, { backgroundColor: tipoExame ? theme.primary : theme.border, flex: 1 }]} onPress={handleSave} disabled={saving || !tipoExame}>
+                    {saving ? <ActivityIndicator color="white" /> : <><Ionicons name="checkmark-circle" size={22} color={tipoExame ? 'white' : theme.textMuted} style={{ marginRight: 8 }} /><Text style={[s.saveBtnText, { color: tipoExame ? 'white' : theme.textMuted }]}>Salvar Exame</Text></>}
+                </TouchableOpacity>
+            </View>
         </KeyboardAvoidingView>
     );
 }
@@ -140,4 +152,6 @@ const s = StyleSheet.create({
     footer: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
     saveBtn: { height: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
     saveBtnText: { fontSize: 16, fontWeight: '700' },
+    pdfBtn: { height: 46, borderRadius: 14, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, gap: 6 },
+    pdfBtnText: { fontSize: 14, fontWeight: '700' },
 });
