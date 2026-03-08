@@ -1,5 +1,6 @@
 import { AppointmentRequest } from '@/modules/vet/hooks/useAppointmentRequests';
 import type { AnamnesisData } from './anamnesisTypes';
+import { NA_TEXT, translatePetType } from '@/shared/utils/translations';
 import {
   SGI_OPTIONS,
   SGU_OPTIONS,
@@ -166,10 +167,10 @@ export const exportAppointmentPdf = ({
   const dateShort = date ? new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
   const dateLong = date ? formatDateLong(date) : '';
   const timeLabel = time || '';
-  const tutorName = request.profile?.full_name || 'N/A';
+  const tutorName = request.profile?.full_name || NA_TEXT;
   const tutorPhone = request.profile?.phone || 'Sem telefone';
-  const petName = request.pet?.name || 'N/A';
-  const petType = request.pet?.type || 'N/A';
+  const petName = request.pet?.name || NA_TEXT;
+  const petType = request.pet?.type ? translatePetType(request.pet.type) : NA_TEXT;
   const petBreed = request.pet?.breed || 'SRD';
   const reason = request.reason || '';
   const veterinarian = request.veterinarian || '____________________________';
