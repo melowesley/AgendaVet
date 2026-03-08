@@ -21,6 +21,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { Colors } from '@/constants/theme';
 import * as ImagePicker from 'expo-image-picker';
 import { format } from 'date-fns';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 interface Pet {
@@ -445,6 +446,7 @@ function RequestAppointmentModal({
 // ─── Tela Principal: Meus Pets ────────────────────────────────────────────────
 export default function PetsScreen() {
   const { session } = useAuth();
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
 
@@ -604,6 +606,7 @@ export default function PetsScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
+      <PWAInstallPrompt />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}

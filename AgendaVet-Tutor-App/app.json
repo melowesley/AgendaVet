@@ -20,8 +20,18 @@
       "package": "com.wesley9827.AgendaVetTutorApp"
     },
     "web": {
+      "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "pwa": {
+        "name": "AgendaVet - Tutor",
+        "shortName": "AV Tutor",
+        "description": "App do Tutor AgendaVet",
+        "backgroundColor": "#ffffff",
+        "themeColor": "#007AFF",
+        "display": "standalone",
+        "orientation": "portrait"
+      }
     },
     "plugins": [
       "expo-router",

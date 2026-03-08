@@ -34,6 +34,8 @@ const navItems = [
   { title: 'Prontuários', href: '/medical-records', icon: FileText },
   { title: 'Analytics', href: '/analytics', icon: BarChart3 },
   { title: 'Assistente IA', href: '/assistant', icon: MessageSquare },
+  { title: 'Área do Tutor (App)', href: 'https://agendavet-tutor.vercel.app', icon: Users, external: true },
+  { title: 'Área do Vet (App)', href: 'https://agendavet-vet.vercel.app', icon: Stethoscope, external: true },
 ]
 
 const bottomNavItems = [
@@ -81,7 +83,12 @@ export function AppSidebar() {
                       isActive={isActive}
                       className={`h-10 transition-all duration-200 ${isActive ? 'bg-gradient-to-r from-emerald-500/15 to-transparent border-l-2 border-emerald-500 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/20' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'}`}
                     >
-                      <Link href={item.href} onClick={handleNavClick}>
+                      <Link
+                        href={item.href}
+                        onClick={handleNavClick}
+                        target={item.external ? "_blank" : undefined}
+                        rel={item.external ? "noopener noreferrer" : undefined}
+                      >
                         <item.icon className={`size-4 ${isActive ? 'text-emerald-500' : ''}`} />
                         <span className={isActive ? 'font-medium' : ''}>{item.title}</span>
                       </Link>

@@ -25,7 +25,17 @@
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/images/favicon.png"
+      "output": "single",
+      "favicon": "./assets/images/favicon.png",
+      "pwa": {
+        "name": "AgendaVet - Veterinário",
+        "shortName": "AV Vet",
+        "description": "App do Veterinário AgendaVet",
+        "backgroundColor": "#f0f9ff",
+        "themeColor": "#0EA5E9",
+        "display": "standalone",
+        "orientation": "portrait"
+      }
     },
     "plugins": [
       "expo-router",

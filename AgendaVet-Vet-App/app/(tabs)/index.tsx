@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 
 // ── Status helpers ──────────────────────────────────────────
 const STATUS_LABEL: Record<string, string> = {
@@ -143,6 +144,7 @@ export default function AgendaScreen() {
             imageStyle={{ opacity: isDark ? 0.08 : 0.45 }}
         >
             <View style={[s.container, { backgroundColor: isDark ? theme.background + 'B0' : theme.background + '70' }]}>
+                <PWAInstallPrompt />
                 <ScrollView
                     refreshControl={<RefreshControl refreshing={loading || statsLoading} onRefresh={() => { refresh(); refetchStats(); }} tintColor={theme.primary} />}
                     contentContainerStyle={{ paddingBottom: 100 }}

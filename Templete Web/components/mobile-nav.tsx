@@ -27,6 +27,8 @@ const navItems = [
   { title: 'Appointments', href: '/appointments', icon: Calendar },
   { title: 'Medical Records', href: '/medical-records', icon: FileText },
   { title: 'AI Assistant', href: '/assistant', icon: MessageSquare },
+  { title: 'Área do Tutor', href: 'https://agendavet-tutor.vercel.app', icon: Users, external: true },
+  { title: 'Área do Vet', href: 'https://agendavet-vet.vercel.app', icon: PawPrint, external: true },
   { title: 'Settings', href: '/settings', icon: Settings },
 ]
 
@@ -59,21 +61,22 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
             </Button>
           </div>
         </SheetHeader>
-        
+
         <nav className="flex flex-col p-4">
           {navItems.map((item) => {
-            const isActive = pathname === item.href || 
+            const isActive = pathname === item.href ||
               (item.href !== '/' && pathname.startsWith(item.href))
             return (
               <Link
                 key={item.title}
                 href={item.href}
                 onClick={() => onOpenChange(false)}
-                className={`flex items-center gap-4 rounded-lg px-4 py-4 text-lg transition-colors ${
-                  isActive
+                target={item.external ? "_blank" : undefined}
+                rel={item.external ? "noopener noreferrer" : undefined}
+                className={`flex items-center gap-4 rounded-lg px-4 py-4 text-lg transition-colors ${isActive
                     ? 'bg-primary text-primary-foreground'
                     : 'hover:bg-muted'
-                }`}
+                  }`}
               >
                 <item.icon className="size-6" />
                 <span>{item.title}</span>
