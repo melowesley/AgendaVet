@@ -490,7 +490,10 @@ export default function PetsScreen() {
     if (!invError && invoicesData) {
       // Filter those that belong to the user's pets (RLS should already do this, but just in case)
       const userPetIds = (petsData || []).map(p => p.id);
-      const userInvoices = invoicesData.filter(i => i.pets && userPetIds.includes(i.pets.id));
+      const userInvoices = invoicesData.filter(i => {
+        const pet = Array.isArray(i.pets) ? i.pets[0] : i.pets;
+        return pet && userPetIds.includes(pet.id);
+      });
       setPendingInvoices(userInvoices);
     }
   }, [userId]);

@@ -29,6 +29,7 @@ export const Colors = {
     tint: '#0284C7',
     tabIconDefault: '#94A3B8',
     tabIconSelected: '#0284C7',
+    icon: '#94A3B8',
 
     // Status
     statusPending: '#F59E0B',
@@ -67,6 +68,7 @@ export const Colors = {
     tint: '#38BDF8',
     tabIconDefault: '#475569',
     tabIconSelected: '#38BDF8',
+    icon: '#475569',
 
     // Status
     statusPending: '#FBBF24',

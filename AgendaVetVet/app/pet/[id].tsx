@@ -149,7 +149,7 @@ export default function PetDetailScreen() {
 
     const ActionButton = ({ icon, label, onPress, color }: any) => {
         const [showTooltip, setShowTooltip] = useState(false);
-        const timeoutRef = React.useRef<NodeJS.Timeout>();
+        const timeoutRef = React.useRef<NodeJS.Timeout>(null);
 
         const handlePressIn = () => {
             timeoutRef.current = setTimeout(() => {

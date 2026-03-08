@@ -445,11 +445,46 @@ As migrations ficam em `supabase/migrations/`. Para aplicar:
 
 ---
 
-## Estrutura de Pastas Resumida
+## Estrutura de Pastas (Multiapp)
+
+O projeto foi organizado em três aplicações independentes que compartilham o mesmo banco de dados Supabase:
 
 ```
 AgendaVet/
-├── AgendaVetWeb/             # Painel Admin (Next.js)
-├── AgendaVetTutor/           # App do Tutor (Expo/Mobile)
-└── AgendaVetVet/             # App do Vet (Expo/Mobile)
+├── AgendaVetWeb/             # Painel Administrativo Principal (Next.js)
+│   ├── app/                  # Rotas e Páginas (App Router)
+│   └── lib/                  # Services e Supabase Client
+├── AgendaVetVet/             # App Mobile do Veterinário (Expo/React Native)
+│   ├── app/pet/              # Prontuários e Módulos Clínicos
+│   └── utils/                # Geração de PDF e utilitários
+└── AgendaVetTutor/           # App Mobile do Tutor/Cliente (Expo/React Native)
+    ├── app/                  # Visualização de pets e agendamentos
+    └── components/           # Componentes UI mobile
+```
+
+---
+
+## Como Rodar e Desenvolver
+
+Cada aplicativo possui suas próprias dependências e scripts.
+
+### 1. AgendaVetWeb (Admin)
+```bash
+cd AgendaVetWeb
+npm install
+npm run dev
+```
+
+### 2. AgendaVetVet (App Profissional)
+```bash
+cd AgendaVetVet
+npm install
+npx expo start
+```
+
+### 3. AgendaVetTutor (App Cliente)
+```bash
+cd AgendaVetTutor
+npm install
+npx expo start
 ```

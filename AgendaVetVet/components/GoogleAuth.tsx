@@ -1,4 +1,4 @@
-// Adicione estas funções ao seu AuthProvider existente
+import { Platform } from 'react-native';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '@/lib/supabase';
@@ -11,7 +11,6 @@ export const signInWithGoogle = async () => {
     const redirectUri = AuthSession.makeRedirectUri({
       scheme: 'agendavet-vet',
       path: 'auth/callback',
-      preferMessenger: false,
     });
 
     const request = new AuthSession.AuthRequest({
@@ -19,7 +18,6 @@ export const signInWithGoogle = async () => {
       scopes: ['openid', 'profile', 'email'],
       responseType: AuthSession.ResponseType.Token,
       redirectUri,
-      additionalParameters: {},
       prompt: AuthSession.Prompt.SelectAccount,
     });
 
