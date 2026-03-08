@@ -32,11 +32,11 @@ export const aiChat = async (prompt: string, options: AIChatOptions = {}) => {
         // Estratégia: usar Gemini para respostas rápidas e econômicas
         // DeepSeek para tarefas que precisam de raciocínio avançado
         const isReasoningTask = prompt.toLowerCase().includes('analisar') ||
-                               prompt.toLowerCase().includes('diagnosticar') ||
-                               prompt.toLowerCase().includes('explicar') ||
-                               prompt.toLowerCase().includes('prescrever') ||
-                               prompt.toLowerCase().includes('tratamento') ||
-                               prompt.length > 500;
+          prompt.toLowerCase().includes('diagnosticar') ||
+          prompt.toLowerCase().includes('explicar') ||
+          prompt.toLowerCase().includes('prescrever') ||
+          prompt.toLowerCase().includes('tratamento') ||
+          prompt.length > 500;
 
         if (isReasoningTask) {
           return await deepseekChat(prompt, {
@@ -72,44 +72,14 @@ export const aiChat = async (prompt: string, options: AIChatOptions = {}) => {
   }
 };
 
-// Funções específicas para veterinária no App Vet
-export const analyzePetSymptoms = async (symptoms: string, petInfo?: string) => {
-  const context = petInfo ? `Informações do pet: ${petInfo}. ` : '';
-  const prompt = `Como veterinário experiente, analise os seguintes sintomas em um animal de estimação: ${context}${symptoms}. Forneça possíveis causas, gravidade e recomendações imediatas. Seja específico e considere a urgência médica.`;
+// Funções específicas exportadas dos módulos especializados
+export * from './ai/symptom_analyzer';
+export * from './ai/diagnosis_assistant';
+export * from './ai/exam_interpreter';
+export * from './ai/treatment_planner';
 
-  return await aiChat(prompt, {
-    model: 'auto',
-    temperature: 0.3,
-    maxTokens: 2048
-  });
-};
-
-export const generateTreatmentPlan = async (diagnosis: string, petInfo: string) => {
-  const prompt = `Baseado no diagnóstico "${diagnosis}" e informações do pet: ${petInfo}, crie um plano de tratamento veterinário detalhado incluindo medicações, cuidados e acompanhamento. Considere dosagens adequadas, frequência e possíveis efeitos colaterais.`;
-
-  return await aiChat(prompt, {
-    model: 'deepseek', // Preferir DeepSeek para planejamento médico detalhado
-    temperature: 0.2,
-    maxTokens: 2048
-  });
-};
-
-export const interpretExams = async (examResults: string, petInfo: string) => {
-  const prompt = `Como veterinário, interprete os resultados de exames: ${examResults}. Informações do pet: ${petInfo}. Explique o que significa cada resultado, valores normais vs alterados, e possíveis implicações clínicas.`;
-
-  return await aiChat(prompt, {
-    model: 'deepseek',
-    temperature: 0.2,
-    maxTokens: 1536
-  });
-};
-
-export const suggestDifferentialDiagnosis = async (symptoms: string, history: string) => {
-  const prompt = `Liste diagnósticos diferenciais para os sintomas: ${symptoms}. Histórico clínico: ${history}. Ordene por probabilidade e sugira próximos passos para investigação.`;
-
-  return await aiChat(prompt, {
-    model: 'deepseek',
-    temperature: 0.3,
-    maxTokens: 1536
-  });
-};
+// Retrocompatibilidade (opcional, se houver chamadas antigas)
+export { analyzeSymptoms as analyzePetSymptoms } from './ai/symptom_analyzer';
+export { planTreatment as generateTreatmentPlan } from './ai/treatment_planner';
+export { interpretExam as interpretExams } from './ai/exam_interpreter';
+export { assistDiagnosis as suggestDifferentialDiagnosis } from './ai/diagnosis_assistant';
