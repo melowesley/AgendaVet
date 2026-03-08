@@ -24,3 +24,16 @@ Todos os logs de uso são enviados para a tabela `ai_usage_logs` no Supabase par
 
 ## 🧪 Testes
 Os scripts de teste estão localizados na pasta `/tests` na raiz do projeto.
+
+## 📁 Estrutura de Pastas
+```text
+AgendaVet/
+├── training/                # Scripts e Dataset de IA
+├── tests/                   # Suíte de testes
+└── AgendaVetVet/
+    └── lib/
+        ├── ai/              # Módulos analíticos
+        ├── prompts/         # Templates de prompts
+        ├── analytics/       # Monitoramento
+        └── optimization/    # Performance
+```

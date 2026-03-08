@@ -449,26 +449,7 @@ As migrations ficam em `supabase/migrations/`. Para aplicar:
 
 ```
 AgendaVet/
-├── index.html              ← Meta tags PWA
-├── vite.config.ts          ← Vite + PWA (Workbox)
-├── package.json
-├── src/
-│   ├── App.tsx             ← Rotas
-│   ├── main.tsx            ← Ponto de entrada
-│   ├── index.css           ← Estilos globais / Tailwind
-│   ├── components/
-│   │   ├── admin/          ← Todos os diálogos veterinários
-│   │   └── ErrorBoundary.tsx
-│   ├── hooks/
-│   │   ├── usePetTimeline.ts   ← Timeline unificada
-│   │   └── usePetsList.ts
-│   ├── pages/
-│   │   ├── AdminDashboard.tsx
-│   │   ├── AdminPetProfile.tsx ← Ficha + timeline
-│   │   ├── AdminAuth.tsx
-│   │   └── ClientPortal.tsx
-│   └── integrations/supabase/
-│       ├── client.ts
-│       └── types.ts
-└── supabase/migrations/    ← SQL para criar/atualizar o banco
+├── AgendaVetWeb/             # Painel Admin (Next.js)
+├── AgendaVetTutor/           # App do Tutor (Expo/Mobile)
+└── AgendaVetVet/             # App do Vet (Expo/Mobile)
 ```
