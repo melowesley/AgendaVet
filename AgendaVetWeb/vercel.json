@@ -1,4 +1,34 @@
 {
     "name": "agendavet-web",
-    "framework": "nextjs"
+    "framework": "nextjs",
+    "rewrites": [
+      {
+        "source": "/app/tutor",
+        "destination": "/redirect/tutor"
+      },
+      {
+        "source": "/app/vet",
+        "destination": "/redirect/vet"
+      },
+      {
+        "source": "/tutor/:path*",
+        "destination": "/tutor-web/:path*"
+      },
+      {
+        "source": "/vet/:path*",
+        "destination": "/vet-web/:path*"
+      }
+    ],
+    "redirects": [
+      {
+        "source": "/tutor",
+        "destination": "/redirect/tutor",
+        "permanent": false
+      },
+      {
+        "source": "/vet",
+        "destination": "/redirect/vet",
+        "permanent": false
+      }
+    ]
 }
