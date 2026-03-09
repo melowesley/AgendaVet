@@ -42,7 +42,22 @@ export function AssistantContent() {
   const [input, setInput] = useState('')
   const [clinicalMode, setClinicalMode] = useState(false)
   const [selectedPetId, setSelectedPetId] = useState<string>('none')
+  const [brainModel, setBrainModel] = useState<'gemini' | 'deepseek'>('gemini')
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Carrega a preferência do modelo do localStorage ao montar
+  useEffect(() => {
+    const savedModel = localStorage.getItem('agendavet-brain-model')
+    if (savedModel === 'gemini' || savedModel === 'deepseek') {
+      setBrainModel(savedModel as 'gemini' | 'deepseek')
+    }
+  }, [])
+
+  // Salva a preferência sempre que mudar
+  const handleModelChange = (model: 'gemini' | 'deepseek') => {
+    setBrainModel(model)
+    localStorage.setItem('agendavet-brain-model', model)
+  }
 
   // Build context about the clinic data
   const clinicContext = `
@@ -57,13 +72,13 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
 `
 
   const { messages, sendMessage, status, setMessages } = useChat({
-    transport: new DefaultChatTransport({ 
+    transport: new DefaultChatTransport({
       api: '/api/chat',
       body: {
-        model: clinicalMode ? 'gemini-1.5-pro' : settings.model,
+        model: brainModel === 'deepseek' ? 'deepseek' : (clinicalMode ? 'gemini-1.5-pro' : settings.model),
         temperature: clinicalMode ? 0.3 : settings.temperature,
-        systemPrompt: clinicalMode 
-          ? 'Você é o Vet Copilot, assistente clínico veterinário.' 
+        systemPrompt: clinicalMode
+          ? 'Você é o Vet Copilot, assistente clínico veterinário.'
           : settings.systemPrompt + '\n\n' + clinicContext,
         mode: clinicalMode ? 'clinical' : 'admin',
         petId: clinicalMode && selectedPetId !== 'none' ? selectedPetId : undefined,
@@ -115,6 +130,24 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
                 {clinicalMode ? 'Vet Copilot (Clínico)' : settings.model.split('/').pop()}
               </span>
               {clinicalMode && <Stethoscope className="size-4 text-green-500" />}
+              <div className="ml-2 flex bg-muted rounded-md p-0.5 scale-90">
+                <Button
+                  variant={brainModel === 'gemini' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={() => handleModelChange('gemini')}
+                >
+                  Gemini
+                </Button>
+                <Button
+                  variant={brainModel === 'deepseek' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={() => handleModelChange('deepseek')}
+                >
+                  DeepSeek
+                </Button>
+              </div>
             </div>
             <div className="flex gap-1 shrink-0 items-center">
               <div className="flex items-center gap-2 mr-2">
@@ -147,7 +180,7 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
                   {clinicalMode ? 'Modo Clínico Ativado' : 'How can I help you today?'}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-md mt-1">
-                  {clinicalMode 
+                  {clinicalMode
                     ? 'Selecione um paciente para consultar dados clínicos, histórico médico, vacinas e mais.'
                     : 'I can help with patient info, appointments, medical records, and veterinary questions.'}
                 </p>
@@ -171,7 +204,7 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
                 <div className="flex flex-wrap justify-center gap-2 mt-4 md:mt-6">
                   {clinicalMode ? [
                     "Histórico médico",
-                    "Status vacinal", 
+                    "Status vacinal",
                     "Medicações atuais",
                     "Calcular dose",
                   ].map((suggestion) => (
@@ -284,10 +317,10 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
               rows={1}
               disabled={isLoading}
             />
-            <Button 
-              type="submit" 
-              size="icon" 
-              className="shrink-0" 
+            <Button
+              type="submit"
+              size="icon"
+              className="shrink-0"
               disabled={isLoading || !input.trim() || (clinicalMode && selectedPetId === 'none')}
             >
               <Send className="size-4" />

@@ -10,18 +10,25 @@
 
 import { streamText, convertToModelMessages, UIMessage } from 'ai'
 import { google } from '@ai-sdk/google'
+import { createOpenAI } from '@ai-sdk/openai'
 import { z } from 'zod'
-import { 
-  getPetInfo, 
-  getMedicalHistory, 
+import {
+  getPetInfo,
+  getMedicalHistory,
   getVaccinationStatus,
   getCurrentMedications,
   getRecentExams,
   calculateMedicationDosage,
-  searchClinicalKnowledge 
+  searchClinicalKnowledge
 } from '@/lib/vet-copilot/tools'
 import { VET_COPILOT_SYSTEM_PROMPT, generatePetContext } from '@/lib/vet-copilot/system-prompt'
 import { createClient } from '@supabase/supabase-js'
+
+// Provedores de modelos
+const deepseekProvider = createOpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY,
+  baseURL: 'https://api.deepseek.com',
+})
 
 // Inicializa cliente Supabase para server-side
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -29,17 +36,17 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export async function POST(req: Request) {
   const startTime = Date.now()
-  
+
   try {
     const body = await req.json()
-    const { 
-      messages, 
-      model, 
-      temperature, 
+    const {
+      messages,
+      model,
+      temperature,
       systemPrompt,
       mode = 'admin', // 'admin' | 'clinical'
       petId,
-    }: { 
+    }: {
       messages: UIMessage[]
       model?: string
       temperature?: number
@@ -56,11 +63,42 @@ export async function POST(req: Request) {
       )
     }
 
-    // Modo Clinical: Vet Copilot com tools
-    if (mode === 'clinical') {
-      // Inicializa modelo Google Gemini
-      const modelName = model || 'gemini-1.5-pro'
-      const geminiModel = google(modelName)
+    // 1. Orquestrador: Classificação de Intenção
+    let detectedMode = mode;
+
+    if (mode === 'admin') {
+      try {
+        const lastMessage = messages[messages.length - 1];
+        const content = lastMessage.parts
+          ? (lastMessage as any).parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join(' ')
+          : (lastMessage as any).content || (lastMessage as any).text || '';
+
+        const clinicalKeywords = ['peso', 'sintoma', 'remédio', 'medicação', 'dose', 'dosagem', 'exame', 'vacina', 'histórico', 'médico', 'clínico', 'doença', 'tratamento'];
+        const isLikelyClinical = clinicalKeywords.some(kw => content.toLowerCase().includes(kw));
+
+        if (isLikelyClinical) {
+          detectedMode = 'clinical';
+          console.log('[Orchestrator] Detected CLINICAL intent via keywords');
+        }
+      } catch (err) {
+        console.warn('[Orchestrator] Intent classification failed:', err);
+      }
+    }
+
+    // Determina o modelo e motor de cálculo baseado no modo (detectado ou solicitado)
+    let modelInstance;
+    let calculatorEngine: 'gemini' | 'deepseek' = 'deepseek';
+
+    if (detectedMode === 'clinical') {
+      modelInstance = deepseekProvider('deepseek-chat');
+      calculatorEngine = 'gemini';
+    } else {
+      modelInstance = google('gemini-2.5-pro');
+      calculatorEngine = 'deepseek';
+    }
+
+    // Modo Clinical: Vet Copilot com tools e cérebro DeepSeek
+    if (detectedMode === 'clinical') {
       const temp = temperature ?? 0.3
 
       // Contexto do pet (se fornecido)
@@ -68,7 +106,7 @@ export async function POST(req: Request) {
       if (petId) {
         try {
           const supabase = createClient(supabaseUrl, supabaseServiceKey)
-          
+
           const { data: pet } = await supabase
             .from('pets')
             .select('*, profiles:user_id (full_name, phone, email)')
@@ -97,8 +135,7 @@ export async function POST(req: Request) {
         }
       }
 
-      // System prompt completo para modo clínico
-      const clinicalSystemPrompt = `${VET_COPILOT_SYSTEM_PROMPT}\n\n${petContext}`
+      const clinicalSystemPrompt = `${VET_COPILOT_SYSTEM_PROMPT}\n\nVocê é o Subagente Clínico Especializado alimentado pelo DeepSeek. Seu foco é precisão técnica, lógica médica e uso de ferramentas clínicas.\n\n${petContext}`
 
       // Define as tools disponíveis para o modelo
       const tools = {
@@ -108,7 +145,6 @@ export async function POST(req: Request) {
             petId: z.string().uuid().describe('ID do pet no sistema'),
           }),
           async execute({ petId }: { petId: string }) {
-            console.log(`[Tool] get_pet_info for petId: ${petId}`)
             return await getPetInfo({ petId })
           },
         },
@@ -119,7 +155,6 @@ export async function POST(req: Request) {
             petId: z.string().uuid().describe('ID do pet no sistema'),
           }),
           async execute({ petId }: { petId: string }) {
-            console.log(`[Tool] get_medical_history for petId: ${petId}`)
             return await getMedicalHistory({ petId })
           },
         },
@@ -130,7 +165,6 @@ export async function POST(req: Request) {
             petId: z.string().uuid().describe('ID do pet no sistema'),
           }),
           async execute({ petId }: { petId: string }) {
-            console.log(`[Tool] get_vaccination_status for petId: ${petId}`)
             return await getVaccinationStatus({ petId })
           },
         },
@@ -141,7 +175,6 @@ export async function POST(req: Request) {
             petId: z.string().uuid().describe('ID do pet no sistema'),
           }),
           async execute({ petId }: { petId: string }) {
-            console.log(`[Tool] get_current_medications for petId: ${petId}`)
             return await getCurrentMedications({ petId })
           },
         },
@@ -152,7 +185,6 @@ export async function POST(req: Request) {
             petId: z.string().uuid().describe('ID do pet no sistema'),
           }),
           async execute({ petId }: { petId: string }) {
-            console.log(`[Tool] get_recent_exams for petId: ${petId}`)
             return await getRecentExams({ petId })
           },
         },
@@ -167,15 +199,14 @@ export async function POST(req: Request) {
             condition: z.string().optional().describe('Condição especial do paciente (ex: renal, hepático, geriátrico)'),
             age: z.string().optional().describe('Idade ou faixa etária (ex: 3 anos, filhote, idoso)'),
           }),
-          async execute(params: { 
-            medication: string; 
-            weight: number; 
+          async execute(params: {
+            medication: string;
+            weight: number;
             species: 'canine' | 'feline' | 'avian' | 'reptile' | 'rodent' | 'other';
             condition?: string;
             age?: string;
           }) {
-            console.log(`[Tool] calculate_medication_dosage for: ${params.medication}, ${params.weight}kg`)
-            return await calculateMedicationDosage(params)
+            return await calculateMedicationDosage({ ...params, calculatorEngine })
           },
         },
 
@@ -187,15 +218,13 @@ export async function POST(req: Request) {
             limit: z.number().default(5).describe('Número máximo de resultados'),
           }),
           async execute(params: { query: string; species?: string; limit: number }) {
-            console.log(`[Tool] search_clinical_knowledge for: ${params.query}`)
             return await searchClinicalKnowledge({ ...params, limit: params.limit || 5 })
           },
         },
       }
 
-      // Executa streaming com tools
       const result = streamText({
-        model: geminiModel,
+        model: modelInstance,
         system: clinicalSystemPrompt,
         messages: await convertToModelMessages(messages),
         temperature: temp,
@@ -204,28 +233,28 @@ export async function POST(req: Request) {
         onFinish: ({ usage }) => {
           const duration = Date.now() - startTime
           console.log(`[Clinical Mode] Request completed in ${duration}ms`)
-          console.log(`[Clinical Mode] Usage:`, usage)
         },
       })
 
-      return result.toTextStreamResponse()
+      return result.toUIMessageStreamResponse()
     }
 
-    // Modo Admin: Assistente geral (padrão)
+    // Modo Admin: Assistente geral com Gemini 2.5 Pro
     const result = streamText({
-      model: model || 'anthropic/claude-opus-4.5',
-      system: systemPrompt || 'You are a helpful veterinary assistant.',
+      model: modelInstance,
+      system: systemPrompt || 'You are a helpful veterinary administrative assistant powered by Gemini. You manage schedules, pricing, and general questions.',
       messages: await convertToModelMessages(messages),
       temperature: temperature ?? 0.7,
     })
+
 
     return result.toUIMessageStreamResponse()
 
   } catch (error) {
     console.error('[Chat API] Error:', error)
-    
+
     return Response.json(
-      { 
+      {
         error: 'Internal server error',
         message: error instanceof Error ? error.message : 'Unknown error',
       },

@@ -41,6 +41,8 @@ const modelOptions = [
   { value: 'openai/gpt-4o', label: 'GPT-4o', provider: 'OpenAI' },
   { value: 'openai/gpt-4o-mini', label: 'GPT-4o Mini', provider: 'OpenAI' },
   { value: 'xai/grok-3', label: 'Grok 3', provider: 'xAI' },
+  { value: 'deepseek/deepseek-chat', label: 'DeepSeek Chat', provider: 'DeepSeek' },
+  { value: 'deepseek/deepseek-coder', label: 'DeepSeek Coder', provider: 'DeepSeek' },
 ]
 
 export function AgentSettingsDialog({ open, onOpenChange }: AgentSettingsDialogProps) {
