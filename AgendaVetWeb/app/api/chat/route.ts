@@ -63,6 +63,14 @@ export async function POST(req: Request) {
       )
     }
 
+    // Validar estrutura das mensagens para evitar erro no convertToModelMessages
+    if (!messages.every(msg => msg && typeof msg === 'object' && 'content' in msg && 'role' in msg)) {
+      return Response.json(
+        { error: 'Invalid message format. Each message must have content and role properties.' },
+        { status: 400 }
+      )
+    }
+
     // Determina o modelo e provedor a ser usado
     let modelInstance;
     const modelRequested = model || (mode === 'clinical' ? 'gemini-1.5-pro' : 'gemini-1.5-flash');
@@ -208,31 +216,53 @@ export async function POST(req: Request) {
         },
       }
 
-      const result = streamText({
-        model: modelInstance,
-        system: clinicalSystemPrompt,
-        messages: await convertToModelMessages(messages),
-        temperature: temp,
-        tools: tools,
-        toolChoice: 'auto',
-        onFinish: ({ usage }) => {
-          const duration = Date.now() - startTime
-          console.log(`[Clinical Mode] Request completed in ${duration}ms`)
-        },
-      })
+      try {
+        const result = streamText({
+          model: modelInstance,
+          system: clinicalSystemPrompt,
+          messages: await convertToModelMessages(messages),
+          temperature: temp,
+          tools: tools,
+          toolChoice: 'auto',
+          onFinish: ({ usage }) => {
+            const duration = Date.now() - startTime
+            console.log(`[Clinical Mode] Request completed in ${duration}ms`)
+          },
+        })
 
-      return result.toUIMessageStreamResponse()
+        return result.toUIMessageStreamResponse()
+      } catch (conversionError) {
+        console.error('[Chat API] Error converting messages in clinical mode:', conversionError)
+        return Response.json(
+          {
+            error: 'Failed to process messages',
+            message: conversionError instanceof Error ? conversionError.message : 'Unknown conversion error',
+          },
+          { status: 500 }
+        )
+      }
     }
 
     // Modo Admin: Assistente geral (padrão)
-    const result = streamText({
-      model: modelInstance,
-      system: systemPrompt || 'You are a helpful veterinary assistant.',
-      messages: await convertToModelMessages(messages),
-      temperature: temperature ?? 0.7,
-    })
+    try {
+      const result = streamText({
+        model: modelInstance,
+        system: systemPrompt || 'You are a helpful veterinary assistant.',
+        messages: await convertToModelMessages(messages),
+        temperature: temperature ?? 0.7,
+      })
 
-    return result.toUIMessageStreamResponse()
+      return result.toUIMessageStreamResponse()
+    } catch (conversionError) {
+      console.error('[Chat API] Error converting messages in admin mode:', conversionError)
+      return Response.json(
+        {
+          error: 'Failed to process messages',
+          message: conversionError instanceof Error ? conversionError.message : 'Unknown conversion error',
+        },
+        { status: 500 }
+      )
+    }
 
   } catch (error) {
     console.error('[Chat API] Error:', error)
