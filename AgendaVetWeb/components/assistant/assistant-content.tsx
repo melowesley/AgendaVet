@@ -124,7 +124,7 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
             <div className="flex items-center gap-2 text-sm md:text-base min-w-0">
               <Bot className="size-4 md:size-5 text-primary shrink-0" />
               <span className="truncate">
-                {clinicalMode ? 'Vet Copilot (Clínico)' : settings.model.split('/').pop()}
+                {clinicalMode ? 'Vet Copilot (Clínico)' : (brainModel === 'deepseek' ? 'DeepSeek Chat' : 'Gemini 1.5 Pro')}
               </span>
               {clinicalMode && <Stethoscope className="size-4 text-green-500" />}
               <div className="ml-2 flex bg-muted rounded-md p-0.5 scale-90">
