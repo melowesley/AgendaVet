@@ -5,14 +5,14 @@
  * Estas tools são executadas no servidor e retornam dados estruturados para o modelo.
  */
 
-import { supabase } from '../supabase/service';
+import { supabase } from '@/lib/supabase/client';
 import { z } from 'zod';
 import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { google } from '@ai-sdk/google';
 
 const deepseek = createOpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY || process.env.EXPO_PUBLIC_DEEPSEEK_API_KEY,
+  apiKey: process.env.DEEPSEEK_API_KEY,
   baseURL: 'https://api.deepseek.com',
 });
 

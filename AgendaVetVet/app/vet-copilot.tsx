@@ -70,7 +70,8 @@ export default function VetCopilotScreen() {
 
     try {
       // Simular resposta da API (implementação real usaria fetch streaming)
-      const response = await fetch('/api/vet-copilot', {
+      const response = await fetch('/api/chat', {
+
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -94,7 +95,7 @@ export default function VetCopilotScreen() {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          
+
           // Decodificar e processar chunks
           const chunk = new TextDecoder().decode(value);
           assistantContent += chunk;

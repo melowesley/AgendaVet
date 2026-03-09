@@ -2,6 +2,7 @@ import { google } from '@ai-sdk/google'
 import { openai } from '@ai-sdk/openai'
 import { anthropic } from '@ai-sdk/anthropic'
 import type { ModelConfig, ProviderName } from './types'
+import { AI_MODELS } from '@agendavet/shared/constants'
 
 export const MODEL_CATALOG: Record<string, ModelConfig> = {
   'gemini-2.0-flash': {

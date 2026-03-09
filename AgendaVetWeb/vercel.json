@@ -1,6 +1,7 @@
 {
     "name": "agendavet-web",
     "framework": "nextjs",
+    "rootDirectory": ".",
     "rewrites": [
       {
         "source": "/app/tutor",

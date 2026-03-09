@@ -1,4 +1,4 @@
-import { createServiceSupabaseClient } from '../supabase/service'
+import { createServiceSupabaseClient } from '@/lib/supabase/service'
 import type { ClinicPlan, PlanQuota } from './types'
 import { MODEL_CATALOG } from './ai-gateway'
 
