@@ -1,5 +1,5 @@
 /**
- * Assistente IA - API Route para AgendaVetVet (Expo Router)
+ * Assistente IA - Vercel Serverless Function para AgendaVetVet
  * 
  * Endpoint: /api/chat
  */
@@ -16,8 +16,8 @@ import {
     getRecentExams,
     calculateMedicationDosage,
     searchClinicalKnowledge
-} from '../../lib/vet-copilot/tools'
-import { VET_COPILOT_SYSTEM_PROMPT, generatePetContext } from '../../lib/vet-copilot/system-prompt'
+} from '../lib/vet-copilot/tools'
+import { VET_COPILOT_SYSTEM_PROMPT, generatePetContext } from '../lib/vet-copilot/system-prompt'
 
 import { createClient } from '@supabase/supabase-js'
 
@@ -56,13 +56,16 @@ export async function POST(req: Request) {
             return Response.json({ error: 'Messages array is required' }, { status: 400 })
         }
 
-        // Preparar mensagens com try-catch
+        // Preparar mensagens com try-catch e logs
         let modelMessages;
         try {
             modelMessages = await convertToModelMessages(messages);
         } catch (msgError) {
             console.error('[Chat API] Message conversion error:', msgError);
-            return Response.json({ error: 'Failed to convert messages format' }, { status: 400 });
+            return Response.json({
+                error: 'Failed to convert messages format',
+                details: msgError instanceof Error ? msgError.message : String(msgError)
+            }, { status: 400 });
         }
 
         // 1. Orquestrador: Classificação de Intenção
