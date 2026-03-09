@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@agendavet/shared": "file:../shared",
     "@ai-sdk/anthropic": "^3.0.58",
     "@ai-sdk/google": "^3.0.43",
     "@ai-sdk/openai": "^3.0.41",
@@ -55,7 +56,7 @@
     "framer-motion": "^12.35.0",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
-    "next": "16.0.10",
+    "next": "^16.1.6",
     "next-themes": "^0.4.6",
     "openai": "^6.27.0",
     "react": "19.2.4",

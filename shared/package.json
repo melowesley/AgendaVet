@@ -1,0 +1,58 @@
+{
+  "name": "@agendavet/shared",
+  "version": "1.0.0",
+  "description": "Tipos, utilitários e constantes compartilhados do AgendaVet",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint . --ext .ts,.tsx",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.15",
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "files": [
+    "*.ts",
+    "*.js",
+    "*.d.ts"
+  ],
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "import": "./index.ts"
+    },
+    "./types": {
+      "types": "./types.ts",
+      "import": "./types.ts"
+    },
+    "./utils": {
+      "types": "./utils.ts",
+      "import": "./utils.ts"
+    },
+    "./constants": {
+      "types": "./constants.ts",
+      "import": "./constants.ts"
+    }
+  },
+  "keywords": [
+    "veterinary",
+    "crm",
+    "shared",
+    "types",
+    "utilities"
+  ],
+  "author": "AgendaVet Team",
+  "license": "MIT"
+}
