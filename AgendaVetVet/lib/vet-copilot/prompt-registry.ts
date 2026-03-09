@@ -1,4 +1,4 @@
-import { createServiceSupabaseClient } from '../supabase/service'
+import { createServiceSupabaseClient } from '@/lib/supabase/service'
 import { VET_COPILOT_SYSTEM_PROMPT } from './system-prompt'
 
 export const promptRegistry = {

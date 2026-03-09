@@ -11,10 +11,13 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { MessageSquare, Send, Bot, User, Stethoscope, FileText, Syringe, Pill, AlertCircle, Loader2, PanelLeftOpen, Plus } from 'lucide-react'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { MessageSquare, Send, Bot, User, Stethoscope, FileText, Syringe, Pill, AlertCircle, Loader2, PanelLeftOpen, Plus, Brain, Camera, Zap, BookOpen, Heart, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ReactMarkdown from 'react-markdown'
 import { ConversationSidebar } from './conversation-sidebar'
+import { VET_MODEL_SPECIALIZATIONS } from '@/lib/vet-copilot/model-specializations'
+import { AI_MODELS } from '@agendavet/shared/constants'
 
 const CLINICAL_SUGGESTIONS = [
   { icon: FileText, label: 'Resumir historico', prompt: 'Resuma o historico clinico completo deste paciente' },
@@ -40,9 +43,12 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
   const { pets } = usePets()
   const { owners } = useOwners()
   const [selectedPetId, setSelectedPetId] = useState<string | null>(initialPetId || null)
+  const [selectedModel, setSelectedModel] = useState<string>('auto')
   const [input, setInput] = useState('')
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showCostWarning, setShowCostWarning] = useState(false)
+  const [pendingModel, setPendingModel] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const { messages, sendMessage, status, setMessages } = useChat({
@@ -51,11 +57,36 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
       body: {
         petId: selectedPetId,
         conversationId,
+        model: selectedModel === 'auto' ? undefined : selectedModel,
       },
     }),
   })
 
   const isLoading = status === 'streaming' || status === 'submitted'
+
+  const handleModelChange = (model: string) => {
+    const premiumModels = ['claude-sonnet', 'gpt-4o', 'gemini-2.5-pro', 'gemini-1.5-pro']
+
+    if (premiumModels.includes(model)) {
+      setPendingModel(model)
+      setShowCostWarning(true)
+    } else {
+      setSelectedModel(model)
+    }
+  }
+
+  const confirmPremiumModel = () => {
+    if (pendingModel) {
+      setSelectedModel(pendingModel)
+      setPendingModel(null)
+      setShowCostWarning(false)
+    }
+  }
+
+  const cancelPremiumModel = () => {
+    setPendingModel(null)
+    setShowCostWarning(false)
+  }
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -173,6 +204,121 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
                   ))}
                 </SelectContent>
               </Select>
+
+              <Select
+                value={selectedModel}
+                onValueChange={handleModelChange}
+              >
+                <SelectTrigger className="w-[140px] md:w-[160px] text-sm">
+                  <SelectValue placeholder="Modelo AI" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-2">
+                        <span>🔄 Automático</span>
+                        <Badge variant="outline" className="text-xs">Grátis</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">Seleção inteligente baseada na tarefa</span>
+                    </div>
+                  </SelectItem>
+                  
+                  {/* Modelos Gratuitos */}
+                  <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">Modelos Gratuitos</div>
+                  
+                  <SelectItem value="deepseek-r1">
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-2">
+                        <Brain className="size-4" />
+                        <span>DeepSeek R1</span>
+                        <Badge variant="secondary" className="text-xs">Grátis</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">Raciocínio Clínico - Diagnóstico diferencial</span>
+                    </div>
+                  </SelectItem>
+                  
+                  <SelectItem value="gemini-2.0-flash">
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-2">
+                        <Zap className="size-4" />
+                        <span>Gemini 2.0 Flash</span>
+                        <Badge variant="secondary" className="text-xs">Grátis</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">Emergências - Triagem rápida</span>
+                    </div>
+                  </SelectItem>
+                  
+                  <SelectItem value="gemini-2.5-flash">
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-2">
+                        <Activity className="size-4" />
+                        <span>Gemini 2.5 Flash</span>
+                        <Badge variant="secondary" className="text-xs">Grátis</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">Análise Laboratorial - Exames</span>
+                    </div>
+                  </SelectItem>
+                  
+                  <SelectItem value="gemini-1.5-flash">
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-2">
+                        <Heart className="size-4" />
+                        <span>Gemini 1.5 Flash</span>
+                        <Badge variant="secondary" className="text-xs">Grátis</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">Medicina Preventiva - Wellness</span>
+                    </div>
+                  </SelectItem>
+                  
+                  {/* Modelos Premium */}
+                  <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">Modelos Premium</div>
+                  
+                  <SelectItem value="gemini-2.5-pro">
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="size-4" />
+                        <span>Gemini 2.5 Pro</span>
+                        <Badge variant="destructive" className="text-xs">$</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">Pesquisa - Literatura científica</span>
+                    </div>
+                  </SelectItem>
+                  
+                  <SelectItem value="gemini-1.5-pro">
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="size-4" />
+                        <span>Gemini 1.5 Pro</span>
+                        <Badge variant="destructive" className="text-xs">$</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">Terapia Intensiva - UTI</span>
+                    </div>
+                  </SelectItem>
+                  
+                  <SelectItem value="claude-sonnet">
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-2">
+                        <Camera className="size-4" />
+                        <span>Claude Sonnet</span>
+                        <Badge variant="destructive" className="text-xs">$</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">Análise de Imagens - Radiografias</span>
+                    </div>
+                  </SelectItem>
+                  
+                  <SelectItem value="gpt-4o">
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="size-4" />
+                        <span>GPT-4o</span>
+                        <Badge variant="destructive" className="text-xs">$</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">Planejamento Cirúrgico</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -324,6 +470,44 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
           </form>
         </CardContent>
       </Card>
+
+      <AlertDialog open={showCostWarning} onOpenChange={setShowCostWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Modelo Premium Selecionado</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você selecionou um modelo que consome créditos pagos. 
+              Este modelo será cobrado por uso real, independente de ser usado como primário ou fallback.
+              <br /><br />
+              <strong>Modelo selecionado:</strong> {
+                pendingModel === 'claude-sonnet' ? 'Claude Sonnet (Anthropic) - Análise de Imagens' :
+                pendingModel === 'gpt-4o' ? 'GPT-4o (OpenAI) - Planejamento Cirúrgico' :
+                pendingModel === 'gemini-2.5-pro' ? 'Gemini 2.5 Pro (Google) - Pesquisa Veterinária' :
+                pendingModel === 'gemini-1.5-pro' ? 'Gemini 1.5 Pro (Google) - Terapia Intensiva' :
+                'Modelo Premium'
+              }
+              <br />
+              <strong>Custo aproximado:</strong> {
+                pendingModel === 'claude-sonnet' ? '$0.003/1k input + $0.015/1k output' :
+                pendingModel === 'gpt-4o' ? '$0.0025/1k input + $0.01/1k output' :
+                pendingModel === 'gemini-2.5-pro' ? '$0.00125/1k input + $0.005/1k output' :
+                pendingModel === 'gemini-1.5-pro' ? '$0.00125/1k input + $0.005/1k output' :
+                'Custo premium'
+              }
+              <br /><br />
+              Deseja continuar mesmo assim?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelPremiumModel}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPremiumModel}>
+              Confirmar e Usar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
