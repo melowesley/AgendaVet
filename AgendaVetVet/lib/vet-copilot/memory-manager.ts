@@ -1,4 +1,4 @@
-import { createServiceSupabaseClient } from '../../../supabase/service'
+import { createServiceSupabaseClient } from '../supabase/service'
 import { generateText } from 'ai'
 import { google } from '@ai-sdk/google'
 import type { ConversationMessage } from './types'

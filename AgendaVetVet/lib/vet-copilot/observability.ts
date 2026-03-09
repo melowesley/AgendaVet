@@ -1,4 +1,4 @@
-import { createServiceSupabaseClient } from '../../../supabase/service'
+import { createServiceSupabaseClient } from '../supabase/service'
 import { costController } from './cost-controller'
 import type { UsageEvent } from './types'
 

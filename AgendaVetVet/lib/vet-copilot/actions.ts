@@ -1,4 +1,4 @@
-import { createServiceSupabaseClient } from '../../../supabase/service'
+import { createServiceSupabaseClient } from '../supabase/service'
 import type { ClinicalActionPreview } from './types'
 import { observability } from './observability'
 
