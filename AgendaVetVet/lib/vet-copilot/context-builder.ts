@@ -1,4 +1,4 @@
-import { createServiceSupabaseClient } from '@/lib/supabase/service'
+import { createServiceSupabaseClient } from '../../../supabase/service'
 
 export const contextBuilder = {
   async build(

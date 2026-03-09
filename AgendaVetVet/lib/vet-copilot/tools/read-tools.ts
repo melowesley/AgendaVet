@@ -1,4 +1,4 @@
-import { createServiceSupabaseClient } from '@/lib/supabase/service'
+import { createServiceSupabaseClient } from '../../../supabase/service'
 import { z } from 'zod'
 
 const PetIdSchema = z.object({

@@ -1,4 +1,4 @@
-import { createServiceSupabaseClient } from '@/lib/supabase/service'
+import { createServiceSupabaseClient } from '../../../supabase/service'
 import { google } from '@ai-sdk/google'
 import { embed } from 'ai'
 
