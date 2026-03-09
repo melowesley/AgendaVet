@@ -5,8 +5,8 @@
  */
 
 import { streamText, convertToModelMessages, UIMessage } from 'ai'
-import { google } from '@ai-sdk/google'
 import { createOpenAI } from '@ai-sdk/openai'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { z } from 'zod'
 import {
     getPetInfo,
@@ -18,41 +18,39 @@ import {
     searchClinicalKnowledge
 } from '../lib/vet-copilot/tools'
 import { VET_COPILOT_SYSTEM_PROMPT, generatePetContext } from '../lib/vet-copilot/system-prompt'
-
 import { createClient } from '@supabase/supabase-js'
-
-// Provedores de modelos
-const deepseekProvider = createOpenAI({
-    apiKey: process.env.DEEPSEEK_API_KEY || process.env.EXPO_PUBLIC_DEEPSEEK_API_KEY,
-    baseURL: 'https://api.deepseek.com',
-})
-
-// Configuração explícita do Google para aceitar prefixos Expo
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
-const googleProvider = createGoogleGenerativeAI({
-    apiKey: process.env.GEMINI_API_KEY || process.env.EXPO_PUBLIC_GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY
-})
-
-
-// Inicializa cliente Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL! || process.env.EXPO_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export async function POST(req: Request) {
     const startTime = Date.now()
 
     try {
+        // 0. Validação de Variáveis de Ambiente
+        const deepseekKey = process.env.DEEPSEEK_API_KEY || process.env.EXPO_PUBLIC_DEEPSEEK_API_KEY;
+        const geminiKey = process.env.GEMINI_API_KEY || process.env.EXPO_PUBLIC_GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+
+        if (!deepseekKey || !geminiKey) {
+            return Response.json({
+                error: 'Configuration Error',
+                message: 'Missing API Keys',
+                debug: {
+                    hasDeepseek: !!deepseekKey,
+                    hasGemini: !!geminiKey,
+                    envKeys: Object.keys(process.env).filter(k => k.includes('KEY') || k.includes('API'))
+                }
+            }, { status: 500 });
+        }
+
         const body = await req.json()
         const {
             messages,
-            model,
             temperature,
             systemPrompt,
             mode = 'admin',
             petId,
         }: {
             messages: UIMessage[]
-            model?: string
             temperature?: number
             systemPrompt?: string
             mode?: 'admin' | 'clinical'
@@ -63,41 +61,42 @@ export async function POST(req: Request) {
             return Response.json({ error: 'Messages array is required' }, { status: 400 })
         }
 
-        // Preparar mensagens com try-catch e logs
+        // Provedores
+        const deepseekProvider = createOpenAI({
+            apiKey: deepseekKey,
+            baseURL: 'https://api.deepseek.com',
+        });
+        const googleProvider = createGoogleGenerativeAI({
+            apiKey: geminiKey
+        });
+
+        // Preparar mensagens
         let modelMessages;
         try {
             modelMessages = await convertToModelMessages(messages);
         } catch (msgError) {
-            console.error('[Chat API] Message conversion error:', msgError);
             return Response.json({
-                error: 'Failed to convert messages format',
-                details: msgError instanceof Error ? msgError.message : String(msgError)
+                error: 'Format Error',
+                message: msgError instanceof Error ? msgError.message : String(msgError)
             }, { status: 400 });
         }
 
         // 1. Orquestrador: Classificação de Intenção
         let detectedMode = mode;
-
         if (mode === 'admin') {
             try {
                 const lastMessage = messages[messages.length - 1];
-                const content = lastMessage.parts
-                    ? (lastMessage as any).parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join(' ')
-                    : (lastMessage as any).content || (lastMessage as any).text || '';
-
+                const content = (lastMessage.content || '').toLowerCase();
                 const clinicalKeywords = ['peso', 'sintoma', 'remédio', 'medicação', 'dose', 'dosagem', 'exame', 'vacina', 'histórico', 'médico', 'clínico', 'doença', 'tratamento'];
-                const isLikelyClinical = clinicalKeywords.some(kw => content.toLowerCase().includes(kw));
-
-                if (isLikelyClinical) {
+                if (clinicalKeywords.some(kw => content.includes(kw))) {
                     detectedMode = 'clinical';
-                    console.log('[Orchestrator] Detected CLINICAL intent via keywords');
                 }
             } catch (err) {
-                console.warn('[Orchestrator] Intent classification failed:', err);
+                console.warn('[Orchestrator] Intent classification failed', err);
             }
         }
 
-        // Determina o modelo e motor de cálculo baseado no modo (detectado ou solicitado)
+        // Determina o modelo
         let modelInstance;
         let calculatorEngine: 'gemini' | 'deepseek' = 'deepseek';
 
@@ -109,13 +108,10 @@ export async function POST(req: Request) {
             calculatorEngine = 'deepseek';
         }
 
-
-        // Modo Clinical: Vet Copilot com tools e cérebro DeepSeek
+        // Modo Clinical
         if (detectedMode === 'clinical') {
-            const temp = temperature ?? 0.3
             let petContext = ''
-
-            if (petId) {
+            if (petId && supabaseUrl && supabaseServiceKey) {
                 try {
                     const supabase = createClient(supabaseUrl, supabaseServiceKey)
                     const { data: pet } = await supabase
@@ -142,11 +138,11 @@ export async function POST(req: Request) {
                         })
                     }
                 } catch (ctxError) {
-                    console.warn('Failed to load pet context:', ctxError)
+                    console.warn('Context load failed', ctxError)
                 }
             }
 
-            const clinicalSystemPrompt = `${VET_COPILOT_SYSTEM_PROMPT}\n\nVocê é o Subagente Clínico Especializado (DeepSeek). Seu foco é precisão técnica e uso de ferramentas médicas.\n\n${petContext}`
+            const clinicalSystemPrompt = `${VET_COPILOT_SYSTEM_PROMPT}\n\nVocê é o Subagente Clínico Especializado (DeepSeek). Seu foco é precisão técnica.\n\n${petContext}`
 
             const tools = {
                 get_pet_info: {
@@ -175,13 +171,11 @@ export async function POST(req: Request) {
                     async execute({ petId }: { petId: string }) { return await getRecentExams({ petId }) },
                 },
                 calculate_medication_dosage: {
-                    description: 'Calcula dose de medicação baseada no peso e espécie',
+                    description: 'Calcula dose de medicação',
                     inputSchema: z.object({
                         medication: z.string(),
                         weight: z.number().positive(),
                         species: z.enum(['canine', 'feline', 'avian', 'reptile', 'rodent', 'other']),
-                        condition: z.string().optional(),
-                        age: z.string().optional(),
                     }),
                     async execute(params: any) { return await calculateMedicationDosage({ ...params, calculatorEngine }) },
                 },
@@ -189,7 +183,6 @@ export async function POST(req: Request) {
                     description: 'Busca em base de conhecimento veterinário',
                     inputSchema: z.object({
                         query: z.string(),
-                        species: z.string().optional(),
                         limit: z.number().default(5),
                     }),
                     async execute(params: any) { return await searchClinicalKnowledge(params) },
@@ -200,18 +193,15 @@ export async function POST(req: Request) {
                 model: modelInstance,
                 system: clinicalSystemPrompt,
                 messages: modelMessages,
-                temperature: temp,
+                temperature: temperature ?? 0.3,
                 tools: tools,
                 toolChoice: 'auto',
-                onFinish: () => {
-                    console.log(`[Clinical Mode] Request completed in ${Date.now() - startTime}ms`)
-                },
             })
 
             return result.toUIMessageStreamResponse()
         }
 
-        // Modo Admin: Assistente geral com Gemini 2.5 Pro
+        // Modo Admin
         const result = streamText({
             model: modelInstance,
             system: systemPrompt || 'You are a helpful veterinary administrative assistant (Gemini).',
@@ -224,12 +214,13 @@ export async function POST(req: Request) {
     } catch (error) {
         console.error('[Chat API] Fatal Error:', error)
         return Response.json({
-            error: 'Internal server error',
+            error: 'Server Error',
             message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined
         }, { status: 500 })
     }
 }
 
 export async function GET() {
-    return Response.json({ status: 'API is running. Use POST to chat.' })
+    return Response.json({ status: 'OK', version: '2.5.1' })
 }
