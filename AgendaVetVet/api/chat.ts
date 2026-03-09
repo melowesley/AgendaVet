@@ -23,9 +23,16 @@ import { createClient } from '@supabase/supabase-js'
 
 // Provedores de modelos
 const deepseekProvider = createOpenAI({
-    apiKey: process.env.DEEPSEEK_API_KEY,
+    apiKey: process.env.DEEPSEEK_API_KEY || process.env.EXPO_PUBLIC_DEEPSEEK_API_KEY,
     baseURL: 'https://api.deepseek.com',
 })
+
+// Configuração explícita do Google para aceitar prefixos Expo
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
+const googleProvider = createGoogleGenerativeAI({
+    apiKey: process.env.GEMINI_API_KEY || process.env.EXPO_PUBLIC_GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY
+})
+
 
 // Inicializa cliente Supabase
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL! || process.env.EXPO_PUBLIC_SUPABASE_URL!
@@ -98,9 +105,10 @@ export async function POST(req: Request) {
             modelInstance = deepseekProvider('deepseek-chat');
             calculatorEngine = 'gemini';
         } else {
-            modelInstance = google('gemini-2.5-pro');
+            modelInstance = googleProvider('gemini-2.5-pro');
             calculatorEngine = 'deepseek';
         }
+
 
         // Modo Clinical: Vet Copilot com tools e cérebro DeepSeek
         if (detectedMode === 'clinical') {
