@@ -2,6 +2,7 @@ import { google } from '@ai-sdk/google'
 import { openai, createOpenAI } from '@ai-sdk/openai'
 import { anthropic } from '@ai-sdk/anthropic'
 import type { ModelConfig, ProviderName } from './types'
+import { AI_MODELS } from '@agendavet/shared/constants'
 
 // DeepSeek provider (OpenAI-compatible) — baseURL must include /v1
 const deepseekProvider = createOpenAI({
