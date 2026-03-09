@@ -4,7 +4,6 @@ import React from "react"
 
 import { useRef, useEffect, useState } from 'react'
 import { useChat } from '@ai-sdk/react'
-import { DefaultChatTransport } from 'ai'
 import { useAgentSettings, usePets, useOwners, useAppointments } from '@/lib/data-store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -72,18 +71,16 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
 `
 
   const { messages, sendMessage, status, setMessages } = useChat({
-    transport: new DefaultChatTransport({
-      api: '/api/chat',
-      body: {
-        model: brainModel === 'deepseek' ? 'deepseek' : (clinicalMode ? 'gemini-1.5-pro' : settings.model),
-        temperature: clinicalMode ? 0.3 : settings.temperature,
-        systemPrompt: clinicalMode
-          ? 'Você é o Vet Copilot, assistente clínico veterinário.'
-          : settings.systemPrompt + '\n\n' + clinicContext,
-        mode: clinicalMode ? 'clinical' : 'admin',
-        petId: clinicalMode && selectedPetId !== 'none' ? selectedPetId : undefined,
-      },
-    }),
+    api: '/api/chat',
+    body: {
+      model: brainModel === 'deepseek' ? 'deepseek' : (clinicalMode ? 'gemini-1.5-pro' : settings.model),
+      temperature: clinicalMode ? 0.3 : settings.temperature,
+      systemPrompt: clinicalMode
+        ? 'Você é o Vet Copilot, assistente clínico veterinário.'
+        : settings.systemPrompt + '\n\n' + clinicContext,
+      mode: clinicalMode ? 'clinical' : 'admin',
+      petId: clinicalMode && selectedPetId !== 'none' ? selectedPetId : undefined,
+    },
   })
 
   const isLoading = status === 'streaming' || status === 'submitted'
