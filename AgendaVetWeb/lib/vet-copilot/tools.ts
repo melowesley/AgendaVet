@@ -7,6 +7,16 @@
 
 import { supabase } from '@/lib/supabase/client';
 import { z } from 'zod';
+import { generateText } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
+import { google } from '@ai-sdk/google';
+
+const deepseek = createOpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY,
+  baseURL: 'https://api.deepseek.com',
+});
+
+const gemini = google('gemini-1.5-pro');
 
 // Esquemas de validação para parâmetros das tools
 const PetIdSchema = z.object({
@@ -19,6 +29,7 @@ const MedicationCalculationSchema = z.object({
   species: z.enum(['canine', 'feline', 'avian', 'reptile', 'rodent', 'other']),
   condition: z.string().optional(),
   age: z.string().optional(),
+  calculatorEngine: z.enum(['gemini', 'deepseek']).default('deepseek'),
 });
 
 const SearchSchema = z.object({
@@ -77,21 +88,21 @@ export async function getMedicalHistory({ petId }: z.infer<typeof PetIdSchema>) 
       .select('*')
       .eq('pet_id', petId)
       .order('created_at', { ascending: false }),
-    
+
     // Exames
     supabase
       .from('pet_exams')
       .select('*')
       .eq('pet_id', petId)
       .order('created_at', { ascending: false }),
-    
+
     // Vacinas
     supabase
       .from('pet_vaccines')
       .select('*')
       .eq('pet_id', petId)
       .order('created_at', { ascending: false }),
-    
+
     // Prescrições/Medicações
     supabase
       .from('pet_prescriptions')
@@ -134,17 +145,17 @@ export async function getVaccinationStatus({ petId }: z.infer<typeof PetIdSchema
   }
 
   const vaccineList = vaccines || [];
-  
+
   // Analisa vacinas principais
   const coreVaccines = ['V8', 'V10', 'V10+Giardia', 'Gripe Canina', 'Raiva', 'Leishmaniose'];
   const lastVaccines: Record<string, { date: string; nextDose?: string }> = {};
-  
+
   vaccineList.forEach((v: any) => {
     const name = v.vaccine_name || v.name || 'Desconhecida';
-    const normalizedName = coreVaccines.find(cv => 
+    const normalizedName = coreVaccines.find(cv =>
       name.toLowerCase().includes(cv.toLowerCase())
     ) || name;
-    
+
     if (!lastVaccines[normalizedName]) {
       lastVaccines[normalizedName] = {
         date: v.created_at,
@@ -156,7 +167,7 @@ export async function getVaccinationStatus({ petId }: z.infer<typeof PetIdSchema
   // Verifica vacinas pendentes
   const pending: string[] = [];
   const today = new Date();
-  
+
   Object.entries(lastVaccines).forEach(([name, info]) => {
     if (info.nextDose && new Date(info.nextDose) < today) {
       pending.push(name);
@@ -191,15 +202,15 @@ export async function getCurrentMedications({ petId }: z.infer<typeof PetIdSchem
   }
 
   const meds = prescriptions || [];
-  
+
   // Filtra medicações provavelmente ativas (últimos 30 dias ou sem data de término)
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
+
   const currentMeds = meds.filter((p: any) => {
     const createdDate = new Date(p.created_at);
     const endDate = p.end_date ? new Date(p.end_date) : null;
-    
+
     // Considera ativa se criada nos últimos 30 dias e sem data de término ou término futuro
     return createdDate > thirtyDaysAgo && (!endDate || endDate > new Date());
   });
@@ -262,93 +273,44 @@ export async function calculateMedicationDosage({
   species,
   condition,
   age,
+  calculatorEngine = 'deepseek',
 }: z.infer<typeof MedicationCalculationSchema>) {
-  // Doses padrão por espécie (mg/kg)
-  const dosageGuide: Record<string, Record<string, { dose: number; range: string; unit: string; notes?: string }>> = {
-    canine: {
-      'Carprofeno': { dose: 4.4, range: '2.2-4.4', unit: 'mg/kg', notes: 'SID ou dividido BID. Máx: 4.4 mg/kg/dia' },
-      'Meloxicam': { dose: 0.2, range: '0.1-0.2', unit: 'mg/kg', notes: 'Dia 1: 0.2 mg/kg, depois 0.1 mg/kg SID' },
-      'Tramadol': { dose: 2, range: '2-5', unit: 'mg/kg', notes: 'BID a TID. Ajustar para dor' },
-      'Amoxicilina': { dose: 15, range: '10-25', unit: 'mg/kg', notes: 'BID a TID' },
-      'Amoxicilina/Clavulanato': { dose: 12.5, range: '12.5-25', unit: 'mg/kg', notes: 'BID' },
-      'Cefalexina': { dose: 15, range: '10-30', unit: 'mg/kg', notes: 'BID a TID' },
-      'Metronidazol': { dose: 10, range: '10-25', unit: 'mg/kg', notes: 'BID. Máx: 25 mg/kg/dia' },
-      'Doxiciclina': { dose: 5, range: '5-10', unit: 'mg/kg', notes: 'SID ou dividido BID' },
-      'Prednisona': { dose: 0.5, range: '0.5-2', unit: 'mg/kg', notes: 'SID ou dividido BID. Ajustar para condição' },
-      'Omeprazol': { dose: 0.7, range: '0.5-1', unit: 'mg/kg', notes: 'SID a BID' },
-      'Dipirona': { dose: 25, range: '25-50', unit: 'mg/kg', notes: 'BID a TID. Não exceder 3 dias consecutivos' },
-      'Butorfanol': { dose: 0.25, range: '0.2-0.4', unit: 'mg/kg', notes: 'SC, IM, IV. A cada 3-4h para tosse' },
-    },
-    feline: {
-      'Meloxicam': { dose: 0.05, range: '0.025-0.05', unit: 'mg/kg', notes: 'Injeção: 0.3 mg/kg SC, única dose' },
-      'Buprenorfina': { dose: 0.02, range: '0.01-0.03', unit: 'mg/kg', notes: 'SC, IM. A cada 6-8h' },
-      'Tramadol': { dose: 2, range: '1-4', unit: 'mg/kg', notes: 'BID. Gatos podem não gostar do sabor' },
-      'Amoxicilina/Clavulanato': { dose: 12.5, range: '10-20', unit: 'mg/kg', notes: 'BID' },
-      'Cefalexina': { dose: 15, range: '10-30', unit: 'mg/kg', notes: 'BID' },
-      'Doxiciclina': { dose: 5, range: '5-10', unit: 'mg/kg', notes: 'SID. Evitar administração seca' },
-      'Metronidazol': { dose: 10, range: '10-25', unit: 'mg/kg', notes: 'BID' },
-      'Prednisolona': { dose: 1, range: '1-2', unit: 'mg/kg', notes: 'SID ou dividido BID' },
-      'Omeprazol': { dose: 0.5, range: '0.5-1', unit: 'mg/kg', notes: 'SID' },
-      'Butorfanol': { dose: 0.4, range: '0.2-0.4', unit: 'mg/kg', notes: 'SC, IM. Antitussígeno' },
-    },
-  };
+  try {
+    const model = calculatorEngine === 'deepseek' ? deepseek('deepseek-chat') : gemini;
 
-  // Busca medicação no guia
-  const speciesGuide = dosageGuide[species] || dosageGuide.canine;
-  const medInfo = speciesGuide[medication] || {
-    dose: 0,
-    range: 'Não encontrado',
-    unit: 'mg/kg',
-    notes: 'Consultar formulário veterinário (Plumb\'s Veterinary Drug Handbook)',
-  };
+    const { text } = await generateText({
+      model,
+      system: 'Você é um farmacologista veterinário especialista. Calcule a dosagem precisa de medicamentos baseando-se em peso, espécie e condições clínicas. Sempre forneça a dose em mg e a frequência (SID, BID, etc). Inclua avisos de segurança.',
+      prompt: `Calcule a dose para:
+      Medicamento: ${medication}
+      Peso: ${weight}kg
+      Espécie: ${species}
+      Condição: ${condition || 'Nenhuma'}
+      Idade: ${age || 'Não informada'}
+      
+      Retorne um JSON estruturado com: calculated (boolean), dosage (objeto com calculatedDose, range, unit, frequency), notes (string), considerations (array), warnings (array).`,
+    });
 
-  if (medInfo.dose === 0) {
+    // Tenta extrair JSON da resposta
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+
     return {
       medication,
-      calculated: false,
-      message: `Dose padrão não encontrada para ${medication} em ${species}. Consulte formulário veterinário.`,
-      recommendation: 'Verificar Plumb\'s Veterinary Drug Handbook ou consultar especialista.',
+      calculated: true,
+      engineUsed: calculatorEngine,
+      textResponse: text,
+      warnings: ['⚠️ Verifique sempre as doses em fontes oficiais antes da administração.'],
+    };
+  } catch (error) {
+    console.error(`${calculatorEngine} Calculation Error:`, error);
+    return {
+      error: `Falha no cálculo via ${calculatorEngine}`,
+      details: error instanceof Error ? error.message : 'Erro desconhecido',
     };
   }
-
-  // Calcula dose
-  const calculatedDose = (medInfo.dose * weight).toFixed(2);
-  const minDose = (parseFloat(medInfo.range.split('-')[0]) * weight).toFixed(2);
-  const maxDose = (parseFloat(medInfo.range.split('-')[1]) * weight).toFixed(2);
-
-  // Considerações especiais
-  const considerations: string[] = [];
-  if (condition?.toLowerCase().includes('renal') || condition?.toLowerCase().includes('hepático')) {
-    considerations.push('⚠️ Ajuste de dose necessário para função renal/hepática comprometida');
-  }
-  if (age?.includes('filhote') || age?.includes('puppy') || age?.includes('kitten')) {
-    considerations.push('⚠️ Verificar idade mínima para uso desta medicação');
-  }
-  if (age?.includes('idoso') || age?.includes('senior')) {
-    considerations.push('⚠️ Considere redução de 25-50% em pacientes geriátricos');
-  }
-
-  return {
-    medication,
-    species,
-    weight,
-    calculated: true,
-    dosage: {
-      standard: medInfo.dose,
-      range: medInfo.range,
-      unit: medInfo.unit,
-      calculatedDose: `${calculatedDose} mg`,
-      doseRange: `${minDose} - ${maxDose} mg`,
-      frequency: extractFrequency(medInfo.notes),
-    },
-    notes: medInfo.notes,
-    considerations,
-    warnings: [
-      '⚠️ VERIFIQUE O CÁLCULO antes de administrar',
-      '⚠️ Confirme peso atual do paciente',
-      '⚠️ Verifique contraindicações específicas',
-    ],
-  };
 }
 
 /**
@@ -404,7 +366,7 @@ function generateMedicalSummary(history: {
   prescriptions: any[];
 }): string {
   const parts: string[] = [];
-  
+
   if (history.observations.length > 0) {
     parts.push(`📋 ${history.observations.length} observações clínicas registradas`);
     const recentObs = history.observations.slice(0, 3);
@@ -412,26 +374,26 @@ function generateMedicalSummary(history: {
       parts.push(`   ${i + 1}. ${new Date(obs.created_at).toLocaleDateString()}: ${obs.observation?.substring(0, 100)}...`);
     });
   }
-  
+
   if (history.exams.length > 0) {
     parts.push(`\n🧪 ${history.exams.length} exames registrados`);
     parts.push(`   Último: ${history.exams[0]?.exam_type || 'Não especificado'} (${new Date(history.exams[0]?.created_at).toLocaleDateString()})`);
   }
-  
+
   if (history.vaccines.length > 0) {
     parts.push(`\n💉 ${history.vaccines.length} vacinas aplicadas`);
   }
-  
+
   if (history.prescriptions.length > 0) {
     parts.push(`\n💊 ${history.prescriptions.length} prescrições registradas`);
   }
-  
+
   return parts.join('\n') || 'Nenhum histórico médico registrado.';
 }
 
 function extractFrequency(notes?: string): string {
   if (!notes) return 'Consultar protocolo';
-  
+
   const patterns = [
     /SID|q\.?24h/i,
     /BID|q\.?12h/i,
@@ -439,12 +401,12 @@ function extractFrequency(notes?: string): string {
     /QID|q\.?6h/i,
     /a cada (\d+)h/i,
   ];
-  
+
   for (const pattern of patterns) {
     const match = notes.match(pattern);
     if (match) return match[0];
   }
-  
+
   return 'Consultar notas específicas';
 }
 
