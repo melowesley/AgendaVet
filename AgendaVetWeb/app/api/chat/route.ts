@@ -240,10 +240,21 @@ export async function POST(req: Request) {
     }
 
     // Modo Admin: Assistente geral com Gemini 2.5 Pro
+    let modelMessages;
+    try {
+      modelMessages = await convertToModelMessages(messages);
+    } catch (msgError) {
+      console.error('[Chat API] Message conversion error:', msgError);
+      return Response.json({
+        error: 'Failed to convert messages format',
+        details: msgError instanceof Error ? msgError.message : String(msgError)
+      }, { status: 400 });
+    }
+
     const result = streamText({
       model: modelInstance,
       system: systemPrompt || 'You are a helpful veterinary administrative assistant powered by Gemini. You manage schedules, pricing, and general questions.',
-      messages: await convertToModelMessages(messages),
+      messages: modelMessages,
       temperature: temperature ?? 0.7,
     })
 
