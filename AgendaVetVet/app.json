@@ -1,0 +1,68 @@
+{
+  "expo": {
+    "name": "AgendaVet - Veterinário",
+    "slug": "agendavet-vet-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "agendavet-vet",
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f0f9ff"
+    },
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#f0f9ff"
+      },
+      "package": "com.agendavet.vet",
+      "versionCode": 2
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/images/favicon.png",
+      "pwa": {
+        "name": "AgendaVet - Veterinário",
+        "shortName": "AV Vet",
+        "description": "App do Veterinário AgendaVet",
+        "backgroundColor": "#f0f9ff",
+        "themeColor": "#0EA5E9",
+        "display": "standalone",
+        "orientation": "portrait"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Acesso à galeria para registros clínicos do pet.",
+          "cameraPermission": "Câmera para foto e vídeo clínico do paciente.",
+          "microphonePermission": "Microfone necessário para gravação de vídeos clínicos."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Microfone para gravação de vídeos clínicos."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cda3734c-a34c-488a-ad83-e863e92ce06c"
+      }
+    }
+  }
+}

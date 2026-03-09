@@ -445,30 +445,46 @@ As migrations ficam em `supabase/migrations/`. Para aplicar:
 
 ---
 
-## Estrutura de Pastas Resumida
+## Estrutura de Pastas (Multiapp)
+
+O projeto foi organizado em três aplicações independentes que compartilham o mesmo banco de dados Supabase:
 
 ```
 AgendaVet/
-├── index.html              ← Meta tags PWA
-├── vite.config.ts          ← Vite + PWA (Workbox)
-├── package.json
-├── src/
-│   ├── App.tsx             ← Rotas
-│   ├── main.tsx            ← Ponto de entrada
-│   ├── index.css           ← Estilos globais / Tailwind
-│   ├── components/
-│   │   ├── admin/          ← Todos os diálogos veterinários
-│   │   └── ErrorBoundary.tsx
-│   ├── hooks/
-│   │   ├── usePetTimeline.ts   ← Timeline unificada
-│   │   └── usePetsList.ts
-│   ├── pages/
-│   │   ├── AdminDashboard.tsx
-│   │   ├── AdminPetProfile.tsx ← Ficha + timeline
-│   │   ├── AdminAuth.tsx
-│   │   └── ClientPortal.tsx
-│   └── integrations/supabase/
-│       ├── client.ts
-│       └── types.ts
-└── supabase/migrations/    ← SQL para criar/atualizar o banco
+├── AgendaVetWeb/             # Painel Administrativo Principal (Next.js)
+│   ├── app/                  # Rotas e Páginas (App Router)
+│   └── lib/                  # Services e Supabase Client
+├── AgendaVetVet/             # App Mobile do Veterinário (Expo/React Native)
+│   ├── app/pet/              # Prontuários e Módulos Clínicos
+│   └── utils/                # Geração de PDF e utilitários
+└── AgendaVetTutor/           # App Mobile do Tutor/Cliente (Expo/React Native)
+    ├── app/                  # Visualização de pets e agendamentos
+    └── components/           # Componentes UI mobile
+```
+
+---
+
+## Como Rodar e Desenvolver
+
+Cada aplicativo possui suas próprias dependências e scripts.
+
+### 1. AgendaVetWeb (Admin)
+```bash
+cd AgendaVetWeb
+npm install
+npm run dev
+```
+
+### 2. AgendaVetVet (App Profissional)
+```bash
+cd AgendaVetVet
+npm install
+npx expo start
+```
+
+### 3. AgendaVetTutor (App Cliente)
+```bash
+cd AgendaVetTutor
+npm install
+npx expo start
 ```

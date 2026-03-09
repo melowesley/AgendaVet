@@ -1,0 +1,32 @@
+[
+    {
+        "instruction": "Analise os sintomas: Cão, 5 anos, vômito amarelado, letargia e perda de apetite há 24 horas.",
+        "context": "Histórico: Vacinação em dia, sem acesso à rua sem supervisão.",
+        "response": "A presença de vômito amarelado (bile) com letargia e anorexia em um cão de 5 anos é um sinal clínico preocupante que requer avaliação veterinária imediata. Possíveis causas incluem gastroenterite aguda, pancreatite, obstrução por corpo estranho ou problemas metabólicos. Recomenda-se: 1. Jejum hídrico e alimentar até consulta; 2. Monitorar frequência do vômito; 3. Consulta presencial urgente para exames de sangue e possível imagem (ultrassom)."
+    },
+    {
+        "instruction": "Prescreva um plano de tratamento para um gato com diagnóstico de infecção urinária leve.",
+        "context": "Gato, macho, castrado, 3 anos, 4.5kg.",
+        "response": "Para um quadro de infecção urinária leve (cistite) em um gato de 3 anos: 1. Antibioticoterapia (ex: Enrofloxacina ou Amoxicilina com Clavulanato conforme prescrição exata); 2. Analgesia/Anti-inflamatório (ex: Meloxicam adaptado para gatos); 3. Estímulo hídrico (oferecer sachês, fontes de água); 4. Manejo de estresse. IMPORTANTE: Monitorar se há obstrução uretral (emergência)."
+    },
+    {
+        "instruction": "Interprete o resultado do exame: ALT (TGP) elevado em 3x o valor de referência em um Schnauzer de 8 anos.",
+        "context": "Animal assintomático.",
+        "response": "ALT é uma enzima extravasada por lesão hepatocelular. Um aumento de 3x em um animal assintomático sugere uma hepatopatia crônica, vacuolar ou induzida por drogas/toxinas. Em Schnauzers, hiperlipidemia é comum e pode afetar o fígado. Recomenda-se: 1. Repetir exame em 15-30 dias; 2. Dosar fFA e Ácidos Biliares; 3. Ultrassom abdominal para avaliar parênquima hepático."
+    },
+    {
+        "instruction": "Como tratar otite externa em Cocker Spaniel?",
+        "context": "Inflamação severa, secreção escura, odor forte.",
+        "response": "Otite externa em Cockers é frequente devido à anatomia da orelha. O tratamento envolve: 1. Limpeza cuidadosa com ceruminolítico; 2. Citologia para identificar agentes (Malassezia ou Bactérias); 3. Antibiótico/Antifúngico/Corticoide otológico (ex: Posatex ou Otomax); 4. Manter orelhas secas. Casos crônicos podem exigir controle alérgico (DAPE ou Alergia Alimentar)."
+    },
+    {
+        "instruction": "Gato com dificuldade para urinar, vocalizando na caixa de areia.",
+        "context": "Macho, 4 anos, dieta baseada apenas em ração seca.",
+        "response": "ATENÇÃO: Este é um quadro de EMERGÊNCIA veterinária (possível obstrução uretral). A obstrução pode causar insuficiência renal aguda e morte em 24-48h. Recomenda-se: 1. Levar imediatamente ao hospital veterinário; 2. NÃO tentar massagear a bexiga; 3. O tratamento envolverá desobstrução sob sedação, fluidoterapia e manejo dietético vitalício."
+    },
+    {
+        "instruction": "Cão com tosse 'engasgada' seca, piora à noite ou após exercício.",
+        "context": "Teckel, 10 anos, leve sopro cardíaco prévio.",
+        "response": "Tosse em cães idosos com sopro cardíaco pode indicar edema pulmonar por insuficiência cardíaca congestiva (ICC) ou colapso de traqueia. Recomenda-se: 1. Raio-X de tórax (projeções lateral e VD); 2. Ecocardiograma; 3. Evitar coleiras de pescoço (usar peitoral); 4. Avaliar uso de diuréticos e inotrópicos se confirmado ICC."
+    }
+]
