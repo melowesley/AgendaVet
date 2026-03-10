@@ -111,7 +111,7 @@ export async function POST(req: Request) {
             modelInstance = deepseekProvider('deepseek-chat');
             calculatorEngine = 'gemini';
         } else {
-            modelInstance = googleProvider('gemini-2.5-pro');
+            modelInstance = googleProvider('gemini-1.5-pro');
             calculatorEngine = 'deepseek';
         }
 
@@ -219,12 +219,22 @@ export async function POST(req: Request) {
         return result.toUIMessageStreamResponse()
 
     } catch (error) {
-        console.error('[Chat API] Fatal Error:', error)
+        const errorDetails = error instanceof Error ? {
+            message: error.message,
+            name: error.name,
+            stack: error.stack?.split('\n').slice(0, 3).join('\n')
+        } : String(error);
+
+        console.error('[Chat API] Fatal Error:', error);
         return Response.json({
             error: 'Server Error',
-            message: error instanceof Error ? error.message : 'Unknown error',
-            stack: error instanceof Error ? error.stack : undefined
-        }, { status: 500 })
+            details: errorDetails,
+            environment: {
+                hasDeepseek: !!process.env.DEEPSEEK_API_KEY,
+                hasGemini: !!process.env.GEMINI_API_KEY,
+                hasSupabase: !!process.env.NEXT_PUBLIC_SUPABASE_URL
+            }
+        }, { status: 500 });
     }
 }
 

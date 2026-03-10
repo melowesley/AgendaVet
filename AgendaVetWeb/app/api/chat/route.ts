@@ -100,7 +100,7 @@ export async function POST(req: Request) {
       modelInstance = deepseekProvider('deepseek-chat');
       calculatorEngine = 'gemini';
     } else {
-      modelInstance = googleProvider('gemini-2.5-pro');
+      modelInstance = googleProvider('gemini-1.5-pro');
       calculatorEngine = 'deepseek';
     }
 
