@@ -1,6 +1,7 @@
 'use client'
 
-import { Menu, Search } from 'lucide-react'
+import { Menu, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
   Breadcrumb,
@@ -21,6 +22,7 @@ interface AppHeaderProps {
 export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
   const { toggleSidebar, isMobile } = useSidebar()
   const { theme, setTheme } = useTheme()
+  const router = useRouter()
 
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-border/50 bg-background/80 backdrop-blur-md px-4 md:px-6 shadow-sm">
@@ -35,6 +37,27 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
           <Menu className="size-5" />
         </Button>
       )}
+
+      <div className="flex items-center gap-1 mr-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full hover:bg-accent"
+          onClick={() => router.back()}
+          title="Voltar"
+        >
+          <ChevronLeft className="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full hover:bg-accent"
+          onClick={() => router.forward()}
+          title="Avançar"
+        >
+          <ChevronRight className="size-4" />
+        </Button>
+      </div>
 
       <Breadcrumb className="hidden md:flex flex-1">
         <BreadcrumbList>

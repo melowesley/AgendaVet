@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/data-store'
+import { mutate } from 'swr'
 import {
     Dialog,
     DialogContent,
@@ -102,6 +103,7 @@ export function ExameDialog({ open, onOpenChange, onBack, petId, petName }: Exam
                 toast.success('Exame registrado com sucesso!')
             }
 
+            mutate('medical-records')
             resetForm()
             loadRecords()
         } catch (error: any) {
@@ -135,6 +137,7 @@ export function ExameDialog({ open, onOpenChange, onBack, petId, petName }: Exam
         try {
             const { error } = await (supabase.from('pet_exams' as any).delete().eq('id', id) as any)
             if (error) throw error
+            mutate('medical-records')
             toast.success('Exame excluído')
             loadRecords()
         } catch (error: any) {

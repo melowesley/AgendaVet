@@ -4,6 +4,7 @@ export interface Pet {
   name: string
   species: 'dog' | 'cat' | 'bird' | 'rabbit' | 'reptile' | 'other'
   breed: string
+  gender?: 'Macho' | 'Fêmea'
   dateOfBirth: string
   weight: number
   ownerId?: string // Legacy link to user_id (for tutores with login)

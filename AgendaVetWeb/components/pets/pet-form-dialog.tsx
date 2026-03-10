@@ -59,6 +59,7 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
     name: '',
     species: 'dog' as Pet['species'],
     breed: '',
+    gender: 'Macho' as 'Macho' | 'Fêmea',
     dateOfBirth: '',
     weight: '',
     notes: '',
@@ -81,6 +82,7 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
           name: pet.name,
           species: pet.species,
           breed: pet.breed,
+          gender: pet.gender || 'Macho',
           dateOfBirth: pet.dateOfBirth,
           weight: pet.weight.toString(),
           notes: pet.notes,
@@ -99,6 +101,7 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
           name: '',
           species: 'dog',
           breed: '',
+          gender: 'Macho',
           dateOfBirth: '',
           weight: '',
           notes: '',
@@ -111,6 +114,20 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validação de campos obrigatórios
+    if (!formData.name || !formData.species || !formData.breed || !formData.dateOfBirth || !formData.weight) {
+      toast.error('Preencha todos os campos obrigatórios do paciente (*)')
+      return
+    }
+
+    if (!isEditing && !useExistingTutor) {
+      if (!formData.tutorFirstName || !formData.tutorGender || !formData.tutorAge || !formData.tutorAddress || !formData.tutorEmail || !formData.tutorWhatsapp) {
+        toast.error('Preencha todos os campos obrigatórios do tutor (*)')
+        return
+      }
+    }
+
     setIsSaving(true)
 
     try {
@@ -119,6 +136,7 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
           name: formData.name,
           species: formData.species,
           breed: formData.breed,
+          gender: formData.gender,
           dateOfBirth: formData.dateOfBirth,
           weight: parseFloat(formData.weight) || 0,
           notes: formData.notes,
@@ -129,6 +147,7 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
           name: formData.name,
           species: formData.species,
           breed: formData.breed,
+          gender: formData.gender,
           dateOfBirth: formData.dateOfBirth,
           weight: parseFloat(formData.weight) || 0,
           profileId: formData.tutorId,
@@ -152,6 +171,7 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
             name: formData.name,
             species: formData.species,
             breed: formData.breed,
+            gender: formData.gender,
             dateOfBirth: formData.dateOfBirth,
             weight: parseFloat(formData.weight) || 0,
             notes: formData.notes,
@@ -342,20 +362,18 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="species">Espécie *</Label>
+                <Label htmlFor="pet-species">Espécie *</Label>
                 <Select
                   value={formData.species}
-                  onValueChange={(value: Pet['species']) =>
-                    setFormData({ ...formData, species: value })
-                  }
+                  onValueChange={(value) => setFormData({ ...formData, species: value as any })}
                 >
-                  <SelectTrigger id="species" className="bg-background">
-                    <SelectValue placeholder="Selecionar" />
+                  <SelectTrigger id="pet-species" className="bg-background">
+                    <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {speciesOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                    {speciesOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -363,13 +381,31 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="breed">Raça *</Label>
+                <Label htmlFor="pet-gender">Sexo *</Label>
+                <Select
+                  value={formData.gender}
+                  onValueChange={(value) => setFormData({ ...formData, gender: value as 'Macho' | 'Fêmea' })}
+                >
+                  <SelectTrigger id="pet-gender" className="bg-background">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Macho">Macho</SelectItem>
+                    <SelectItem value="Fêmea">Fêmea</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="pet-breed">Raça *</Label>
                 <Input
-                  id="breed"
+                  id="pet-breed"
                   className="bg-background"
                   value={formData.breed}
                   onChange={(e) => setFormData({ ...formData, breed: e.target.value })}
-                  placeholder="ex., Golden Retriever"
+                  placeholder="Ex: Golden Retriever"
                   required
                 />
               </div>

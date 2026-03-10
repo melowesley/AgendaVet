@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
+import DOMPurify from 'dompurify'
 import { usePet, useOwner, useMedicalRecords, useAppointments } from '@/lib/data-store'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -9,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { motion } from 'framer-motion'
 import {
   PawPrint, User, Calendar, FileText, Phone, Mail, MapPin, Edit, ArrowLeft,
-  Syringe, Stethoscope, Pill, FlaskConical, StickyNote, Activity, Plus, MoreHorizontal, AlertCircle
+  Syringe, Stethoscope, Pill, FlaskConical, StickyNote, Activity, Plus, MoreHorizontal, AlertCircle, Folder, Printer,
+  Scale, Scissors, Skull, Bed, HeartPulse, Heart
 } from 'lucide-react'
 import { PetFormDialog } from './pet-form-dialog'
 import { MedicalRecordFormDialog } from '../medical-records/medical-record-form-dialog'
@@ -21,7 +23,11 @@ import { ReceitaDialog } from '../admin/modules/receita-dialog'
 import { ExameDialog } from '../admin/modules/exame-dialog'
 import { CirurgiaDialog } from '../admin/modules/cirurgia-dialog'
 import { GaleriaDialog } from '../admin/modules/galeria-dialog'
+import { InternacaoDialog } from '../admin/modules/internacao-dialog'
+import { ObitoDialog } from '../admin/modules/obito-dialog'
+import { BanhoTosaDialog } from '../admin/modules/banho-tosa-dialog'
 import type { MedicalRecord } from '@/lib/types'
+import { ArchiveDialog } from '@/components/admin/modules/archive-dialog'
 
 interface PetDetailContentProps {
   petId: string
@@ -69,6 +75,10 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
   const [exameDialogOpen, setExameDialogOpen] = useState(false)
   const [cirurgiaDialogOpen, setCirurgiaDialogOpen] = useState(false)
   const [galeriaDialogOpen, setGaleriaDialogOpen] = useState(false)
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
+  const [internacaoDialogOpen, setInternacaoDialogOpen] = useState(false)
+  const [obitoDialogOpen, setObitoDialogOpen] = useState(false)
+  const [banhoTosaDialogOpen, setBanhoTosaDialogOpen] = useState(false)
   const [recordDialogType, setRecordDialogType] = useState<MedicalRecord['type']>('vaccination')
 
   const openMedicalRecord = (type: MedicalRecord['type']) => {
@@ -91,6 +101,12 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
       setExameDialogOpen(true)
     } else if (type === 'cirurgia') {
       setCirurgiaDialogOpen(true)
+    } else if (type === 'internacao') {
+      setInternacaoDialogOpen(true)
+    } else if (type === 'obito') {
+      setObitoDialogOpen(true)
+    } else if (type === 'banho-tosa') {
+      setBanhoTosaDialogOpen(true)
     } else if (type === 'fotos' || type === 'video') {
       setGaleriaDialogOpen(true)
     } else {
@@ -183,6 +199,14 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
               <span>Saldo Regular</span>
             </div>
             <Button
+              onClick={() => setArchiveDialogOpen(true)}
+              variant="outline"
+              className="border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 transition-colors"
+            >
+              <Folder className="size-4 mr-2" />
+              <span className="hidden sm:inline">Arquivo</span>
+            </Button>
+            <Button
               onClick={() => setEditDialogOpen(true)}
               variant="outline"
               className="border-border/50 hover:bg-muted/50 transition-colors"
@@ -211,7 +235,7 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => openMedicalRecord('prescription')}
+                  onClick={() => setReceitaDialogOpen(true)}
                   className="w-full border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10"
                 >
                   <Pill className="size-4 mr-2" />
@@ -219,7 +243,7 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => openMedicalRecord('vaccination')}
+                  onClick={() => setVacinaDialogOpen(true)}
                   className="w-full border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10"
                 >
                   <Syringe className="size-4 mr-2" />
@@ -349,7 +373,7 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
                       <Button variant="outline" onClick={() => openMedicalRecord('diagnosis')} className="mt-6 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10">Registrar Primeiro Atendimento</Button>
                     </div>
                   ) : (
-                    <div className="relative border-l border-border/50 ml-4 md:ml-6 space-y-8 pb-8">
+                    <div className="relative border-l-2 border-slate-200 dark:border-slate-800 ml-4 md:ml-6 space-y-12 pb-12">
                       {records.map((record, index) => {
                         const Icon = recordTypeIcons[record.type] || FileText
                         return (
@@ -361,7 +385,7 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
                             className="relative pl-8 md:pl-10 group"
                           >
                             {/* Marker da Timeline */}
-                            <div className="absolute -left-[17px] top-1 flex size-8 items-center justify-center rounded-full bg-background border-2 border-emerald-500/30 text-emerald-500 shadow-sm group-hover:bg-emerald-500/10 group-hover:border-emerald-500 transition-colors">
+                            <div className="absolute -left-[17px] top-1 flex size-8 items-center justify-center rounded-full bg-background border-2 border-emerald-500 text-emerald-500 shadow-md group-hover:scale-110 transition-transform">
                               <Icon className="size-4" />
                             </div>
 
@@ -378,19 +402,20 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
                                     </p>
                                   </div>
                                   <div className="flex flex-col sm:items-end gap-2">
-                                    <Badge variant="secondary" className="bg-muted/50 font-mono font-normal w-fit">
+                                    <Badge variant="outline" className="w-fit border-emerald-500/20 bg-emerald-500/5 text-emerald-600 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
+                                      {medicalRecordTypeLabels[record.type] || record.type}
+                                    </Badge>
+                                    <Badge variant="secondary" className="bg-muted/50 font-sans font-normal w-fit text-xs">
                                       {new Date(record.date).toLocaleDateString('pt-BR', {
                                         day: '2-digit', month: 'long', year: 'numeric'
                                       })}
                                     </Badge>
-                                    <Badge variant="outline" className="w-fit border-border/50 bg-transparent text-[10px] uppercase tracking-wider backdrop-blur-sm">
-                                      {medicalRecordTypeLabels[record.type] || record.type}
-                                    </Badge>
                                   </div>
                                 </div>
-                                <div className="text-sm text-muted-foreground leading-relaxed font-mono">
-                                  {record.description}
-                                </div>
+                                <div
+                                  className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-sans prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1"
+                                  dangerouslySetInnerHTML={{ __html: record.description ? DOMPurify.sanitize(record.description) : "" }}
+                                />
 
                                 {/* Placeholder para "Ver Exame" sutil */}
                                 {(record.type === 'lab-result' || record.type === 'procedure') && (
@@ -535,6 +560,43 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
         onOpenChange={setRecordDialogOpen}
         petId={petId}
         defaultType={recordDialogType}
+      />
+      <ArchiveDialog
+        open={archiveDialogOpen}
+        onOpenChange={setArchiveDialogOpen}
+        pet={pet}
+        owner={owner}
+        records={records}
+      />
+      <InternacaoDialog
+        open={internacaoDialogOpen}
+        onOpenChange={setInternacaoDialogOpen}
+        petId={petId}
+        petName={pet.name}
+        onBack={() => {
+          setInternacaoDialogOpen(false)
+          setAttendanceDialogOpen(true)
+        }}
+      />
+      <ObitoDialog
+        open={obitoDialogOpen}
+        onOpenChange={setObitoDialogOpen}
+        petId={petId}
+        petName={pet.name}
+        onBack={() => {
+          setObitoDialogOpen(false)
+          setAttendanceDialogOpen(true)
+        }}
+      />
+      <BanhoTosaDialog
+        open={banhoTosaDialogOpen}
+        onOpenChange={setBanhoTosaDialogOpen}
+        petId={petId}
+        petName={pet.name}
+        onBack={() => {
+          setBanhoTosaDialogOpen(false)
+          setAttendanceDialogOpen(true)
+        }}
       />
     </div>
   )

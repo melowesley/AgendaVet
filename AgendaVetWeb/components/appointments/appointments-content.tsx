@@ -202,9 +202,6 @@ export function AppointmentsContent() {
             selectedWeek={selectedWeek}
             onDayDoubleClick={handleDayDoubleClick}
           />
-          {selectedWeek && (
-            <WeekAppointments weekStart={selectedWeek.start} weekEnd={selectedWeek.end} />
-          )}
         </div>
       ) : (
         <Card>

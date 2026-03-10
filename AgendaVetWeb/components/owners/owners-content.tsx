@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Users, Eye, PawPrint } from 'lucide-react'
+import { Plus, Search, MoreHorizontal, Edit, Trash2, Users, Eye, PawPrint, Printer } from 'lucide-react'
 import Link from 'next/link'
 import { OwnerFormDialog } from './owner-form-dialog'
 
@@ -166,34 +166,50 @@ export function OwnersContent() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8">
-                              <MoreHorizontal className="size-4" />
-                              <span className="sr-only">Ações</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/owners/${owner.id}`}>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <Link
+                            href={`/owners/${owner.id}`}
+                            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-3 hidden sm:flex text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 transition-all cursor-pointer"
+                          >
+                            <Eye className="size-4 mr-1.5" />
+                            Visualizar
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="hidden sm:flex text-slate-600 hover:text-slate-700 hover:bg-slate-500/10 transition-all"
+                            onClick={() => window.print()}
+                          >
+                            <Printer className="size-4 mr-1.5" />
+                            Imprimir
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="size-8">
+                                <MoreHorizontal className="size-4" />
+                                <span className="sr-only">Ações</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEdit(owner)} className="sm:hidden">
                                 <Eye className="size-4 mr-2" />
-                                Ver Detalhes
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEdit(owner)}>
-                              <Edit className="size-4 mr-2" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(owner)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="size-4 mr-2" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                                Visualizar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEdit(owner)}>
+                                <Edit className="size-4 mr-2" />
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(owner)}
+                                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                              >
+                                <Trash2 className="size-4 mr-2" />
+                                Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

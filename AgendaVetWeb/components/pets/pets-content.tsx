@@ -31,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, Search, MoreHorizontal, Edit, Trash2, PawPrint, Eye } from 'lucide-react'
+import { Plus, Search, MoreHorizontal, Edit, Trash2, PawPrint, Eye, Printer } from 'lucide-react'
 import Link from 'next/link'
 import { PetFormDialog } from './pet-form-dialog'
 
@@ -256,16 +256,21 @@ export function PetsContent() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                            className="hidden lg:flex border-emerald-500/30 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all"
+                          <Link
+                            href={`/pets/${pet.id}`}
+                            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-3 hidden sm:flex text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 transition-all cursor-pointer"
                           >
-                            <Link href={`/pets/${pet.id}`}>
-                              <Eye className="size-4 mr-1.5" />
-                              Ver Ficha
-                            </Link>
+                            <Eye className="size-4 mr-1.5" />
+                            Visualizar
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="hidden sm:flex text-slate-600 hover:text-slate-700 hover:bg-slate-500/10 transition-all"
+                            onClick={() => window.print()}
+                          >
+                            <Printer className="size-4 mr-1.5" />
+                            Imprimir
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -275,7 +280,7 @@ export function PetsContent() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild className="lg:hidden">
+                              <DropdownMenuItem asChild>
                                 <Link href={`/pets/${pet.id}`}>
                                   <Eye className="size-4 mr-2 text-emerald-500" />
                                   Ver Ficha

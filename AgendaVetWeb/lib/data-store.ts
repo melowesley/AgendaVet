@@ -20,19 +20,33 @@ Always be professional, empathetic, and accurate in your responses.`,
 }
 
 // Mappers
-const mapSupabasePet = (p: any): Pet => ({
-  id: p.id,
-  name: p.name,
-  species: (p.type || 'other') as Pet['species'],
-  breed: p.breed || '',
-  dateOfBirth: p.age || '',
-  weight: parseFloat(p.weight) || 0,
-  ownerId: p.user_id, // Legacy link
-  profileId: p.profile_id, // New link to profile UUID
-  notes: p.notes || '',
-  imageUrl: p.imageUrl,
-  createdAt: p.created_at,
-})
+const mapSupabasePet = (p: any): Pet => {
+  let notesText = p.notes || ''
+  let genderVal: 'Macho' | 'Fêmea' | undefined = undefined
+
+  if (notesText.includes(' | Gênero: Fêmea')) {
+    genderVal = 'Fêmea'
+    notesText = notesText.replace(' | Gênero: Fêmea', '')
+  } else if (notesText.includes(' | Gênero: Macho')) {
+    genderVal = 'Macho'
+    notesText = notesText.replace(' | Gênero: Macho', '')
+  }
+
+  return {
+    id: p.id,
+    name: p.name,
+    species: (p.type || 'other') as Pet['species'],
+    breed: p.breed || '',
+    gender: genderVal,
+    dateOfBirth: p.age || '',
+    weight: parseFloat(p.weight) || 0,
+    ownerId: p.user_id, // Legacy link
+    profileId: p.profile_id, // New link to profile UUID
+    notes: notesText,
+    imageUrl: p.imageUrl,
+    createdAt: p.created_at,
+  }
+}
 
 const mapSupabaseOwner = (p: any): Owner => {
   const parts = (p.full_name || '').split(' ')
@@ -104,7 +118,7 @@ const medicalRecordsFetcher = async () => {
     supabase.from('pet_vaccines').select('*'),
     supabase.from('pet_observations').select('*'),
     supabase.from('pet_prescriptions').select('*'),
-    supabase.from('medical_records' as any).select('*').eq('type', 'surgery'),
+    supabase.from('medical_records' as any).select('*'),
     supabase.from('pet_photos' as any).select('*'),
     supabase.from('pet_videos' as any).select('*'),
   ])
@@ -153,10 +167,10 @@ const medicalRecordsFetcher = async () => {
     ...(surgeries.data || []).map((s: any) => ({
       id: s.id,
       petId: s.pet_id,
-      date: s.date,
-      type: 'procedure' as const,
-      title: `Cirurgia: ${s.title}`,
-      description: s.description || '',
+      date: s.date || s.observation_date,
+      type: (s.type === 'surgery' ? 'procedure' : s.type) as any,
+      title: s.type === 'surgery' ? `Cirurgia: ${s.title}` : s.title,
+      description: s.description || s.observation || '',
       veterinarian: s.veterinarian || '',
       createdAt: s.created_at,
     })),
@@ -239,7 +253,7 @@ export async function addPet(pet: Omit<Pet, 'id' | 'createdAt'>) {
     weight: pet.weight.toString(),
     user_id: currentUserId || null, // ID of the logged-in vet
     profile_id: pet.profileId,     // ID of the tutor profile
-    notes: pet.notes,
+    notes: pet.notes + (pet.gender ? ` | Gênero: ${pet.gender}` : ''),
   }] as any) as any).select().single()
 
   if (error) {
@@ -258,7 +272,11 @@ export async function updatePet(id: string, updates: Partial<Pet>) {
   if (updates.breed) supabaseUpdates.breed = updates.breed
   if (updates.dateOfBirth) supabaseUpdates.age = updates.dateOfBirth
   if (updates.weight !== undefined) supabaseUpdates.weight = updates.weight.toString()
-  if (updates.notes) supabaseUpdates.notes = updates.notes
+  if (updates.notes !== undefined || updates.gender !== undefined) {
+    const currentNotes = updates.notes !== undefined ? updates.notes : ''
+    const currentGender = updates.gender !== undefined ? updates.gender : ''
+    supabaseUpdates.notes = currentNotes + (currentGender ? ` | Gênero: ${currentGender}` : '')
+  }
 
   const { data, error } = await supabase.from('pets').update(supabaseUpdates).eq('id', id).select().single()
   if (error) {
@@ -329,7 +347,7 @@ export async function addTutorAndPet(
     weight: petData.weight.toString(),
     user_id: currentUserId || null, // Logged in Vet ID
     profile_id: tutor.id,         // Newly created Tutor Profile ID
-    notes: petData.notes,
+    notes: petData.notes + (petData.gender ? ` | Gênero: ${petData.gender}` : ''),
   }] as any) as any).select().single()
 
   if (petError) {

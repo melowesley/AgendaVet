@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/data-store'
+import { mutate } from 'swr'
 import {
     Dialog,
     DialogContent,
@@ -116,6 +117,7 @@ export function GaleriaDialog({ open, onOpenChange, onBack, petId, petName }: Ga
             const { error } = await (supabase.from(table as any).insert([payload] as any) as any)
             if (error) throw error
 
+            mutate('medical-records')
             toast.success(`${mediaType === 'photo' ? 'Foto' : 'Vídeo'} salvo com sucesso!`)
             resetForm()
             loadRecords()
@@ -139,6 +141,8 @@ export function GaleriaDialog({ open, onOpenChange, onBack, petId, petName }: Ga
             const table = type === 'photo' ? 'pet_photos' : 'pet_videos'
             const { error } = await (supabase.from(table as any).delete().eq('id', id) as any)
             if (error) throw error
+
+            mutate('medical-records')
             toast.success('Mídia excluída')
             loadRecords()
         } catch (error: any) {
