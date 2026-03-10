@@ -70,7 +70,7 @@ export default function VetCopilotScreen() {
 
     try {
       // Simular resposta da API (implementação real usaria fetch streaming)
-      const response = await fetch('/api/chat', {
+      const response = await fetch('https://agendavet-web.vercel.app/api/chat', {
 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
