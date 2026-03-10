@@ -36,9 +36,9 @@ export function WeekAppointments({ weekStart, weekEnd }: WeekAppointmentsProps) 
       const appointmentDate = new Date(appointment.date)
       return appointmentDate >= weekStart && appointmentDate <= weekEnd
     }).sort((a, b) => {
-      const dateCompare = a.date.localeCompare(b.date)
+      const dateCompare = (a.date || '').localeCompare(b.date || '')
       if (dateCompare !== 0) return dateCompare
-      return a.time.localeCompare(b.time)
+      return (a.time || '').localeCompare(b.time || '')
     })
   }, [appointments, weekStart, weekEnd])
 

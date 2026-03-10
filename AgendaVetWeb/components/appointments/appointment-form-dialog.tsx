@@ -30,6 +30,7 @@ interface AppointmentFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   appointment?: Appointment | null
+  initialDate?: Date
 }
 
 const typeOptions: { value: Appointment['type']; label: string }[] = [
@@ -60,6 +61,7 @@ export function AppointmentFormDialog({
   open,
   onOpenChange,
   appointment,
+  initialDate,
 }: AppointmentFormDialogProps) {
   const { pets } = usePets()
   const { owners } = useOwners()
@@ -98,10 +100,13 @@ export function AppointmentFormDialog({
         })
       } else {
         const today = new Date().toISOString().split('T')[0]
+        const defaultDate = initialDate
+          ? new Date(initialDate.getTime() - (initialDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0]
+          : today
         setFormData({
           petId: filteredPets[0]?.id || '',
           ownerId: filteredPets[0]?.ownerId || owners[0]?.id || '',
-          date: today,
+          date: defaultDate,
           time: '09:00',
           type: 'checkup',
           status: 'scheduled',

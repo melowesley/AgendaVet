@@ -199,7 +199,7 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
 
           {/* Painel Esquerdo (Ações e Tutor) */}
-          <div className="md:col-span-4 lg:col-span-3 flex flex-col gap-6 md:sticky md:top-[120px]">
+          <div className="md:col-span-4 lg:col-span-3 flex flex-col gap-6 md:sticky md:top-[200px] z-10">
             <div className="flex flex-col gap-3">
               <Button
                 onClick={() => setAttendanceDialogOpen(true)}

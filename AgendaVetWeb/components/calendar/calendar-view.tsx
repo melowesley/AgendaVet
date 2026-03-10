@@ -12,9 +12,10 @@ import { ptBR } from 'date-fns/locale'
 interface CalendarViewProps {
   onWeekSelect?: (weekStart: Date, weekEnd: Date) => void
   selectedWeek?: { start: Date; end: Date } | null
+  onDayDoubleClick?: (day: Date) => void
 }
 
-export function CalendarView({ onWeekSelect, selectedWeek }: CalendarViewProps) {
+export function CalendarView({ onWeekSelect, selectedWeek, onDayDoubleClick }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const { appointments, isLoading: appointmentsLoading } = useAppointments()
   const { pets, isLoading: petsLoading } = usePets()
@@ -101,14 +102,14 @@ export function CalendarView({ onWeekSelect, selectedWeek }: CalendarViewProps) 
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          
+
           <div className="flex items-center gap-2">
             <CalendarIcon className="h-5 w-5 text-emerald-500" />
             <h3 className="text-lg font-semibold">
               {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
             </h3>
           </div>
-          
+
           <Button
             variant="ghost"
             size="sm"
@@ -149,7 +150,11 @@ export function CalendarView({ onWeekSelect, selectedWeek }: CalendarViewProps) 
                   ${isFirstDayOfWeek ? 'hover:border-emerald-500/50' : ''}
                   hover:bg-muted/30
                 `}
-                onClick={() => isFirstDayOfWeek && handleWeekClick(weekStart)}
+                onClick={() => handleWeekClick(weekStart)}
+                onDoubleClick={(e) => {
+                  e.stopPropagation()
+                  onDayDoubleClick?.(day)
+                }}
               >
                 {/* Day number */}
                 <div className={`
@@ -200,7 +205,11 @@ export function CalendarView({ onWeekSelect, selectedWeek }: CalendarViewProps) 
         <div className="flex items-center justify-center gap-4 mt-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 rounded-full bg-emerald-500/30"></div>
-            <span>Clique na semana para ver detalhes</span>
+            <span>Clique (1x) na semana p/ ver detalhes</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 border border-dashed border-emerald-500/50 bg-transparent rounded-sm"></div>
+            <span>Clique (2x) no dia p/ agendar</span>
           </div>
           <div className="flex items-center gap-1">
             <PawPrint className="h-3 w-3 text-emerald-500" />
