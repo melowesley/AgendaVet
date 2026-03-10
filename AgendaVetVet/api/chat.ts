@@ -86,9 +86,16 @@ export async function POST(req: Request) {
         if (mode === 'admin') {
             try {
                 const lastMessage = messages[messages.length - 1];
-                const content = (lastMessage.content || '').toLowerCase();
+                const content = lastMessage?.parts
+                    ? lastMessage.parts
+                        .filter((p: any) => p?.type === 'text' && typeof p.text === 'string')
+                        .map((p: any) => p.text)
+                        .join(' ')
+                    : ((lastMessage as any)?.content || (lastMessage as any)?.text || '');
+
+                const normalizedContent = content.toLowerCase();
                 const clinicalKeywords = ['peso', 'sintoma', 'remédio', 'medicação', 'dose', 'dosagem', 'exame', 'vacina', 'histórico', 'médico', 'clínico', 'doença', 'tratamento'];
-                if (clinicalKeywords.some(kw => content.includes(kw))) {
+                if (clinicalKeywords.some(kw => normalizedContent.includes(kw))) {
                     detectedMode = 'clinical';
                 }
             } catch (err) {

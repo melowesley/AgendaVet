@@ -33,3 +33,5 @@ bun.lockb
 *.njsproj
 *.sln
 *.sw?
+.vercel
+.env*.local
