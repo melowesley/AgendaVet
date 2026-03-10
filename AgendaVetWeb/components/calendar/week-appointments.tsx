@@ -110,7 +110,7 @@ export function WeekAppointments({ weekStart, weekEnd }: WeekAppointmentsProps) 
           </div>
         ) : (
           <div className="space-y-4">
-            {appointmentsByDay.map(({ day, dayAppointments }) => (
+            {appointmentsByDay.map(({ day, appointments: dayAppointments }) => (
               <div key={day.toString()}>
                 <div className="flex items-center gap-2 mb-2">
                   <h4 className="font-medium text-sm">
@@ -122,13 +122,13 @@ export function WeekAppointments({ weekStart, weekEnd }: WeekAppointmentsProps) 
                     </Badge>
                   )}
                 </div>
-                
+
                 {dayAppointments.length > 0 && (
                   <div className="space-y-2">
                     {dayAppointments.map((appointment) => {
                       const pet = pets.find(p => p.id === appointment.petId)
                       const owner = owners.find(o => o.id === appointment.ownerId)
-                      
+
                       return (
                         <div
                           key={appointment.id}
@@ -154,11 +154,11 @@ export function WeekAppointments({ weekStart, weekEnd }: WeekAppointmentsProps) 
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="shrink-0 flex items-center gap-2 self-start sm:self-auto ml-12 sm:ml-0">
                             {getAppointmentTypeBadge(appointment.type)}
                             {getStatusBadge(appointment.status)}
-                            
+
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="size-8">

@@ -238,7 +238,7 @@ export function DashboardContent() {
             ) : (
               <div className="space-y-3">
                 {pets.slice(0, 4).map((pet) => {
-                  const owner = getOwnerById(pet.ownerId)
+                  const owner = pet.ownerId ? getOwnerById(pet.ownerId) : null
                   return (
                     <Link
                       key={pet.id}
