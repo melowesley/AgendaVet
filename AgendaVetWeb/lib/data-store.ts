@@ -2,7 +2,8 @@
 
 import useSWR, { mutate } from 'swr'
 import type { Pet, Owner, Appointment, MedicalRecord, AgentSettings } from './types'
-export { supabase } from './supabase/client'
+import { supabase } from './supabase/client'
+export { supabase }
 import { useAuthStore } from './auth-store'
 
 // AI Agent Settings (kept in-memory for now or could be moved to a settings table)
@@ -98,11 +99,14 @@ const appointmentsFetcher = async () => {
 
 const medicalRecordsFetcher = async () => {
   // Combining different record types from Supabase
-  const [exams, vaccines, observations, prescriptions] = await Promise.all([
+  const [exams, vaccines, observations, prescriptions, surgeries, photos, videos] = await Promise.all([
     supabase.from('pet_exams').select('*'),
     supabase.from('pet_vaccines').select('*'),
     supabase.from('pet_observations').select('*'),
     supabase.from('pet_prescriptions').select('*'),
+    supabase.from('medical_records' as any).select('*').eq('type', 'surgery'),
+    supabase.from('pet_photos' as any).select('*'),
+    supabase.from('pet_videos' as any).select('*'),
   ])
 
   const records: MedicalRecord[] = [
@@ -145,6 +149,36 @@ const medicalRecordsFetcher = async () => {
       description: p.medication_name || '',
       veterinarian: p.veterinarian || '',
       createdAt: p.created_at,
+    })),
+    ...(surgeries.data || []).map((s: any) => ({
+      id: s.id,
+      petId: s.pet_id,
+      date: s.date,
+      type: 'procedure' as const,
+      title: `Cirurgia: ${s.title}`,
+      description: s.description || '',
+      veterinarian: s.veterinarian || '',
+      createdAt: s.created_at,
+    })),
+    ...(photos.data || []).map((p: any) => ({
+      id: p.id,
+      petId: p.pet_id,
+      date: p.date,
+      type: 'note' as const,
+      title: `Foto: ${p.title || 'Mídia Anexada'}`,
+      description: p.description || p.photo_url || '',
+      veterinarian: '',
+      createdAt: p.created_at || new Date(p.date).toISOString(),
+    })),
+    ...(videos.data || []).map((v: any) => ({
+      id: v.id,
+      petId: v.pet_id,
+      date: v.date,
+      type: 'note' as const,
+      title: `Vídeo: ${v.title || 'Mídia Anexada'}`,
+      description: v.description || v.video_url || '',
+      veterinarian: '',
+      createdAt: v.created_at || new Date(v.date).toISOString(),
     })),
   ]
 

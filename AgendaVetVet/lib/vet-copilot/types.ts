@@ -215,7 +215,7 @@ export interface ToolResponses {
 export type CopilotViewMode = 'compact' | 'expanded' | 'fullscreen';
 
 // Tipo de mensagem
-export type CopilotMessageType = 
+export type CopilotMessageType =
   | 'user'
   | 'assistant'
   | 'system'

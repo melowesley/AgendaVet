@@ -18,6 +18,9 @@ import { VacinaDialog } from '../admin/modules/vacina-dialog'
 import { ConsultaDialog } from '../admin/modules/consulta-dialog'
 import { PesoDialog } from '../admin/modules/peso-dialog'
 import { ReceitaDialog } from '../admin/modules/receita-dialog'
+import { ExameDialog } from '../admin/modules/exame-dialog'
+import { CirurgiaDialog } from '../admin/modules/cirurgia-dialog'
+import { GaleriaDialog } from '../admin/modules/galeria-dialog'
 import type { MedicalRecord } from '@/lib/types'
 
 interface PetDetailContentProps {
@@ -63,6 +66,9 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
   const [consultaDialogOpen, setConsultaDialogOpen] = useState(false)
   const [pesoDialogOpen, setPesoDialogOpen] = useState(false)
   const [receitaDialogOpen, setReceitaDialogOpen] = useState(false)
+  const [exameDialogOpen, setExameDialogOpen] = useState(false)
+  const [cirurgiaDialogOpen, setCirurgiaDialogOpen] = useState(false)
+  const [galeriaDialogOpen, setGaleriaDialogOpen] = useState(false)
   const [recordDialogType, setRecordDialogType] = useState<MedicalRecord['type']>('vaccination')
 
   const openMedicalRecord = (type: MedicalRecord['type']) => {
@@ -81,12 +87,16 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
       setPesoDialogOpen(true)
     } else if (type === 'receita') {
       setReceitaDialogOpen(true)
+    } else if (type === 'exame') {
+      setExameDialogOpen(true)
+    } else if (type === 'cirurgia') {
+      setCirurgiaDialogOpen(true)
+    } else if (type === 'fotos' || type === 'video') {
+      setGaleriaDialogOpen(true)
     } else {
       // Map other types to general MedicalRecord types for now
       const mapping: Record<string, MedicalRecord['type']> = {
-        'receita': 'prescription',
         'procedimento': 'procedure',
-        'exame': 'lab-result',
       }
 
       if (mapping[type]) {
@@ -487,6 +497,36 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
         petName={pet.name}
         onBack={() => {
           setReceitaDialogOpen(false)
+          setAttendanceDialogOpen(true)
+        }}
+      />
+      <ExameDialog
+        open={exameDialogOpen}
+        onOpenChange={setExameDialogOpen}
+        petId={petId}
+        petName={pet.name}
+        onBack={() => {
+          setExameDialogOpen(false)
+          setAttendanceDialogOpen(true)
+        }}
+      />
+      <CirurgiaDialog
+        open={cirurgiaDialogOpen}
+        onOpenChange={setCirurgiaDialogOpen}
+        petId={petId}
+        petName={pet.name}
+        onBack={() => {
+          setCirurgiaDialogOpen(false)
+          setAttendanceDialogOpen(true)
+        }}
+      />
+      <GaleriaDialog
+        open={galeriaDialogOpen}
+        onOpenChange={setGaleriaDialogOpen}
+        petId={petId}
+        petName={pet.name}
+        onBack={() => {
+          setGaleriaDialogOpen(false)
           setAttendanceDialogOpen(true)
         }}
       />
