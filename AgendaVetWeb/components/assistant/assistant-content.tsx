@@ -77,9 +77,9 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
       body: {
         model: brainModel === 'deepseek' ? 'deepseek' : (clinicalMode ? 'gemini-1.5-pro' : settings.model),
         temperature: clinicalMode ? 0.3 : settings.temperature,
-        systemPrompt: clinicalMode
-          ? 'Você é o Vet Copilot, assistente clínico veterinário.'
-          : settings.systemPrompt + '\n\n' + clinicContext,
+        systemPrompt: (clinicalMode
+          ? 'Você é o Vet Copilot, assistente clínico veterinário especializado da AgendaVet.'
+          : settings.systemPrompt.replace(/VetCRM/g, 'AgendaVet')) + '\n\n' + clinicContext,
         mode: clinicalMode ? 'clinical' : 'admin',
         petId: clinicalMode && selectedPetId !== 'none' ? selectedPetId : undefined,
       },

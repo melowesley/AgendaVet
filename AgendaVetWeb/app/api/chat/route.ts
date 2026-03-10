@@ -92,39 +92,40 @@ export async function POST(req: Request) {
       }
     }
 
-    // Determina o modelo e motor de cálculo baseado no modo (detectado ou solicitado)
+    // 2. Determina o modelo e motor de cálculo
+    const isDeepseekAvailable = !!(process.env.DEEPSEEK_API_KEY || process.env.EXPO_PUBLIC_DEEPSEEK_API_KEY);
     let modelInstance;
     let calculatorEngine: 'gemini' | 'deepseek' = 'deepseek';
-
-    // Fallback: Se DeepSeek não estiver configurado, usa Gemini para tudo
-    const isDeepseekAvailable = !!(process.env.DEEPSEEK_API_KEY || process.env.EXPO_PUBLIC_DEEPSEEK_API_KEY);
 
     if (detectedMode === 'clinical' && isDeepseekAvailable) {
       modelInstance = deepseekProvider('deepseek-chat');
       calculatorEngine = 'gemini';
     } else {
-      // Usa Gemini 1.5 Pro por padrão (mais estável e disponível)
       modelInstance = googleProvider('gemini-1.5-pro');
       calculatorEngine = 'deepseek';
     }
 
+    // 3. Preparar Mensagens
+    let modelMessages;
+    try {
+      modelMessages = await convertToModelMessages(messages);
+    } catch (msgError) {
+      console.error('[Chat API] Message conversion error:', msgError);
+      return Response.json({ error: 'Failed to convert messages' }, { status: 400 });
+    }
 
-    // Modo Clinical: Vet Copilot com tools e cérebro DeepSeek
-    if (detectedMode === 'clinical') {
-      try {
-        const temp = temperature ?? 0.3
-
-        // Contexto do pet (se fornecido)
-        let petContext = ''
+    // 4. Execução do Stream
+    try {
+      if (detectedMode === 'clinical') {
+        let petContext = '';
         if (petId) {
           try {
-            const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
+            const supabase = createClient(supabaseUrl, supabaseServiceKey);
             const { data: pet } = await supabase
               .from('pets')
               .select('*, profiles:user_id (full_name, phone, email)')
               .eq('id', petId)
-              .single()
+              .single();
 
             if (pet) {
               petContext = generatePetContext({
@@ -141,155 +142,87 @@ export async function POST(req: Request) {
                   lastName: (pet.profiles.full_name || '').split(' ').slice(1).join(' '),
                   phone: pet.profiles.phone || '',
                 } : undefined,
-              })
+              });
             }
-          } catch (error) {
-            console.warn('Failed to load pet context:', error)
+          } catch (ctxError) {
+            console.warn('[Chat API] Failed to load pet context:', ctxError);
           }
         }
 
-        const clinicalSystemPrompt = `${VET_COPILOT_SYSTEM_PROMPT}\n\nVocê é o Subagente Clínico Especializado alimentado pelo DeepSeek no sistema AgendaVet. Seu foco é precisão técnica, lógica médica e uso de ferramentas clínicas.\n\n${petContext}`
+        const clinicalSystemPrompt = `${VET_COPILOT_SYSTEM_PROMPT}\n\nVocê é o Subagente Clínico Especializado na AgendaVet. Foco em precisão técnica e ferramentas.\n\n${petContext}`;
 
-        // Define as tools disponíveis para o modelo
-        const tools = {
-          get_pet_info: {
-            description: 'Busca informações básicas do pet (nome, espécie, raça, peso, tutor)',
-            inputSchema: z.object({
-              petId: z.string().uuid().describe('ID do pet no sistema'),
-            }),
-            async execute({ petId }: { petId: string }) {
-              return await getPetInfo({ petId })
-            },
-          },
-
-          get_medical_history: {
-            description: 'Busca histórico médico completo do pet (observações, exames, vacinas, prescrições)',
-            inputSchema: z.object({
-              petId: z.string().uuid().describe('ID do pet no sistema'),
-            }),
-            async execute({ petId }: { petId: string }) {
-              return await getMedicalHistory({ petId })
-            },
-          },
-
-          get_vaccination_status: {
-            description: 'Verifica status vacinal do pet e vacinas pendentes',
-            inputSchema: z.object({
-              petId: z.string().uuid().describe('ID do pet no sistema'),
-            }),
-            async execute({ petId }: { petId: string }) {
-              return await getVaccinationStatus({ petId })
-            },
-          },
-
-          get_current_medications: {
-            description: 'Lista medicações atualmente em uso pelo pet',
-            inputSchema: z.object({
-              petId: z.string().uuid().describe('ID do pet no sistema'),
-            }),
-            async execute({ petId }: { petId: string }) {
-              return await getCurrentMedications({ petId })
-            },
-          },
-
-          get_recent_exams: {
-            description: 'Busca exames laboratoriais e de imagem recentes do pet',
-            inputSchema: z.object({
-              petId: z.string().uuid().describe('ID do pet no sistema'),
-            }),
-            async execute({ petId }: { petId: string }) {
-              return await getRecentExams({ petId })
-            },
-          },
-
-          calculate_medication_dosage: {
-            description: 'Calcula dose de medicação baseada no peso e espécie do animal. Inclui considerações de segurança.',
-            inputSchema: z.object({
-              medication: z.string().describe('Nome do medicamento (ex: Meloxicam, Carprofeno, Amoxicilina)'),
-              weight: z.number().positive().describe('Peso atual do animal em kg'),
-              species: z.enum(['canine', 'feline', 'avian', 'reptile', 'rodent', 'other'])
-                .describe('Espécie do animal'),
-              condition: z.string().optional().describe('Condição especial do paciente (ex: renal, hepático, geriátrico)'),
-              age: z.string().optional().describe('Idade ou faixa etária (ex: 3 anos, filhote, idoso)'),
-            }),
-            async execute(params: {
-              medication: string;
-              weight: number;
-              species: 'canine' | 'feline' | 'avian' | 'reptile' | 'rodent' | 'other';
-              condition?: string;
-              age?: string;
-            }) {
-              return await calculateMedicationDosage({ ...params, calculatorEngine })
-            },
-          },
-
-          search_clinical_knowledge: {
-            description: 'Busca informações em base de conhecimento veterinário. Retorna diretrizes e fontes relevantes.',
-            inputSchema: z.object({
-              query: z.string().describe('Termo de busca clínica'),
-              species: z.string().optional().describe('Espécie animal (ex: canine, feline)'),
-              limit: z.number().default(5).describe('Número máximo de resultados'),
-            }),
-            async execute(params: { query: string; species?: string; limit: number }) {
-              return await searchClinicalKnowledge({ ...params, limit: params.limit || 5 })
-            },
-          },
-        }
-
-        const result = streamText({
+        return streamText({
           model: modelInstance,
           system: clinicalSystemPrompt,
-          messages: await convertToModelMessages(messages),
-          temperature: temp,
-          tools: tools,
-          toolChoice: 'auto',
-          onFinish: ({ usage }) => {
-            const duration = Date.now() - startTime
-            console.log(`[Clinical Mode] Request completed in ${duration}ms`)
+          messages: modelMessages,
+          temperature: temperature ?? 0.3,
+          tools: {
+            get_pet_info: {
+              description: 'Busca informações básicas do pet',
+              inputSchema: z.object({ petId: z.string().uuid() }),
+              async execute({ petId }: { petId: string }) { return await getPetInfo({ petId }) },
+            },
+            get_medical_history: {
+              description: 'Busca histórico médico completo',
+              inputSchema: z.object({ petId: z.string().uuid() }),
+              async execute({ petId }: { petId: string }) { return await getMedicalHistory({ petId }) },
+            },
+            get_vaccination_status: {
+              description: 'Verifica status vacinal',
+              inputSchema: z.object({ petId: z.string().uuid() }),
+              async execute({ petId }: { petId: string }) { return await getVaccinationStatus({ petId }) },
+            },
+            get_current_medications: {
+              description: 'Lista medicações atuais',
+              inputSchema: z.object({ petId: z.string().uuid() }),
+              async execute({ petId }: { petId: string }) { return await getCurrentMedications({ petId }) },
+            },
+            get_recent_exams: {
+              description: 'Busca exames recentes',
+              inputSchema: z.object({ petId: z.string().uuid() }),
+              async execute({ petId }: { petId: string }) { return await getRecentExams({ petId }) },
+            },
+            calculate_medication_dosage: {
+              description: 'Calcula dose de medicação',
+              inputSchema: z.object({
+                medication: z.string(),
+                weight: z.number().positive(),
+                species: z.enum(['canine', 'feline', 'avian', 'reptile', 'rodent', 'other']),
+                condition: z.string().optional(),
+                age: z.string().optional(),
+              }),
+              async execute(params: any) { return await calculateMedicationDosage({ ...params, calculatorEngine }) },
+            },
+            search_clinical_knowledge: {
+              description: 'Busca em base de conhecimento veterinário',
+              inputSchema: z.object({ query: z.string(), species: z.string().optional() }),
+              async execute(params: any) { return await searchClinicalKnowledge(params) },
+            },
           },
-        })
-
-        return result.toUIMessageStreamResponse()
-      } catch (clinicalError) {
-        console.error('[Chat API] Clinical Mode Error:', clinicalError)
-        // Fallback para modo admin se o clínico falhar drasticamente
-        detectedMode = 'admin'
-        modelInstance = googleProvider('gemini-1.5-pro')
+          toolChoice: 'auto',
+          onFinish: () => console.log(`[Clinical Mode] Done in ${Date.now() - startTime}ms`),
+        }).toUIMessageStreamResponse();
       }
-    }
 
-    // Modo Admin: Assistente geral com Gemini 2.5 Pro
-    let modelMessages;
-    try {
-      modelMessages = await convertToModelMessages(messages);
-    } catch (msgError) {
-      console.error('[Chat API] Message conversion error:', msgError);
+      // Modo Admin (Fallback or Direct)
+      return streamText({
+        model: modelInstance,
+        system: (systemPrompt || 'You are a helpful veterinary assistant for AgendaVet.').replace(/VetCRM/g, 'AgendaVet'),
+        messages: modelMessages,
+        temperature: temperature ?? 0.7,
+        onFinish: () => console.log(`[Admin Mode] Done in ${Date.now() - startTime}ms`),
+      }).toUIMessageStreamResponse();
+
+    } catch (streamError) {
+      console.error('[Chat API] Stream Error:', streamError);
       return Response.json({
-        error: 'Failed to convert messages format',
-        details: msgError instanceof Error ? msgError.message : String(msgError)
-      }, { status: 400 });
+        error: 'Stream error',
+        message: streamError instanceof Error ? streamError.message : String(streamError)
+      }, { status: 500 });
     }
-
-    const result = streamText({
-      model: modelInstance,
-      system: systemPrompt || 'You are a helpful veterinary administrative assistant for AgendaVet powered by Gemini. You manage schedules, pricing, and general questions.',
-      messages: modelMessages,
-      temperature: temperature ?? 0.7,
-    })
-
-
-    return result.toUIMessageStreamResponse()
-
-  } catch (error) {
-    console.error('[Chat API] Error:', error)
-
-    return Response.json(
-      {
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    )
+  } catch (fatalError) {
+    console.error('[Chat API] Fatal Error:', fatalError);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
