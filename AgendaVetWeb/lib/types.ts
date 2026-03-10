@@ -6,18 +6,24 @@ export interface Pet {
   breed: string
   dateOfBirth: string
   weight: number
-  ownerId: string
+  ownerId?: string // Legacy link to user_id (for tutores with login)
+  profileId: string // New primary link to profile (tutor)
   notes: string
   imageUrl?: string
   createdAt: string
 }
 
 export interface Owner {
-  id: string
+  id: string // This is the profile.id (UUID)
+  userId?: string // Optional link to auth.users (for login)
   firstName: string
   lastName: string
+  fullName: string
+  gender?: 'Masculino' | 'Feminino' | 'Outro'
+  age?: number
   email: string
   phone: string
+  whatsapp?: string
   address: string
   petIds: string[]
   createdAt: string

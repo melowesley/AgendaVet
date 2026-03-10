@@ -56,9 +56,24 @@ export function PetsContent() {
   const [editingPet, setEditingPet] = useState<Pet | null>(null)
   const [deletingPet, setDeletingPet] = useState<Pet | null>(null)
 
-  const getOwnerName = (ownerId: string) => {
-    const owner = owners.find((o) => o.id === ownerId)
-    return owner ? `${owner.firstName} ${owner.lastName}` : 'Desconhecido'
+  const getOwnerFromPet = (pet: Pet) => {
+    // 1. Try profileId (new system)
+    if (pet.profileId) {
+      const owner = owners.find(o => o.id === pet.profileId)
+      if (owner) return owner
+    }
+    // 2. Try ownerId (legacy system)
+    if (pet.ownerId) {
+      const owner = owners.find(o => o.userId === pet.ownerId || o.id === pet.ownerId)
+      if (owner) return owner
+    }
+    return null
+  }
+
+  const getOwnerName = (pet: Pet) => {
+    const owner = getOwnerFromPet(pet)
+    if (owner) return owner.fullName || `${owner.firstName} ${owner.lastName}`
+    return 'Desconhecido'
   }
 
   const calculateAge = (dateOfBirth: string) => {
@@ -76,10 +91,11 @@ export function PetsContent() {
   }
 
   const filteredPets = pets.filter((pet) => {
+    const ownerName = getOwnerName(pet)
     const matchesSearch =
       pet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       pet.breed.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      getOwnerName(pet.ownerId).toLowerCase().includes(searchQuery.toLowerCase())
+      ownerName.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesSpecies = speciesFilter === 'all' || pet.species === speciesFilter
     return matchesSearch && matchesSpecies
   })
@@ -232,10 +248,10 @@ export function PetsContent() {
                       <TableCell className="hidden lg:table-cell text-muted-foreground">{pet.weight} kg</TableCell>
                       <TableCell>
                         <Link
-                          href={`/owners/${pet.ownerId}`}
+                          href={`/owners/${getOwnerFromPet(pet)?.id || pet.ownerId}`}
                           className="hover:text-emerald-500 transition-colors font-medium"
                         >
-                          {getOwnerName(pet.ownerId)}
+                          {getOwnerName(pet)}
                         </Link>
                       </TableCell>
                       <TableCell className="text-right">

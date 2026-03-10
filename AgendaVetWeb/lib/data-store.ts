@@ -26,7 +26,8 @@ const mapSupabasePet = (p: any): Pet => ({
   breed: p.breed || '',
   dateOfBirth: p.age || '',
   weight: parseFloat(p.weight) || 0,
-  ownerId: p.user_id,
+  ownerId: p.user_id, // Legacy link
+  profileId: p.profile_id, // New link to profile UUID
   notes: p.notes || '',
   imageUrl: p.imageUrl,
   createdAt: p.created_at,
@@ -35,11 +36,16 @@ const mapSupabasePet = (p: any): Pet => ({
 const mapSupabaseOwner = (p: any): Owner => {
   const parts = (p.full_name || '').split(' ')
   return {
-    id: p.id,
+    id: p.id, // Profile UUID
+    userId: p.user_id, // Optional Auth User UUID
     firstName: parts[0] || '',
     lastName: parts.slice(1).join(' ') || '',
+    fullName: p.full_name || '',
+    gender: p.gender,
+    age: p.age,
     email: p.email || '',
     phone: p.phone || '',
+    whatsapp: p.whatsapp || '',
     address: p.address || '',
     petIds: [],
     createdAt: p.created_at,
@@ -185,17 +191,21 @@ export function useAgentSettings() {
 
 // Mutations
 export async function addPet(pet: Omit<Pet, 'id' | 'createdAt'>) {
-  const { data, error } = await supabase.from('pets').insert([{
+  const { data, error } = await (supabase.from('pets').insert([{
     name: pet.name,
     type: pet.species,
     breed: pet.breed,
     age: pet.dateOfBirth,
     weight: pet.weight.toString(),
-    user_id: pet.ownerId,
+    user_id: pet.ownerId || null,
+    profile_id: pet.profileId,
     notes: pet.notes,
-  }]).select().single()
+  }] as any) as any).select().single()
 
-  if (error) throw error
+  if (error) {
+    console.error('Error adding pet:', error)
+    throw error
+  }
   const newPet = mapSupabasePet(data)
   mutate('pets')
   return newPet
@@ -211,7 +221,10 @@ export async function updatePet(id: string, updates: Partial<Pet>) {
   if (updates.notes) supabaseUpdates.notes = updates.notes
 
   const { data, error } = await supabase.from('pets').update(supabaseUpdates).eq('id', id).select().single()
-  if (error) throw error
+  if (error) {
+    console.error('Error updating pet:', error)
+    throw error
+  }
   const updatedPet = mapSupabasePet(data)
   mutate('pets')
   return updatedPet
@@ -224,21 +237,70 @@ export async function deletePet(id: string) {
   return true
 }
 
-export async function addOwner(owner: Omit<Owner, 'id' | 'createdAt' | 'petIds'>) {
-  const user = useAuthStore.getState().user
-  if (!user?.id) throw new Error('User not authenticated')
-
-  const { data, error } = await supabase.from('profiles').insert([{
+export async function addOwner(owner: Omit<Owner, 'id' | 'createdAt' | 'petIds' | 'fullName' | 'userId'>) {
+  const { data, error } = await (supabase.from('profiles').insert([{
     full_name: `${owner.firstName} ${owner.lastName}`,
     phone: owner.phone,
     address: owner.address,
-    user_id: user.id,
-  }]).select().single()
+    email: owner.email,
+    gender: owner.gender,
+    age: owner.age,
+    whatsapp: owner.whatsapp,
+  }] as any) as any).select().single()
 
-  if (error) throw error
+  if (error) {
+    console.error('Error adding owner profile:', error)
+    throw error
+  }
   const newOwner = mapSupabaseOwner(data)
   mutate('owners')
   return newOwner
+}
+
+export async function addTutorAndPet(
+  tutorData: Omit<Owner, 'id' | 'createdAt' | 'petIds' | 'fullName' | 'userId'>,
+  petData: Omit<Pet, 'id' | 'createdAt' | 'profileId'>
+) {
+  // 1. Create the Tutor Profile
+  const { data: tutor, error: tutorError } = await (supabase.from('profiles').insert([{
+    full_name: `${tutorData.firstName} ${tutorData.lastName}`.trim(),
+    phone: tutorData.phone,
+    address: tutorData.address,
+    email: tutorData.email,
+    gender: tutorData.gender,
+    age: tutorData.age,
+    whatsapp: tutorData.whatsapp,
+  }] as any) as any).select().single()
+
+  if (tutorError) {
+    console.error('Error adding tutor during unified registration:', tutorError)
+    throw tutorError
+  }
+
+  // 2. Create the Pet linked to the new Profile ID
+  const { data: pet, error: petError } = await (supabase.from('pets').insert([{
+    name: petData.name,
+    type: petData.species,
+    breed: petData.breed,
+    age: petData.dateOfBirth,
+    weight: petData.weight.toString(),
+    profile_id: tutor.id, // Link to the newly created profile
+    notes: petData.notes,
+  }] as any) as any).select().single()
+
+  if (petError) {
+    console.error('Error adding pet during unified registration:', petError)
+    throw petError
+  }
+
+  // 3. Mutate caches
+  mutate('owners')
+  mutate('pets')
+
+  return {
+    owner: mapSupabaseOwner(tutor),
+    pet: mapSupabasePet(pet)
+  }
 }
 
 export async function updateOwner(id: string, updates: Partial<Owner>) {
@@ -249,16 +311,22 @@ export async function updateOwner(id: string, updates: Partial<Owner>) {
   if (updates.phone) supabaseUpdates.phone = updates.phone
   if (updates.address) supabaseUpdates.address = updates.address
 
-  const { data, error } = await supabase.from('profiles').update(supabaseUpdates).eq('id', id).select().single()
-  if (error) throw error
+  const { data, error } = await supabase.from('profiles').update(supabaseUpdates).eq('user_id', id).select().single()
+  if (error) {
+    console.error('Error updating owner profile:', error)
+    throw error
+  }
   const updatedOwner = mapSupabaseOwner(data)
   mutate('owners')
   return updatedOwner
 }
 
 export async function deleteOwner(id: string) {
-  const { error } = await supabase.from('profiles').delete().eq('id', id)
-  if (error) throw error
+  const { error } = await supabase.from('profiles').delete().eq('user_id', id)
+  if (error) {
+    console.error('Error deleting owner profile:', error)
+    throw error
+  }
   mutate('owners')
   return true
 }
