@@ -47,7 +47,7 @@ const modelOptions = [
 
 export function AgentSettingsDialog({ open, onOpenChange }: AgentSettingsDialogProps) {
   const { settings } = useAgentSettings()
-  
+
   const [formData, setFormData] = useState({
     model: settings.model,
     temperature: settings.temperature,
@@ -72,7 +72,7 @@ export function AgentSettingsDialog({ open, onOpenChange }: AgentSettingsDialogP
     const defaultSettings = {
       model: 'anthropic/claude-opus-4.5',
       temperature: 0.7,
-      systemPrompt: `You are a helpful veterinary assistant for VetCRM. You help staff with:
+      systemPrompt: `You are a helpful veterinary assistant for AgendaVet. You help staff with:
 - Looking up patient and owner information
 - Scheduling appointments
 - Answering common veterinary questions

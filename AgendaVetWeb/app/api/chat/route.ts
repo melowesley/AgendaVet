@@ -96,10 +96,14 @@ export async function POST(req: Request) {
     let modelInstance;
     let calculatorEngine: 'gemini' | 'deepseek' = 'deepseek';
 
-    if (detectedMode === 'clinical') {
+    // Fallback: Se DeepSeek não estiver configurado, usa Gemini para tudo
+    const isDeepseekAvailable = !!(process.env.DEEPSEEK_API_KEY || process.env.EXPO_PUBLIC_DEEPSEEK_API_KEY);
+
+    if (detectedMode === 'clinical' && isDeepseekAvailable) {
       modelInstance = deepseekProvider('deepseek-chat');
       calculatorEngine = 'gemini';
     } else {
+      // Usa Gemini 1.5 Pro por padrão (mais estável e disponível)
       modelInstance = googleProvider('gemini-1.5-pro');
       calculatorEngine = 'deepseek';
     }

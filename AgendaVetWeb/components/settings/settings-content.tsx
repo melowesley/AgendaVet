@@ -34,7 +34,7 @@ export function SettingsContent() {
       description: 'Atualize o nome, endereço e detalhes de contato da sua clínica',
       icon: Building2,
       badge: null,
-      onClick: () => {},
+      onClick: () => { },
       disabled: true,
     },
     {
@@ -42,7 +42,7 @@ export function SettingsContent() {
       description: 'Gerencie preferências de notificação por email e SMS',
       icon: Bell,
       badge: null,
-      onClick: () => {},
+      onClick: () => { },
       disabled: true,
     },
     {
@@ -50,7 +50,7 @@ export function SettingsContent() {
       description: 'Senha, autenticação de dois fatores e gerenciamento de sessão',
       icon: Shield,
       badge: null,
-      onClick: () => {},
+      onClick: () => { },
       disabled: true,
     },
     {
@@ -58,7 +58,7 @@ export function SettingsContent() {
       description: 'Backup, exportação e gerenciamento dos dados da sua clínica',
       icon: Database,
       badge: null,
-      onClick: () => {},
+      onClick: () => { },
       disabled: true,
     },
   ]
@@ -77,7 +77,7 @@ export function SettingsContent() {
             Configurações do Aplicativo
           </CardTitle>
           <CardDescription>
-            Configure suas preferências do aplicativo VetCRM
+            Configure suas preferências do aplicativo AgendaVet
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -118,7 +118,7 @@ export function SettingsContent() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Sobre o VetCRM</CardTitle>
+          <CardTitle>Sobre o AgendaVet</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex justify-between">
@@ -135,7 +135,7 @@ export function SettingsContent() {
           </div>
           <Separator />
           <p className="text-sm text-muted-foreground">
-            VetCRM é uma solução completa de gestão para clínicas veterinárias. Conecte uma integração com banco de dados
+            AgendaVet é uma solução completa de gestão para clínicas veterinárias. Conecte uma integração com banco de dados
             para habilitar o armazenamento persistente de dados.
           </p>
         </CardContent>
