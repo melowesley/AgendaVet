@@ -76,7 +76,10 @@ const mapSupabaseAppointment = (a: any): Appointment => {
 
 // Fetchers
 const petsFetcher = async () => {
-  const { data, error } = await supabase.from('pets').select('*').order('created_at', { ascending: false })
+  const { data, error } = await supabase
+    .from('pets')
+    .select('*, profiles(full_name, id)')
+    .order('created_at', { ascending: false })
   if (error) throw error
   return (data || []).map(mapSupabasePet)
 }
@@ -191,14 +194,17 @@ export function useAgentSettings() {
 
 // Mutations
 export async function addPet(pet: Omit<Pet, 'id' | 'createdAt'>) {
+  const { data: userData } = await supabase.auth.getUser()
+  const currentUserId = userData.user?.id
+
   const { data, error } = await (supabase.from('pets').insert([{
     name: pet.name,
     type: pet.species,
     breed: pet.breed,
     age: pet.dateOfBirth,
     weight: pet.weight.toString(),
-    user_id: pet.ownerId || null,
-    profile_id: pet.profileId,
+    user_id: currentUserId || null, // ID of the logged-in vet
+    profile_id: pet.profileId,     // ID of the tutor profile
     notes: pet.notes,
   }] as any) as any).select().single()
 
@@ -278,13 +284,17 @@ export async function addTutorAndPet(
   }
 
   // 2. Create the Pet linked to the new Profile ID
+  const { data: userData } = await supabase.auth.getUser()
+  const currentUserId = userData.user?.id
+
   const { data: pet, error: petError } = await (supabase.from('pets').insert([{
     name: petData.name,
     type: petData.species,
     breed: petData.breed,
     age: petData.dateOfBirth,
     weight: petData.weight.toString(),
-    profile_id: tutor.id, // Link to the newly created profile
+    user_id: currentUserId || null, // Logged in Vet ID
+    profile_id: tutor.id,         // Newly created Tutor Profile ID
     notes: petData.notes,
   }] as any) as any).select().single()
 
