@@ -13,6 +13,11 @@ import {
 } from 'lucide-react'
 import { PetFormDialog } from './pet-form-dialog'
 import { MedicalRecordFormDialog } from '../medical-records/medical-record-form-dialog'
+import { AttendanceTypeDialog } from '../admin/attendance/attendance-type-dialog'
+import { VacinaDialog } from '../admin/modules/vacina-dialog'
+import { ConsultaDialog } from '../admin/modules/consulta-dialog'
+import { PesoDialog } from '../admin/modules/peso-dialog'
+import { ReceitaDialog } from '../admin/modules/receita-dialog'
 import type { MedicalRecord } from '@/lib/types'
 
 interface PetDetailContentProps {
@@ -53,11 +58,43 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
   const { appointments } = useAppointments()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [recordDialogOpen, setRecordDialogOpen] = useState(false)
+  const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false)
+  const [vacinaDialogOpen, setVacinaDialogOpen] = useState(false)
+  const [consultaDialogOpen, setConsultaDialogOpen] = useState(false)
+  const [pesoDialogOpen, setPesoDialogOpen] = useState(false)
+  const [receitaDialogOpen, setReceitaDialogOpen] = useState(false)
   const [recordDialogType, setRecordDialogType] = useState<MedicalRecord['type']>('vaccination')
 
   const openMedicalRecord = (type: MedicalRecord['type']) => {
     setRecordDialogType(type)
     setRecordDialogOpen(true)
+  }
+
+  const handleAttendanceSelect = (type: string) => {
+    setAttendanceDialogOpen(false)
+
+    if (type === 'vacina') {
+      setVacinaDialogOpen(true)
+    } else if (type === 'consulta') {
+      setConsultaDialogOpen(true)
+    } else if (type === 'peso') {
+      setPesoDialogOpen(true)
+    } else if (type === 'receita') {
+      setReceitaDialogOpen(true)
+    } else {
+      // Map other types to general MedicalRecord types for now
+      const mapping: Record<string, MedicalRecord['type']> = {
+        'receita': 'prescription',
+        'procedimento': 'procedure',
+        'exame': 'lab-result',
+      }
+
+      if (mapping[type]) {
+        openMedicalRecord(mapping[type])
+      } else {
+        openMedicalRecord('note')
+      }
+    }
   }
 
   const petAppointments = appointments
@@ -155,7 +192,7 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
           <div className="md:col-span-4 lg:col-span-3 flex flex-col gap-6 md:sticky md:top-[120px]">
             <div className="flex flex-col gap-3">
               <Button
-                onClick={() => openMedicalRecord('diagnosis')}
+                onClick={() => setAttendanceDialogOpen(true)}
                 className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/20 h-12 text-md"
               >
                 <Stethoscope className="size-4 mr-2" />
@@ -408,6 +445,51 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
       </div>
 
       <PetFormDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} pet={pet} />
+      <AttendanceTypeDialog
+        open={attendanceDialogOpen}
+        onOpenChange={setAttendanceDialogOpen}
+        onSelect={handleAttendanceSelect}
+      />
+      <VacinaDialog
+        open={vacinaDialogOpen}
+        onOpenChange={setVacinaDialogOpen}
+        petId={petId}
+        petName={pet.name}
+        onBack={() => {
+          setVacinaDialogOpen(false)
+          setAttendanceDialogOpen(true)
+        }}
+      />
+      <ConsultaDialog
+        open={consultaDialogOpen}
+        onOpenChange={setConsultaDialogOpen}
+        petId={petId}
+        petName={pet.name}
+        onBack={() => {
+          setConsultaDialogOpen(false)
+          setAttendanceDialogOpen(true)
+        }}
+      />
+      <PesoDialog
+        open={pesoDialogOpen}
+        onOpenChange={setPesoDialogOpen}
+        petId={petId}
+        petName={pet.name}
+        onBack={() => {
+          setPesoDialogOpen(false)
+          setAttendanceDialogOpen(true)
+        }}
+      />
+      <ReceitaDialog
+        open={receitaDialogOpen}
+        onOpenChange={setReceitaDialogOpen}
+        petId={petId}
+        petName={pet.name}
+        onBack={() => {
+          setReceitaDialogOpen(false)
+          setAttendanceDialogOpen(true)
+        }}
+      />
       <MedicalRecordFormDialog
         open={recordDialogOpen}
         onOpenChange={setRecordDialogOpen}

@@ -2,7 +2,7 @@
 
 import useSWR, { mutate } from 'swr'
 import type { Pet, Owner, Appointment, MedicalRecord, AgentSettings } from './types'
-import { supabase } from './supabase/client'
+export { supabase } from './supabase/client'
 import { useAuthStore } from './auth-store'
 
 // AI Agent Settings (kept in-memory for now or could be moved to a settings table)
