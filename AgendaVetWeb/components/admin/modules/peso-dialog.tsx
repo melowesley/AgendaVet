@@ -48,11 +48,11 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
     }, [open, petId])
 
     const loadRecords = async () => {
-        const { data, error } = await supabase
-            .from('pet_weight_records')
+        const { data, error } = await (supabase
+            .from('pet_weight_records' as any)
             .select('*')
             .eq('pet_id', petId)
-            .order('date', { ascending: false })
+            .order('date', { ascending: false }) as any)
 
         if (error) {
             console.error('Error loading weights:', error)
@@ -80,19 +80,19 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
             }
 
             if (editingId) {
-                const { error } = await supabase
-                    .from('pet_weight_records')
-                    .update(payload)
-                    .eq('id', editingId)
+                const { error } = await (supabase
+                    .from('pet_weight_records' as any)
+                    .update(payload as any)
+                    .eq('id', editingId) as any)
                 if (error) throw error
                 toast.success('Peso atualizado com sucesso!')
             } else {
-                const { error } = await supabase.from('pet_weight_records').insert([payload])
+                const { error } = await (supabase.from('pet_weight_records' as any).insert([payload] as any) as any)
                 if (error) throw error
                 toast.success('Peso registrado com sucesso!')
 
                 // Update the main pet weight in the pets table as well
-                await supabase.from('pets').update({ weight: parseFloat(weight) }).eq('id', petId)
+                await (supabase.from('pets').update({ weight: parseFloat(weight) } as any).eq('id', petId) as any)
             }
 
             resetForm()
@@ -120,7 +120,7 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
 
     const handleDelete = async (id: string) => {
         try {
-            const { error } = await supabase.from('pet_weight_records').delete().eq('id', id)
+            const { error } = await (supabase.from('pet_weight_records' as any).delete().eq('id', id) as any)
             if (error) throw error
             toast.success('Registro de peso excluído')
             loadRecords()

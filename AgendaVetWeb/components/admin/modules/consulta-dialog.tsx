@@ -46,7 +46,7 @@ export function ConsultaDialog({ open, onOpenChange, onBack, petId, petName }: C
 
             // Save to medical_records as a general record for now
             // Eventually we can use the specialized anamnesis table
-            const { error } = await supabase.from('medical_records').insert([{
+            const { error } = await (supabase.from('medical_records' as any).insert([{
                 pet_id: petId,
                 user_id: userData.user?.id,
                 type: 'diagnosis',
@@ -54,7 +54,7 @@ export function ConsultaDialog({ open, onOpenChange, onBack, petId, petName }: C
                 description: `Queixa: ${queixa}\n\nAnamnese: ${anamnese}\n\nExame Físico: ${exameFisico}\n\nSuspeita: ${suspeita}\n\nTratamento: ${tratamento}`,
                 date: new Date().toISOString(),
                 veterinarian: 'Veterinário Responsável',
-            }])
+            }] as any) as any)
 
             if (error) throw error
             toast.success('Consulta registrada com sucesso!')

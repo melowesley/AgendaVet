@@ -55,7 +55,7 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
     }, [open, petId])
 
     const loadRecords = async () => {
-        const { data, error } = await (supabase.from('pet_prescriptions').select('*').eq('pet_id', petId).order('prescription_date', { ascending: false }) as any)
+        const { data, error } = await (supabase.from('pet_prescriptions' as any).select('*').eq('pet_id', petId).order('prescription_date', { ascending: false }) as any)
         if (error) {
             console.error('Error loading prescriptions:', error)
             return
@@ -86,11 +86,11 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
             }
 
             if (editingId) {
-                const { error } = await (supabase.from('pet_prescriptions').update(payload).eq('id', editingId) as any)
+                const { error } = await (supabase.from('pet_prescriptions' as any).update(payload as any).eq('id', editingId) as any)
                 if (error) throw error
                 toast.success('Receita atualizada com sucesso!')
             } else {
-                const { error } = await (supabase.from('pet_prescriptions').insert([payload]) as any)
+                const { error } = await (supabase.from('pet_prescriptions' as any).insert([payload] as any) as any)
                 if (error) throw error
                 toast.success('Receita registrada com sucesso!')
             }
@@ -130,7 +130,7 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
 
     const handleDelete = async (id: string) => {
         try {
-            const { error } = await (supabase.from('pet_prescriptions').delete().eq('id', id) as any)
+            const { error } = await (supabase.from('pet_prescriptions' as any).delete().eq('id', id) as any)
             if (error) throw error
             toast.success('Receita excluída')
             loadRecords()

@@ -54,11 +54,11 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
     }, [open, petId])
 
     const loadRecords = async () => {
-        const { data, error } = await supabase
-            .from('pet_vaccines')
+        const { data, error } = await (supabase
+            .from('pet_vaccines' as any)
             .select('*')
             .eq('pet_id', petId)
-            .order('application_date', { ascending: false })
+            .order('application_date', { ascending: false }) as any)
 
         if (error) {
             console.error('Error loading vaccines:', error)
@@ -89,14 +89,14 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
             }
 
             if (editingId) {
-                const { error } = await supabase
-                    .from('pet_vaccines')
-                    .update(payload)
-                    .eq('id', editingId)
+                const { error } = await (supabase
+                    .from('pet_vaccines' as any)
+                    .update(payload as any)
+                    .eq('id', editingId) as any)
                 if (error) throw error
                 toast.success('Vacina atualizada com sucesso!')
             } else {
-                const { error } = await supabase.from('pet_vaccines').insert([payload])
+                const { error } = await (supabase.from('pet_vaccines' as any).insert([payload] as any) as any)
                 if (error) throw error
                 toast.success('Vacina registrada com sucesso!')
             }
@@ -132,7 +132,7 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
 
     const handleDelete = async (id: string) => {
         try {
-            const { error } = await supabase.from('pet_vaccines').delete().eq('id', id)
+            const { error } = await (supabase.from('pet_vaccines' as any).delete().eq('id', id) as any)
             if (error) throw error
             toast.success('Vacina excluída')
             loadRecords()
