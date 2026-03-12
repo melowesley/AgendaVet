@@ -167,7 +167,7 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
     <div className="flex flex-col min-h-[calc(100vh-3.5rem)] bg-background">
       {/* Header do Paciente */}
       <div className="sticky top-14 z-30 bg-background/80 backdrop-blur-md border-b border-border/50 px-4 md:px-6 py-4">
-        <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between w-full">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild className="shrink-0 hover:bg-muted/50 rounded-full">
               <Link href="/pets">
@@ -218,7 +218,7 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
         </div>
       </div>
 
-      <div className="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full">
+      <div className="flex-1 p-4 md:p-6 w-full">
         {/* Bento Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
 
@@ -232,7 +232,7 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
                 <Stethoscope className="size-4 mr-2" />
                 Iniciar Atendimento
               </Button>
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3">
                 <Button
                   variant="outline"
                   onClick={() => setReceitaDialogOpen(true)}

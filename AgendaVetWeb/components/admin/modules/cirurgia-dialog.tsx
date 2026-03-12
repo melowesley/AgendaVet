@@ -5,9 +5,9 @@ import { supabase } from '@/lib/data-store'
 import { mutate } from 'swr'
 import dynamic from 'next/dynamic'
 import DOMPurify from 'dompurify'
-import 'react-quill/dist/quill.snow.css'
+import 'react-quill-new/dist/quill.snow.css'
 
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false, loading: () => <div className="h-[150px] w-full animate-pulse bg-muted rounded-md" /> })
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false, loading: () => <div className="h-[150px] w-full animate-pulse bg-muted rounded-md" /> })
 import { useRef } from 'react'
 import {
     Dialog,
@@ -23,11 +23,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { Scissors, Save, ArrowLeft, History, FileDown, Printer, DollarSign, Plus, Trash2, Activity, HeartPulse } from 'lucide-react'
+import { Scissors, Save, ArrowLeft, History, FileDown, Printer, DollarSign, Plus, Trash2, Activity, HeartPulse, PawPrint, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import ReactToPrint from 'react-to-print'
-import { usePet, useOwner } from '@/lib/data-store'
+import { useReactToPrint } from 'react-to-print'
+import { usePet, useOwner, useMedicalRecords } from '@/lib/data-store'
 import { Badge } from '@/components/ui/badge'
 
 interface CirurgiaDialogProps {
@@ -54,6 +54,7 @@ const MATERIAIS_SUTURA = [
 export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: CirurgiaDialogProps) {
     const { pet } = usePet(petId)
     const { owner } = useOwner(pet?.profileId || '')
+    const { records: allRecords } = useMedicalRecords(petId)
 
     const isFemale = pet?.gender === 'Fêmea'
     const themeColor = {
@@ -87,6 +88,7 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
     const [services, setServices] = useState<{ id: string, name: string, value: number }[]>([])
 
     const printRef = useRef<HTMLDivElement>(null)
+    const handlePrint = useReactToPrint({ contentRef: printRef, documentTitle: `Cirurgia_${procedimento}_${petName}_${format(new Date(), 'dd_MM_yyyy')}` })
 
     const modules = {
         toolbar: [
@@ -164,329 +166,397 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-7xl max-h-[95vh] flex flex-col p-0 overflow-hidden bg-background">
-                <DialogHeader className="p-6 pb-2 border-b border-border/50">
+            <DialogContent className="w-screen sm:max-w-none !max-w-none h-screen max-h-none rounded-none p-0 flex flex-col overflow-hidden border-none text-slate-800">
+                <DialogHeader className="p-4 md:p-6 border-b border-border/50 bg-white flex flex-row items-center justify-between shrink-0 z-20 shadow-sm">
                     <div className="flex items-center gap-4">
                         {onBack && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={onBack}>
-                                <ArrowLeft size={18} />
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-slate-100" onClick={onBack}>
+                                <ArrowLeft className="size-5" />
                             </Button>
                         )}
-                        <div className={`flex size-10 items-center justify-center rounded-full ${themeColor.bgGhost} ${themeColor.text}`}>
-                            <Scissors className="size-5" />
+                        <div className={`flex size-12 items-center justify-center rounded-xl ${themeColor.bgGhost} ${themeColor.text} shadow-inner`}>
+                            <Scissors className="size-6" />
                         </div>
                         <div>
-                            <DialogTitle className="text-xl">Cirurgia - {petName}</DialogTitle>
-                            <DialogDescription>Registro e ficha de procedimento cirúrgico</DialogDescription>
+                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-800">
+                                Centro Cirúrgico
+                            </DialogTitle>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5 font-medium">
+                                <span className="flex items-center gap-1"><PawPrint className="size-3.5" /> <span className="font-bold text-slate-700">{petName}</span></span>
+                                <span className="text-slate-300">•</span>
+                                <span className={`flex items-center gap-1 font-bold ${themeColor.text} uppercase tracking-tighter text-[11px] ${themeColor.bgGhost} px-2 py-0.5 rounded border ${themeColor.borderLight}`}>Surgical Unit</span>
+                            </div>
                         </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Button variant="outline" onClick={() => onOpenChange(false)} className="h-10 px-6 font-bold text-slate-500">
+                            Fechar
+                        </Button>
+                        <Button onClick={handleSave} disabled={loading} className={`h-10 px-6 font-black ${themeColor.bg} ${themeColor.bgHover} text-white shadow-lg`}>
+                            <Save className="size-4 mr-2" />
+                            {loading ? 'Salvando...' : 'Finalizar Cirurgia'}
+                        </Button>
                     </div>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-                    {/* Form Side */}
-                    <div className="w-full md:w-1/2 p-6 border-r border-border/30 overflow-y-auto">
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Procedimento Realizado *</Label>
-                                    <Input
-                                        placeholder="Ex: Ovariohisterectomia"
-                                        value={procedimento}
-                                        onChange={(e) => setProcedimento(e.target.value)}
-                                        className="focus:ring-red-500"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Data da Cirurgia *</Label>
-                                    <Input
-                                        type="date"
-                                        value={date}
-                                        onChange={(e) => setDate(e.target.value)}
-                                    />
-                                </div>
+                <div className="flex-1 overflow-hidden flex bg-slate-100/50">
+                    {/* NEW: Left Sidebar with Patient History */}
+                    <div className="hidden xl:block w-[380px] bg-slate-50/80 border-r border-border/30 p-8 overflow-y-auto shrink-0 shadow-inner">
+                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 border-l-4 border-rose-500 pl-4 mb-8">
+                            Histórico do Paciente
+                        </h3>
+                        
+                        {allRecords.length === 0 ? (
+                            <div className="text-center py-20 flex flex-col items-center gap-4 opacity-50">
+                                <History className="size-10 text-slate-300" />
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Sem registros prévios</p>
                             </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Técnica Cirúrgica</Label>
-                                <div className="bg-white text-black rounded-md overflow-hidden border border-input shadow-inner">
-                                    <ReactQuill
-                                        theme="snow"
-                                        value={tecnica}
-                                        onChange={setTecnica}
-                                        modules={modules}
-                                        className="h-[120px] mb-12"
-                                        placeholder="Descreva a técnica utilizada..."
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Tipo de Anestesia</Label>
-                                    <Select value={tipoAnestesia} onValueChange={setTipoAnestesia}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecione" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {TIPOS_ANESTESIA.map((t) => (
-                                                <SelectItem key={t} value={t}>{t}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Duração (min)</Label>
-                                    <Input
-                                        type="number"
-                                        placeholder="0"
-                                        value={duracao}
-                                        onChange={(e) => setDuracao(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Protocolo Anestésico</Label>
-                                <Textarea
-                                    placeholder="MPA, indução, manutenção, fármacos e doses..."
-                                    value={protocolo}
-                                    onChange={(e) => setProtocolo(e.target.value)}
-                                    rows={2}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Materiais de Sutura</Label>
-                                <div className="grid grid-cols-2 gap-3 bg-muted/30 p-4 rounded-xl border border-border/50">
-                                    {MATERIAIS_SUTURA.map((mat) => (
-                                        <label key={mat} className="flex items-center gap-2 text-[10px] cursor-pointer hover:bg-muted/50 p-1 rounded transition-colors uppercase font-medium">
-                                            <Checkbox
-                                                checked={materiais.includes(mat)}
-                                                onCheckedChange={() => toggleMaterial(mat)}
-                                            />
-                                            {mat}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Intercorrências</Label>
-                                    <Textarea
-                                        placeholder="Descreva intercorrências durante o procedimento (se houver)..."
-                                        value={intercorrencias}
-                                        onChange={(e) => setIntercorrencias(e.target.value)}
-                                        rows={2}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Pós-operatório Imediato</Label>
-                                    <Textarea
-                                        placeholder="Estado do paciente na recuperação anestésica..."
-                                        value={posOperatorio}
-                                        onChange={(e) => setPosOperatorio(e.target.value)}
-                                        rows={2}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Prescrição Pós-operatória</Label>
-                                <div className="bg-white text-black rounded-md overflow-hidden border border-input shadow-inner">
-                                    <ReactQuill
-                                        theme="snow"
-                                        value={prescricao}
-                                        onChange={setPrescricao}
-                                        modules={modules}
-                                        className="h-[150px] mb-12"
-                                        placeholder="Medicamentos, curativos, restrições..."
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Retorno Previsto</Label>
-                                <Input
-                                    placeholder="Ex: 10 dias para retirada de pontos"
-                                    value={retorno}
-                                    onChange={(e) => setRetorno(e.target.value)}
-                                />
-                            </div>
-
-                            {/* Billing Section */}
-                            <div className={`p-4 rounded-xl border-2 border-dashed ${themeColor.border}/20 ${themeColor.bgLight}/30 space-y-3`}>
-                                <div className={`flex items-center gap-2 ${themeColor.text} font-bold text-xs uppercase tracking-wider`}>
-                                    <DollarSign className="size-4" />
-                                    Procedimento e Custos
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1">
-                                        <Label className="text-[10px]">Valor da Cirurgia (R$)</Label>
-                                        <Input
-                                            type="number"
-                                            value={baseValue}
-                                            onChange={(e) => setBaseValue(e.target.value)}
-                                            className="h-8 text-sm"
-                                        />
-                                    </div>
-                                    <div className="flex items-end">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className={`w-full h-8 text-[10px] ${themeColor.border}/30 ${themeColor.text}`}
-                                            onClick={() => setServices([...services, { id: Math.random().toString(), name: 'Cirurgia Adicional', value: 0 }])}
-                                        >
-                                            <Plus className="size-3 mr-1" /> Add Serviço
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                {services.map((service, idx) => (
-                                    <div key={service.id} className="flex gap-2 items-center">
-                                        <Input
-                                            value={service.name}
-                                            onChange={(e) => {
-                                                const newServices = [...services]
-                                                newServices[idx].name = e.target.value
-                                                setServices(newServices)
-                                            }}
-                                            placeholder="Nome do serviço"
-                                            className="h-7 text-[10px] flex-1"
-                                        />
-                                        <Input
-                                            type="number"
-                                            value={service.value}
-                                            onChange={(e) => {
-                                                const newServices = [...services]
-                                                newServices[idx].value = parseFloat(e.target.value) || 0
-                                                setServices(newServices)
-                                            }}
-                                            className="h-7 text-[10px] w-16"
-                                        />
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-7 w-7 p-0 text-destructive"
-                                            onClick={() => setServices(services.filter((_, i) => i !== idx))}
-                                        >
-                                            <Trash2 className="size-3" />
-                                        </Button>
+                        ) : (
+                            <div className="space-y-4">
+                                {allRecords.map(record => (
+                                    <div key={record.id} className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-rose-500 transition-all hover:shadow-md group">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <span className="text-[11px] font-black text-white bg-slate-900 px-2 py-0.5 rounded-[3px]">
+                                                {format(new Date(record.date || record.createdAt), "dd/MM/yyyy")}
+                                            </span>
+                                            <span className="text-[10px] font-black uppercase text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 group-hover:bg-rose-500 group-hover:text-white transition-colors">
+                                                {record.type}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-sm font-black text-slate-800 line-clamp-2 leading-snug">{record.title}</h4>
                                     </div>
                                 ))}
+                            </div>
+                        )}
+                    </div>
 
-                                <div className={`pt-2 border-t ${themeColor.border}/20 flex justify-between items-center text-sm font-bold ${themeColor.text}`}>
-                                    <span>Total Faturado:</span>
-                                    <span>R$ {(parseFloat(baseValue) + services.reduce((acc, s) => acc + s.value, 0)).toFixed(2)}</span>
-                                </div>
+                    {/* Form Side */}
+                    <div className="w-full md:w-[450px] p-8 bg-white border-r border-border/30 overflow-y-auto shrink-0 shadow-lg z-10 relative">
+                        <div className="space-y-8">
+                            <div className="flex justify-between items-center border-l-4 border-slate-900 pl-4">
+                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 leading-none py-1">
+                                    Ficha Cirúrgica
+                                </h3>
                             </div>
 
-                            <div className="flex gap-3">
-                                <Button onClick={handleSave} disabled={loading} className={`flex-1 ${themeColor.bg} ${themeColor.bgHover} text-white shadow-lg`}>
-                                    <Save className="size-4 mr-2" />
-                                    {loading ? 'Salvando...' : 'Finalizar Cirurgia'}
-                                </Button>
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 gap-6">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Procedimento Principal *</Label>
+                                        <Input
+                                            placeholder="Ex: Ovariohisterectomia"
+                                            value={procedimento}
+                                            onChange={(e) => setProcedimento(e.target.value)}
+                                            className="h-12 border-slate-200 rounded-xl font-black text-slate-800 placeholder:font-normal placeholder:text-slate-300"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Data *</Label>
+                                            <Input
+                                                type="date"
+                                                value={date}
+                                                onChange={(e) => setDate(e.target.value)}
+                                                className="h-12 border-slate-200 rounded-xl font-bold"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cirurgião</Label>
+                                            <Input
+                                                value={veterinarian}
+                                                onChange={(e) => setVeterinarian(e.target.value)}
+                                                className="h-12 border-slate-200 rounded-xl font-black font-mono text-slate-700"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
 
-                                {/* @ts-ignore */}
-                                <ReactToPrint
-                                    trigger={() => (
-                                        <Button variant="outline" className="flex-1">
-                                            <Printer className="size-4 mr-2" />
-                                            Gerar Relatório A4
-                                        </Button>
-                                    )}
-                                    content={() => printRef.current}
-                                    documentTitle={`Cirurgia_${procedimento}_${petName}_${format(new Date(), 'dd_MM_yyyy')}`}
-                                />
+                                <div className="space-y-4 pt-4 border-t border-slate-100">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Descrição da Técnica</Label>
+                                    <div className="bg-white text-black rounded-2xl overflow-hidden border border-slate-200 shadow-sm transition-all focus-within:ring-2 focus-within:ring-rose-500/20">
+                                        <ReactQuill
+                                            theme="snow"
+                                            value={tecnica}
+                                            onChange={setTecnica}
+                                            modules={modules}
+                                            className="min-h-[150px]"
+                                            placeholder="Descreva a técnica operatória utilizada..."
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 bg-slate-50 p-6 rounded-2xl border border-slate-200 shadow-inner">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Anestesia</Label>
+                                        <Select value={tipoAnestesia} onValueChange={setTipoAnestesia}>
+                                            <SelectTrigger className="h-12 border-slate-200 bg-white rounded-xl font-bold">
+                                                <SelectValue placeholder="Tipo" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {TIPOS_ANESTESIA.map((t) => (
+                                                    <SelectItem key={t} value={t} className="font-medium">{t}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Duração (min)</Label>
+                                        <Input
+                                            type="number"
+                                            value={duracao}
+                                            onChange={(e) => setDuracao(e.target.value)}
+                                            className="h-12 border-slate-200 bg-white rounded-xl font-black"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Protocolo e Materiais</Label>
+                                    <Textarea
+                                        placeholder="Protocolo anestésico (MPA, indução, manutenção...)"
+                                        value={protocolo}
+                                        onChange={(e) => setProtocolo(e.target.value)}
+                                        className="min-h-[80px] border-slate-200 rounded-xl font-medium"
+                                    />
+                                    <div className="grid grid-cols-2 gap-2 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                                        {MATERIAIS_SUTURA.map((mat) => (
+                                            <label key={mat} className="flex items-center gap-2 text-[10px] font-bold cursor-pointer hover:bg-white p-2 rounded-lg transition-all border border-transparent hover:border-slate-100 uppercase tracking-tighter">
+                                                <Checkbox
+                                                    checked={materiais.includes(mat)}
+                                                    onCheckedChange={() => toggleMaterial(mat)}
+                                                />
+                                                {mat}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 pt-4 border-t border-slate-100">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Observações e Prescrição</Label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <Textarea
+                                            placeholder="Intercorrências..."
+                                            value={intercorrencias}
+                                            onChange={(e) => setIntercorrencias(e.target.value)}
+                                            className="min-h-[80px] border-slate-200 rounded-xl text-xs font-medium"
+                                        />
+                                        <Textarea
+                                            placeholder="Recuperação imediata..."
+                                            value={posOperatorio}
+                                            onChange={(e) => setPosOperatorio(e.target.value)}
+                                            className="min-h-[80px] border-slate-200 rounded-xl text-xs font-medium"
+                                        />
+                                    </div>
+                                    <div className="bg-white text-black rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+                                        <ReactQuill
+                                            theme="snow"
+                                            value={prescricao}
+                                            onChange={setPrescricao}
+                                            modules={modules}
+                                            className="min-h-[150px]"
+                                            placeholder="Prescrição pós-cirúrgica e cuidados em casa..."
+                                        />
+                                    </div>
+                                    <Input
+                                        placeholder="Data/Prazo de Retorno"
+                                        value={retorno}
+                                        onChange={(e) => setRetorno(e.target.value)}
+                                        className="h-12 border-slate-200 rounded-xl font-bold"
+                                    />
+                                </div>
+
+                                {/* Billing Section */}
+                                <div className={`p-6 rounded-2xl border-2 border-dashed ${themeColor.border}/20 ${themeColor.bgGhost}-30 space-y-4 shadow-inner`}>
+                                    <div className={`flex items-center gap-2 ${themeColor.text} font-black text-[10px] uppercase tracking-[0.2em]`}>
+                                        <DollarSign className="size-4" />
+                                        Honorários e Procedimentos Extras
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-[9px] font-black text-slate-400 uppercase">Valor Cirurgia (R$)</Label>
+                                            <Input
+                                                type="number"
+                                                value={baseValue}
+                                                onChange={(e) => setBaseValue(e.target.value)}
+                                                className="h-10 border-slate-200 rounded-xl font-black text-slate-900"
+                                            />
+                                        </div>
+                                        <div className="flex items-end">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className={`w-full h-10 text-[10px] font-black uppercase tracking-widest ${themeColor.border}/30 ${themeColor.text} rounded-xl hover:bg-white`}
+                                                onClick={() => setServices([...services, { id: Math.random().toString(), name: 'Extra / Material', value: 0 }])}
+                                            >
+                                                <Plus className="size-3 mr-1" /> Add Extra
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {services.map((service, idx) => (
+                                        <div key={service.id} className="flex gap-2 items-center bg-white/50 p-2 rounded-xl border border-slate-100">
+                                            <Input
+                                                value={service.name}
+                                                onChange={(e) => {
+                                                    const newServices = [...services]
+                                                    newServices[idx].name = e.target.value
+                                                    setServices(newServices)
+                                                }}
+                                                placeholder="Descrição"
+                                                className="h-9 text-[10px] flex-1 border-none bg-transparent font-bold"
+                                            />
+                                            <Input
+                                                type="number"
+                                                value={service.value}
+                                                onChange={(e) => {
+                                                    const newServices = [...services]
+                                                    newServices[idx].value = parseFloat(e.target.value) || 0
+                                                    setServices(newServices)
+                                                }}
+                                                className="h-9 text-[11px] w-20 border-none bg-transparent font-black text-right"
+                                            />
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10 rounded-lg"
+                                                onClick={() => setServices(services.filter((_, i) => i !== idx))}
+                                            >
+                                                <Trash2 className="size-3" />
+                                            </Button>
+                                        </div>
+                                    ))}
+
+                                    <div className={`pt-4 border-t border-slate-200 flex justify-between items-center`}>
+                                        <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Total Faturado:</span>
+                                        <span className={`text-xl font-black ${themeColor.text}`}>
+                                            R$ {(parseFloat(baseValue) + services.reduce((acc, s) => acc + s.value, 0)).toFixed(2)}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4 pt-4">
+                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-16 text-lg font-black ${themeColor.bg} ${themeColor.bgHover} text-white shadow-xl rounded-2xl transition-all hover:scale-[1.02] active:scale-95`}>
+                                        <Save className="size-6 mr-2" />
+                                        {loading ? 'Salvando...' : 'Finalizar Cirurgia'}
+                                    </Button>
+                                    <Button variant="outline" className="h-16 px-6 border-2 font-bold hover:bg-slate-50 rounded-2xl" onClick={() => handlePrint()}>
+                                        <Printer className="size-6" />
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Preview Side */}
-                    <div className="hidden md:block w-1/2 bg-muted/10 p-8 overflow-y-auto">
+                    {/* Preview Section - A4 Page */}
+                    <div className="hidden md:flex flex-1 bg-slate-200/50 p-6 lg:p-12 overflow-y-auto justify-center items-start">
                         <div
                             ref={printRef}
-                            className={`w-full max-w-[600px] mx-auto min-h-[842px] bg-white shadow-2xl rounded-sm border-2 p-10 flex flex-col text-slate-900 ${themeColor.borderLight}`}
+                            className={`w-full max-w-[650px] min-h-[920px] bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-sm border p-12 flex flex-col text-slate-900 ${themeColor.borderLight} border-t-8 ${themeColor.border}`}
                         >
                             <div className={`border-b-2 pb-6 mb-8 flex justify-between items-end ${themeColor.border}`}>
                                 <div>
-                                    <h2 className={`text-2xl font-bold uppercase tracking-widest ${themeColor.text}`}>Relatório Cirúrgico</h2>
-                                    <p className="text-[10px] opacity-70 mt-1 uppercase">Ficha Técnica de Procedimento Invasivo</p>
+                                    <h2 className={`text-2xl font-black uppercase tracking-tight ${themeColor.text}`}>Relatório Cirúrgico</h2>
+                                    <p className="text-[10px] opacity-70 mt-1 uppercase font-bold text-slate-500">Ficha Técnica de Procedimento Invasivo</p>
                                 </div>
                                 <div className={`text-right ${themeColor.text}`}>
                                     <Scissors className="size-10 ml-auto mb-1 opacity-20" />
-                                    <p className="text-[8px] font-bold">AgendaVet Medical Unit</p>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">AgendaVet Surgical Hub</p>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-8 mb-10 bg-muted/20 p-5 rounded-xl border border-border/50">
-                                <div className="space-y-1">
-                                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Informações do Paciente</p>
-                                    <p className="text-sm font-bold">{petName}</p>
-                                    <p className="text-[10px] opacity-70">{pet?.species} | {pet?.breed}</p>
-                                    <p className="text-[10px] opacity-70">Peso: {pet?.weight || '-'} kg | Sexo: {pet?.gender}</p>
-                                </div>
-                                <div className="space-y-1 text-right">
-                                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Responsável</p>
-                                    <p className="text-sm font-bold">{owner?.fullName || 'S/R'}</p>
-                                    <p className="text-[10px] opacity-70">{owner?.phone || 'Sem contato'}</p>
-                                    <p className="text-[10px] opacity-70">Data: {format(new Date(date), 'dd/MM/yyyy')}</p>
+                            <div className="border border-slate-300 p-6 mb-8 rounded-sm bg-slate-50/50 shadow-inner">
+                                <div className="grid grid-cols-2 gap-10">
+                                    <div className="space-y-1.5">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">DADOS DO PACIENTE</p>
+                                        <div className="space-y-0.5 border-t border-slate-200 pt-3 text-[11px] font-medium text-slate-900 uppercase">
+                                            <p className="text-sm font-black text-slate-800 mb-1 leading-none">{petName}</p>
+                                            <p className="text-slate-600 truncate">{pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : 'Animal'} | {pet?.breed}</p>
+                                            <p className="text-slate-500">Peso: <span className="font-bold text-slate-800">{pet?.weight || '-'} kg</span> | Sexo: <span className="font-bold text-slate-800">{pet?.gender}</span></p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5 border-l border-slate-200 pl-8 text-right font-medium">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">LOGÍSTICA E DATA</p>
+                                        <div className="space-y-0.5 border-t border-slate-200 pt-3 text-[11px]">
+                                            <p className="font-black text-slate-800 text-sm uppercase mb-1">{owner?.fullName || 'S/R'}</p>
+                                            <p className={`font-black uppercase text-[10px] mt-2 inline-block px-2 py-0.5 rounded ${themeColor.bgGhost} ${themeColor.text}`}>
+                                                Procedimento em: {format(new Date(date), 'dd/MM/yyyy')}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex-1 space-y-8 text-slate-800 pb-10">
-                                <section className={`p-5 rounded-xl bg-muted/30 border-l-4 ${themeColor.border}`}>
-                                    <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${themeColor.text}`}>Procedimento Principal</h3>
-                                    <p className="text-lg font-bold italic">{procedimento || "Relatório em preenchimento..."}</p>
+                            <div className="flex-1 space-y-10 text-slate-800 pb-10">
+                                <section className={`p-6 rounded-sm bg-white border border-slate-300 relative overflow-hidden shadow-sm`}>
+                                    <div className={`absolute top-0 left-0 w-1.5 h-full ${themeColor.bg}`}></div>
+                                    <h3 className={`text-[11px] font-black uppercase tracking-widest mb-2 ${themeColor.text}`}>Procedimento Principal</h3>
+                                    <p className="text-2xl font-black text-slate-900 uppercase tracking-tighter underline decoration-4 decoration-slate-100 underline-offset-8">
+                                        {procedimento || "Em preenchimento..."}
+                                    </p>
                                 </section>
 
-                                <div className="grid grid-cols-2 gap-8">
-                                    <section>
-                                        <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${themeColor.text} border-b pb-1`}>Anestesia</h3>
-                                        <p className="text-[11px] font-bold">{tipoAnestesia || "-"}</p>
-                                        <p className="text-[10px] opacity-70 mt-1">Duração: {duracao || "0"} min</p>
-                                        <p className="text-[10px] mt-2 italic text-muted-foreground">{protocolo || "Protocolo não informado"}</p>
+                                <div className="grid grid-cols-2 gap-10">
+                                    <section className="bg-slate-50/80 p-5 rounded-sm border border-slate-200 relative overflow-hidden">
+                                        <div className={`absolute top-0 left-0 w-full h-1 ${themeColor.bg}`}></div>
+                                        <h3 className={`text-[10px] font-black uppercase tracking-widest mb-4 ${themeColor.text}`}>Anestesia e Cronologia</h3>
+                                        <p className="text-[12px] font-black text-slate-800 uppercase leading-snug">{tipoAnestesia || "Não informada"}</p>
+                                        <div className="flex items-center gap-2 mt-3 text-[11px] font-bold text-slate-500">
+                                            <Activity className="size-3.5" />
+                                            <span>Tempo Estimado: <span className="text-slate-900">{duracao || "0"} min</span></span>
+                                        </div>
+                                        <p className="text-[10px] mt-4 font-medium italic text-slate-500 border-t border-slate-100 pt-3 leading-relaxed whitespace-pre-wrap">{protocolo || "Sem observações de protocolo"}</p>
                                     </section>
-                                    <section>
-                                        <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${themeColor.text} border-b pb-1`}>Materiais de Sutura</h3>
-                                        <div className="flex flex-wrap gap-1 mt-2">
+                                    <section className="bg-slate-50/80 p-5 rounded-sm border border-slate-200 relative overflow-hidden">
+                                        <div className={`absolute top-0 left-0 w-full h-1 ${themeColor.bg}`}></div>
+                                        <h3 className={`text-[10px] font-black uppercase tracking-widest mb-4 ${themeColor.text}`}>Materiais e Síntese</h3>
+                                        <div className="flex flex-wrap gap-2">
                                             {materiais.length > 0 ? materiais.map(m => (
-                                                <Badge key={m} variant="outline" className={`text-[8px] h-4 ${themeColor.border}/50`}>{m}</Badge>
-                                            )) : <span className="text-[10px] opacity-40">Nenhum informado</span>}
+                                                <Badge key={m} variant="outline" className={`text-[9px] px-2 py-0.5 bg-white border-slate-300 text-slate-600 font-bold uppercase tracking-tight`}>{m}</Badge>
+                                            )) : <span className="text-[10px] opacity-40 italic font-medium">Nenhum material listado</span>}
                                         </div>
                                     </section>
                                 </div>
 
                                 <section>
-                                    <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${themeColor.text} border-b pb-1`}>Descrição da Técnica</h3>
-                                    <div className="text-[11px] leading-relaxed prose prose-sm max-w-none prose-p:my-0.5" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(tecnica || "Descrição técnica...") }} />
+                                    <h3 className={`text-[11px] font-black uppercase tracking-widest mb-4 ${themeColor.text} border-b border-slate-100 pb-2`}>
+                                        <Scissors className="size-4 inline-block mr-2 align-middle opacity-50" />
+                                        Relatório da Técnica Operatória
+                                    </h3>
+                                    <div className="text-[13px] leading-relaxed prose prose-slate max-w-none text-slate-700 font-medium break-words bg-slate-50/30 p-4 border border-slate-100 rounded-sm italic" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(tecnica || "Aguardando descrição técnica...") }} />
                                 </section>
 
-                                <div className="grid grid-cols-2 gap-8">
+                                <div className="grid grid-cols-2 gap-10 py-6 border-y border-slate-100">
                                     <section>
-                                        <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${themeColor.text} border-b pb-1`}>Intercorrências</h3>
-                                        <p className="text-[10px] leading-relaxed">{intercorrencias || "Sem intercorrências registradas."}</p>
+                                        <h3 className={`text-[10px] font-black uppercase tracking-widest mb-1 ${themeColor.text} opacity-60`}>Intercorrências</h3>
+                                        <p className="text-[11px] leading-relaxed italic text-slate-500 font-medium">{intercorrencias || "Procedimento sem intercorrências registradas."}</p>
                                     </section>
                                     <section>
-                                        <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${themeColor.text} border-b pb-1`}>Recuperação (Pós-Op)</h3>
-                                        <p className="text-[10px] leading-relaxed">{posOperatorio || "Paciente em observação."}</p>
+                                        <h3 className={`text-[10px] font-black uppercase tracking-widest mb-1 ${themeColor.text} opacity-60`}>Pós-Op Imediato</h3>
+                                        <p className="text-[11px] leading-relaxed text-slate-800 font-black uppercase tracking-tight">{posOperatorio || "Recuperação estável."}</p>
                                     </section>
                                 </div>
 
-                                <section>
-                                    <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${themeColor.text} border-b pb-1`}>Recomendações e Prescrição</h3>
-                                    <div className="text-[11px] leading-relaxed prose prose-sm max-w-none prose-p:my-0.5" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(prescricao || "Condutas pós-cirúrgicas...") }} />
-                                    <p className="text-[10px] font-bold mt-4 italic text-muted-foreground">Retorno Previsto: {retorno || "A definir"}</p>
+                                <section className="bg-slate-50 p-6 rounded-sm border border-slate-200 shadow-inner">
+                                    <h3 className={`text-[11px] font-black uppercase tracking-widest mb-4 ${themeColor.text} flex items-center gap-2`}>
+                                        <HeartPulse className="size-4 opacity-50" />
+                                        Plano Terapêutico e Follow-up
+                                    </h3>
+                                    <div className="text-[13px] leading-relaxed text-slate-700 border-l-4 border-slate-300 pl-6 font-medium italic break-words" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(prescricao || "Aguardando prescrição pós-cirúrgica...") }} />
+                                    <div className="mt-8 flex items-center justify-between text-[11px] font-black text-slate-900 border-t border-slate-200/50 pt-4 uppercase tracking-widest">
+                                        <span className="opacity-40">Retorno Clínico Previsto:</span>
+                                        <span className="bg-white px-4 py-1 rounded shadow-sm border border-slate-100">{retorno || "A definir pelo cirurgião"}</span>
+                                    </div>
                                 </section>
                             </div>
 
-                            <div className="mt-auto pt-10 flex justify-between items-end border-t border-dashed">
-                                <div className="text-[9px] opacity-40 italic">Relatório profissional gerado em {format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
+                            <div className="mt-auto pt-12 flex justify-between items-end border-t border-slate-100 italic">
+                                <div className="text-[9px] opacity-40 leading-tight max-w-[200px] font-black text-slate-500 uppercase">
+                                    VALIDAÇÃO DIGITAL • REGISTRO DE CENTRO CIRÚRGICO • {format(new Date(), 'dd/MM/yyyy HH:mm')}
+                                </div>
                                 <div className="text-center w-64">
-                                    <div className={`h-[1px] w-full ${themeColor.border} mb-3`}></div>
-                                    <p className="text-[11px] font-bold uppercase">{veterinarian || 'Dr. Cleyton Chaves'}</p>
-                                    <p className="text-[9px] opacity-60">Médico Veterinário Sênior</p>
-                                    <p className="text-[8px] opacity-60 tracking-widest">CRMV-SP / REGISTRO AgendaVet</p>
+                                    <div className={`h-[2px] w-full ${themeColor.bg} opacity-20 mb-3`}></div>
+                                    <p className="text-[14px] font-black uppercase text-slate-900 tracking-tighter">{veterinarian || 'Dr. Cleyton Chaves'}</p>
+                                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Surgical Specialist / CRMV-XX</p>
                                 </div>
                             </div>
                         </div>

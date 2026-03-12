@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
 import { Search } from 'lucide-react'
 import {
   Dialog,
@@ -66,6 +67,7 @@ export function AppointmentFormDialog({
   const { pets } = usePets()
   const { owners } = useOwners()
   const isEditing = !!appointment
+  const [loading, setLoading] = useState(false)
 
   const [formData, setFormData] = useState({
     petId: '',
@@ -127,16 +129,25 @@ export function AppointmentFormDialog({
     })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (isEditing && appointment) {
-      updateAppointment(appointment.id, formData)
-    } else {
-      addAppointment(formData)
+    setLoading(true)
+    try {
+      if (isEditing && appointment) {
+        await updateAppointment(appointment.id, formData)
+        toast.success("Agendamento atualizado com sucesso!")
+      } else {
+        await addAppointment(formData)
+        toast.success("Novo agendamento criado com sucesso!")
+      }
+      onOpenChange(false)
+    } catch (error: any) {
+      console.error("Error saving appointment:", error)
+      toast.error(error?.message || "Erro ao salvar agendamento")
+    } finally {
+      setLoading(false)
     }
-
-    onOpenChange(false)
   }
 
   return (
@@ -304,7 +315,9 @@ export function AppointmentFormDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit">{isEditing ? 'Salvar Alterações' : 'Agendar'}</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Salvando...' : isEditing ? 'Salvar Alterações' : 'Agendar'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

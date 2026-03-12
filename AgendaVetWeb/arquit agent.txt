@@ -1,0 +1,277 @@
+Visão Geral
+
+A integração de IA do AgendaVet permite que veterinários:
+
+analisem sintomas e histórico clínico
+
+obtenham sugestões de diagnóstico diferencial
+
+recebam recomendações de exames
+
+calculem doses medicamentosas
+
+consultem literatura veterinária
+
+Tudo diretamente dentro do fluxo de atendimento.
+
+Arquitetura de IA
+
+O sistema utiliza arquitetura multi-modelo, permitindo escolher o modelo mais adequado dependendo da complexidade da tarefa.
+
+Modelos utilizados
+Gemini (Google)
+
+Utilizado para:
+
+respostas rápidas
+
+interação geral em chat
+
+processamento de linguagem natural
+
+explicações clínicas simples
+
+Características:
+
+baixa latência
+
+custo reduzido
+
+ideal para interações frequentes
+
+DeepSeek (R1 / Chat)
+
+Utilizado para:
+
+raciocínio clínico complexo
+
+análise de sintomas
+
+diagnósticos diferenciais
+
+recomendações de exames
+
+suporte a decisões médicas
+
+Características:
+
+maior capacidade de raciocínio
+
+respostas mais detalhadas
+
+ideal para casos clínicos complexos
+
+Fluxo de Processamento de IA
+Veterinário envia pergunta
+        │
+        ▼
+Classificação de intenção
+        │
+        ├── Interação simples → Gemini
+        │
+        └── Raciocínio clínico → DeepSeek
+                        │
+                        ▼
+                Processamento do modelo
+                        │
+                        ▼
+                Resposta retornada
+
+Esse fluxo permite otimizar custo, velocidade e qualidade de resposta.
+
+Estrutura de Arquivos (App Vet)
+
+A organização do código segue uma arquitetura modular.
+
+lib/
+ ├── ai.ts
+ ├── ai/
+ ├── prompts/
+ ├── analytics/
+ └── optimization/
+lib/ai.ts
+
+Ponto de entrada principal do sistema de IA.
+
+Responsável por:
+
+inicializar provedores de IA
+
+gerenciar chamadas para modelos
+
+direcionar requisições para módulos especializados
+
+lib/ai/
+
+Contém os módulos analíticos responsáveis pelas funcionalidades clínicas.
+
+Exemplos de módulos:
+
+symptomAnalysis.ts
+diagnosisEngine.ts
+examSuggestions.ts
+treatmentSupport.ts
+
+Responsabilidades:
+
+análise de sintomas
+
+diagnóstico diferencial
+
+recomendação de exames
+
+sugestões terapêuticas
+
+lib/prompts/
+
+Contém templates de prompts otimizados para medicina veterinária.
+
+Os prompts são projetados para:
+
+reduzir alucinação
+
+manter contexto clínico
+
+garantir respostas seguras
+
+Exemplo de prompts:
+
+symptom_analysis.prompt
+diagnostic_reasoning.prompt
+treatment_recommendation.prompt
+lib/analytics/
+
+Sistema de monitoramento de uso da IA.
+
+Responsável por:
+
+registrar interações
+
+medir performance
+
+acompanhar custos de API
+
+identificar erros e falhas
+
+lib/optimization/
+
+Camada responsável pela eficiência operacional da IA.
+
+Inclui:
+
+gerenciamento de tokens
+
+cache de respostas
+
+controle de rate limiting
+
+fallback entre modelos
+
+Estrutura de Pastas
+AgendaVet/
+│
+├── training/                # Dataset e scripts de treinamento
+│
+├── tests/                   # Testes automatizados
+│
+└── AgendaVetVet/
+    └── lib/
+        ├── ai/              # Módulos analíticos
+        │
+        ├── prompts/         # Templates de prompts
+        │
+        ├── analytics/       # Monitoramento e logs
+        │
+        └── optimization/    # Cache e controle de uso
+Segurança
+
+As chaves de API são gerenciadas por variáveis de ambiente, evitando exposição no código.
+
+Variáveis utilizadas:
+
+EXPO_PUBLIC_GEMINI_API_KEY
+EXPO_PUBLIC_DEEPSEEK_API_KEY
+
+Boas práticas implementadas:
+
+armazenamento seguro
+
+separação entre ambientes (dev / prod)
+
+rotação periódica de chaves
+
+Monitoramento
+
+Todas as interações com IA são registradas na tabela:
+
+ai_usage_logs
+
+Localizada no Supabase.
+
+Campos monitorados:
+
+modelo utilizado
+
+número de tokens
+
+tempo de resposta
+
+custo estimado
+
+tipo de requisição
+
+data e usuário
+
+Esse monitoramento permite:
+
+controle de custos
+
+análise de qualidade
+
+otimização de prompts
+
+Testes
+
+Os testes automatizados ficam na pasta:
+
+/tests
+
+Incluem:
+
+testes de integração com modelos
+
+validação de prompts
+
+testes de desempenho
+
+testes de fallback entre modelos
+
+Boas Práticas Clínicas
+
+O sistema segue diretrizes para evitar uso indevido da IA.
+
+A IA sempre deve:
+
+atuar como assistente clínico
+
+nunca fornecer diagnósticos definitivos
+
+incentivar revisão profissional
+
+Mensagem padrão incluída nas respostas:
+
+"Esta sugestão é apenas um apoio clínico. A decisão final deve ser tomada pelo médico veterinário responsável."
+
+Objetivo do Sistema
+
+O objetivo da integração de IA no AgendaVet é:
+
+aumentar a eficiência clínica
+
+reduzir tempo de análise
+
+melhorar suporte à decisão médica
+
+manter o veterinário no controle da consulta
+
+A IA atua como copiloto clínico, não como substituto do profissional.

@@ -16,13 +16,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { Syringe, Save, Trash2, Calendar, Edit2, ArrowLeft, FileDown, Plus, Printer, PawPrint, DollarSign } from 'lucide-react'
+import { Syringe, Save, Trash2, Calendar, Edit2, ArrowLeft, FileDown, Plus, Printer, PawPrint, DollarSign, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import ReactToPrint from 'react-to-print'
-import { usePet, useOwner } from '@/lib/data-store'
+import { useReactToPrint } from 'react-to-print'
+import { usePet, useOwner, useMedicalRecords } from '@/lib/data-store'
 import DOMPurify from 'dompurify'
 
 interface VacinaDialogProps {
@@ -46,6 +46,7 @@ interface Vaccine {
 export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: VacinaDialogProps) {
     const { pet } = usePet(petId)
     const { owner } = useOwner(pet?.profileId || '')
+    const { records: allRecords } = useMedicalRecords(petId)
 
     const isFemale = pet?.gender === 'Fêmea'
     const themeColor = {
@@ -73,6 +74,7 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
     const [services, setServices] = useState<{ id: string, name: string, value: number }[]>([])
 
     const printRef = useRef<HTMLDivElement>(null)
+    const handlePrint = useReactToPrint({ contentRef: printRef, documentTitle: `Vacina_${vaccineName}_${petName}` })
 
     useEffect(() => {
         if (open) loadRecords()
@@ -187,118 +189,159 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
             toast.error(error.message || 'Erro ao excluir vacina')
         }
     }
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-3xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
-                <DialogHeader className="p-6 pb-0 border-b border-border/50">
-                    <div className="flex items-center gap-4 mb-4">
-                        {onBack && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={onBack}>
-                                <ArrowLeft size={18} />
-                            </Button>
-                        )}
-                        <div className="flex size-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
-                            <Syringe className="size-5" />
+            <DialogContent className="w-screen sm:max-w-none !max-w-none h-screen max-h-none rounded-none p-0 flex flex-col overflow-hidden border-none text-slate-800">
+                <DialogHeader className="p-4 md:p-6 border-b border-border/50 bg-white flex flex-row items-center justify-between shrink-0 z-20 shadow-sm">
+                    <div className="flex items-center gap-4">
+                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-slate-100" onClick={onBack}>
+                            <ArrowLeft className="size-5" />
+                        </Button>
+                        <div className={`flex size-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 shadow-inner`}>
+                            <Syringe className="size-6" />
                         </div>
                         <div>
-                            <DialogTitle className="text-xl">Vacinas - {petName}</DialogTitle>
-                            <DialogDescription>Gerencie o histórico de vacinação do paciente</DialogDescription>
+                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-800">
+                                Controle de Vacinação
+                            </DialogTitle>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5 font-medium">
+                                <span className="flex items-center gap-1"><PawPrint className="size-3.5" /> <span className="font-bold text-slate-700">{petName}</span></span>
+                                <span className="text-slate-300">•</span>
+                                <span className="flex items-center gap-1 font-bold text-emerald-600 uppercase tracking-tighter text-[11px] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">Doses & Reforços</span>
+                            </div>
                         </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Button variant="outline" onClick={() => onOpenChange(false)} className="h-10 px-6 font-bold text-slate-500">
+                            Fechar
+                        </Button>
+                        <Button onClick={handleSave} disabled={loading} className={`h-10 px-6 font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg`}>
+                            <Save className="size-4 mr-2" />
+                            {loading ? 'Salvando...' : 'Salvar Registro'}
+                        </Button>
                     </div>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+                <div className="flex-1 overflow-hidden flex bg-slate-100/50">
+                    {/* NEW: Left Sidebar with Patient History */}
+                    <div className="hidden xl:block w-[380px] bg-slate-50/80 border-r border-border/30 p-8 overflow-y-auto shrink-0 shadow-inner">
+                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 border-l-4 border-emerald-500 pl-4 mb-8">
+                            Histórico do Paciente
+                        </h3>
+                        
+                        {allRecords.length === 0 ? (
+                            <div className="text-center py-20 flex flex-col items-center gap-4 opacity-50">
+                                <Clock className="size-10 text-slate-300" />
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Sem registros prévios</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {allRecords.map(record => (
+                                    <div key={record.id} className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-emerald-500 transition-all hover:shadow-md group">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <span className="text-[11px] font-black text-white bg-slate-900 px-2 py-0.5 rounded-[3px]">
+                                                {format(new Date(record.date || record.createdAt), "dd/MM/yyyy")}
+                                            </span>
+                                            <span className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                                                {record.type}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-sm font-black text-slate-800 line-clamp-2 leading-snug">{record.title}</h4>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     {/* Form Side */}
-                    <div className="w-full md:w-1/2 p-6 border-r border-border/30 overflow-y-auto">
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between">
-                                <h3 className="font-semibold text-sm flex items-center gap-2">
-                                    <Plus className="size-4" />
+                    <div className="w-full md:w-[450px] p-8 bg-white border-r border-border/30 overflow-y-auto shrink-0 shadow-lg z-10 relative">
+                        <div className="space-y-8">
+                            <div className="flex justify-between items-center border-l-4 border-slate-900 pl-4">
+                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 leading-none py-1">
                                     {editingId ? 'Editar Vacina' : 'Nova Aplicação'}
                                 </h3>
                                 {editingId && (
-                                    <Button variant="ghost" size="sm" onClick={resetForm} className="h-7 text-xs">
+                                    <Button variant="ghost" size="sm" onClick={resetForm} className="h-7 text-xs font-bold text-slate-500">
                                         Cancelar
                                     </Button>
                                 )}
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <Label htmlFor="vaccine_name">Nome da Vacina *</Label>
+                                    <Label htmlFor="vaccine_name" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nome da Vacina *</Label>
                                     <Input
                                         id="vaccine_name"
                                         value={vaccineName}
                                         onChange={(e) => setVaccineName(e.target.value)}
                                         placeholder="Ex: V10, Antirrábica..."
-                                        className="focus:ring-emerald-500"
+                                        className="h-12 border-slate-200 rounded-xl focus:ring-emerald-500 font-bold"
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="app_date">Data de Aplicação *</Label>
-                                        <Input id="app_date" type="date" value={applicationDate} onChange={(e) => setApplicationDate(e.target.value)} />
+                                        <Label htmlFor="app_date" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Data de Aplicação *</Label>
+                                        <Input id="app_date" type="date" value={applicationDate} onChange={(e) => setApplicationDate(e.target.value)} className="h-12 border-slate-200 rounded-xl font-bold" />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="next_date">Próxima Dose</Label>
-                                        <Input id="next_date" type="date" value={nextDoseDate} onChange={(e) => setNextDoseDate(e.target.value)} />
+                                        <Label htmlFor="next_date" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Próxima Dose</Label>
+                                        <Input id="next_date" type="date" value={nextDoseDate} onChange={(e) => setNextDoseDate(e.target.value)} className="h-12 border-slate-200 rounded-xl font-bold" />
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="batch">Lote</Label>
-                                        <Input id="batch" value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} placeholder="Nº do Lote" />
+                                        <Label htmlFor="batch" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Lote</Label>
+                                        <Input id="batch" value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} placeholder="Nº do Lote" className="h-12 border-slate-200 rounded-xl font-bold" />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="vet">Veterinário</Label>
-                                        <Input id="vet" value={veterinarian} onChange={(e) => setVeterinarian(e.target.value)} placeholder="Dr. Cleyton Chaves" />
+                                        <Label htmlFor="vet" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Veterinário</Label>
+                                        <Input id="vet" value={veterinarian} onChange={(e) => setVeterinarian(e.target.value)} placeholder="Dr. Cleyton Chaves" className="h-12 border-slate-200 rounded-xl font-bold" />
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="vac-notes">Observações Clínicas</Label>
+                                    <Label htmlFor="vac-notes" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Observações Clínicas</Label>
                                     <Textarea
                                         id="vac-notes"
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
-                                        placeholder="Notas adicionais..."
-                                        className="min-h-[80px]"
+                                        placeholder="Notas adicionais sobre a aplicação ou reação..."
+                                        className="min-h-[100px] border-slate-200 rounded-xl font-medium"
                                     />
                                 </div>
 
                                 {/* Billing Section */}
-                                <div className="p-4 rounded-xl border-2 border-dashed border-emerald-500/20 bg-emerald-500/5 space-y-3">
-                                    <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs uppercase tracking-wider">
+                                <div className="p-6 rounded-2xl border-2 border-dashed border-emerald-500/20 bg-emerald-500/[0.02] space-y-4">
+                                    <div className="flex items-center gap-2 text-emerald-700 font-black text-[10px] uppercase tracking-[0.2em]">
                                         <DollarSign className="size-4" />
                                         Serviços e Valores
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1">
-                                            <Label className="text-[10px]">Valor da Vacina (R$)</Label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor da Vacina (R$)</Label>
                                             <Input
                                                 type="number"
                                                 value={baseValue}
                                                 onChange={(e) => setBaseValue(e.target.value)}
-                                                className="h-8 text-sm"
+                                                className="h-10 border-slate-200 rounded-xl font-bold"
                                             />
                                         </div>
                                         <div className="flex items-end">
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                className="w-full h-8 text-[10px] border-emerald-500/30 text-emerald-600"
+                                                className="w-full h-10 border-emerald-500/30 text-emerald-600 font-bold rounded-xl hover:bg-emerald-50"
                                                 onClick={() => setServices([...services, { id: Math.random().toString(), name: 'Serviço Extra', value: 0 }])}
                                             >
-                                                <Plus className="size-3 mr-1" /> Add Serviço
+                                                <Plus className="size-4 mr-1" /> Serviço
                                             </Button>
                                         </div>
                                     </div>
 
                                     {services.map((service, idx) => (
-                                        <div key={service.id} className="flex gap-2 items-center">
+                                        <div key={service.id} className="flex gap-2 items-center bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
                                             <Input
                                                 value={service.name}
                                                 onChange={(e) => {
@@ -306,8 +349,8 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
                                                     newServices[idx].name = e.target.value
                                                     setServices(newServices)
                                                 }}
-                                                placeholder="Nome do serviço"
-                                                className="h-7 text-[10px] flex-1"
+                                                placeholder="Serviço"
+                                                className="h-8 border-none shadow-none text-xs font-bold flex-1"
                                             />
                                             <Input
                                                 type="number"
@@ -317,126 +360,123 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
                                                     newServices[idx].value = parseFloat(e.target.value) || 0
                                                     setServices(newServices)
                                                 }}
-                                                className="h-7 text-[10px] w-16"
+                                                className="h-8 border-none shadow-none text-xs font-black w-20 text-right"
                                             />
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="h-7 w-7 p-0 text-destructive"
+                                                className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive rounded-full"
                                                 onClick={() => setServices(services.filter((_, i) => i !== idx))}
                                             >
-                                                <Trash2 className="size-3" />
+                                                <Trash2 className="size-4" />
                                             </Button>
                                         </div>
                                     ))}
 
-                                    <div className="pt-2 border-t border-emerald-500/20 flex justify-between items-center text-sm font-bold text-emerald-700">
+                                    <div className="pt-4 border-t border-emerald-500/10 flex justify-between items-center text-lg font-black text-emerald-800 uppercase tracking-tighter">
                                         <span>Total:</span>
                                         <span>R$ {(parseFloat(baseValue) + services.reduce((acc, s) => acc + s.value, 0)).toFixed(2)}</span>
                                     </div>
                                 </div>
 
-                                <div className="flex gap-2">
-                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 ${themeColor.bg} ${themeColor.bgHover} text-white`}>
-                                        <Save className="size-4 mr-2" />
+                                <div className="flex gap-4 pt-4">
+                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-16 text-lg font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-100 rounded-2xl`}>
+                                        <Save className="size-6 mr-2" />
                                         {loading ? 'Salvando...' : 'Salvar Registro'}
                                     </Button>
 
-                                    {/* @ts-ignore */}
-                                    <ReactToPrint
-                                        trigger={() => (
-                                            <Button variant="outline" className="flex-1">
-                                                <Printer className="size-4 mr-2" />
-                                                Visualizar A4
-                                            </Button>
-                                        )}
-                                        content={() => printRef.current}
-                                        documentTitle={`Vacina_${vaccineName}_${petName}`}
-                                    />
+                                    <Button variant="outline" className="h-16 px-6 border-2 font-bold hover:bg-slate-50 rounded-2xl" title="Visualizar/Imprimir" onClick={() => handlePrint()}>
+                                        <Printer className="size-6" />
+                                    </Button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Preview Side */}
-                    <div className="hidden md:block w-1/2 bg-muted/10 p-8 overflow-y-auto">
+                    <div className="hidden md:flex flex-1 bg-slate-200/50 p-6 lg:p-12 overflow-y-auto justify-center items-start">
                         <div
                             ref={printRef}
-                            className={`w-full max-w-[600px] mx-auto aspect-[1/1.414] bg-white shadow-2xl rounded-sm border-2 p-8 flex flex-col text-slate-900 ${themeColor.borderLight}`}
+                            className={`w-full max-w-[650px] min-h-[920px] bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-sm border p-12 flex flex-col text-slate-900 border-emerald-200 border-t-8 border-emerald-600`}
                         >
-                            <div className={`border-b-2 pb-4 mb-6 flex justify-between items-end ${themeColor.border}`}>
+                            <div className={`border-b-2 pb-4 mb-6 flex justify-between items-end border-emerald-500`}>
                                 <div>
-                                    <h2 className={`text-xl font-bold uppercase tracking-widest ${themeColor.text}`}>Comprovante de Vacinação</h2>
-                                    <p className="text-[10px] opacity-70 mt-1 uppercase">Folha Médica de Atendimento</p>
+                                    <h2 className={`text-xl font-bold uppercase tracking-widest text-emerald-600`}>Comprovante de Vacinação</h2>
+                                    <p className="text-[10px] opacity-70 mt-1 uppercase text-slate-500">Folha Médica de Atendimento</p>
                                 </div>
-                                <div className={`text-right ${themeColor.text}`}>
+                                <div className={`text-right text-emerald-600`}>
                                     <PawPrint className="size-8 ml-auto mb-1 opacity-20" />
-                                    <p className="text-[8px] font-bold">AgendaVet System v2.0</p>
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">AgendaVet System v2.0</p>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-6 mb-8 bg-muted/20 p-4 rounded-lg border border-border/50">
-                                <div className="space-y-1">
-                                    <p className="text-[9px] font-bold text-muted-foreground uppercase">Paciente</p>
-                                    <p className="text-sm font-bold">{petName}</p>
-                                    <p className="text-[10px] opacity-70">Espécie: {pet?.species} | Raça: {pet?.breed}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-[9px] font-bold text-muted-foreground uppercase">Tutor</p>
-                                    <p className="text-sm font-bold">{owner?.fullName || 'S/R'}</p>
-                                    <p className="text-[10px] opacity-70">{owner?.phone || 'Sem contato'}</p>
+                            <div className="border border-slate-400 p-6 mb-8 rounded-sm bg-slate-50/50">
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div className="space-y-1.5">
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">PACIENTE</p>
+                                        <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{petName}</p>
+                                        <div className="text-[10px] space-y-0.5 mt-2 border-t border-slate-200 pt-2 text-slate-600 font-medium">
+                                            <p><span className="font-bold text-slate-400 uppercase text-[9px]">Espécie:</span> {pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : pet?.species}</p>
+                                            <p><span className="font-bold text-slate-400 uppercase text-[9px]">Raça:</span> {pet?.breed}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5 text-right border-l border-slate-200 pl-8">
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">TUTOR</p>
+                                        <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{owner?.fullName || 'S/R'}</p>
+                                        <p className="text-[10px] mt-2 border-t border-slate-200 pt-2 text-slate-600 font-medium">{owner?.phone || 'Sem contato'}</p>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex-1 space-y-6">
-                                <div className={`p-4 rounded-xl border ${themeColor.borderLight} ${themeColor.bgLight}`}>
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className={`p-2 rounded-lg ${themeColor.bg} text-white`}>
-                                            <Syringe className="size-5" />
+                            <div className="flex-1 space-y-8">
+                                <div className={`border border-slate-300 p-6 rounded-sm bg-white relative`}>
+                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-600"></div>
+                                    <div className="flex items-center gap-5 mb-6 border-b border-slate-100 pb-5">
+                                        <div className={`p-4 rounded-xl bg-emerald-600 text-white shadow-lg`}>
+                                            <Syringe className="size-8" />
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-lg">{vaccineName || 'Aguardando nome...'}</h3>
-                                            <p className="text-xs opacity-70">Aplicada em {format(new Date(applicationDate), 'dd/MM/yyyy')}</p>
+                                            <h3 className="font-black text-2xl text-slate-900 tracking-tighter">{vaccineName || 'Aguardando nome...'}</h3>
+                                            <p className="text-xs text-emerald-600 font-black uppercase tracking-widest mt-0.5">Aplicada em {format(new Date(applicationDate), 'dd/MM/yyyy')}</p>
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4 text-xs">
-                                        <div>
-                                            <p className="font-bold text-muted-foreground uppercase text-[8px]">Próxima Dose</p>
-                                            <p className="font-medium">{nextDoseDate ? format(new Date(nextDoseDate), 'dd/MM/yyyy') : 'Não agendada'}</p>
+                                    <div className="grid grid-cols-2 gap-8">
+                                        <div className="bg-slate-50 p-3 border border-slate-200 rounded-sm text-center">
+                                            <p className="font-black text-slate-400 uppercase text-[9px] tracking-[0.2em] mb-2">Próxima Dose</p>
+                                            <p className="text-base font-black text-emerald-600 tracking-tight">{nextDoseDate ? format(new Date(nextDoseDate), 'dd/MM/yyyy') : 'Não agendada'}</p>
                                         </div>
-                                        <div>
-                                            <p className="font-bold text-muted-foreground uppercase text-[8px]">Vigilância Sanitária (Lote)</p>
-                                            <p className="font-medium">{batchNumber || 'N/I'}</p>
+                                        <div className="bg-slate-50 p-3 border border-slate-200 rounded-sm text-center">
+                                            <p className="font-black text-slate-400 uppercase text-[9px] tracking-[0.2em] mb-2">Vigilância Sanitária</p>
+                                            <p className="text-base font-black text-slate-800 tracking-tight">{batchNumber || 'Lote N/I'}</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase border-b pb-1">Observações e Serviços</h4>
-                                    <p className="text-[11px] italic leading-relaxed text-slate-600 min-h-[50px]">
-                                        {notes || "Nenhuma observação clínica registrada."}
-                                    </p>
+                                <div className="border border-slate-300 p-6 rounded-sm min-h-[150px] bg-slate-50/20">
+                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-200 pb-2 mb-4">Observações Clínicas</h4>
+                                    <div className="text-[12px] leading-relaxed text-slate-700 font-medium whitespace-pre-wrap">
+                                        {notes || "Nenhuma observação clínica adicional registrada para esta aplicação."}
+                                    </div>
                                 </div>
 
                                 {(parseFloat(baseValue) > 0 || services.length > 0) && (
-                                    <div className="mt-4 border border-emerald-500/10 rounded-lg overflow-hidden">
-                                        <div className="bg-emerald-500/5 px-3 py-1 text-[9px] font-bold uppercase text-emerald-700">Resumo Financeiro</div>
-                                        <div className="p-3 space-y-1">
+                                    <div className="border border-slate-800 rounded-sm overflow-hidden mt-6 bg-white shadow-sm">
+                                        <div className="bg-slate-800 px-4 py-2 text-[10px] font-black uppercase text-white tracking-[0.25em]">Resumo Financeiro</div>
+                                        <div className="p-6 space-y-3">
                                             {parseFloat(baseValue) > 0 && (
-                                                <div className="flex justify-between text-[10px]">
-                                                    <span>{vaccineName}</span>
-                                                    <span>R$ {parseFloat(baseValue).toFixed(2)}</span>
+                                                <div className="flex justify-between text-[12px] border-b border-slate-100 pb-2">
+                                                    <span className="font-bold text-slate-500 uppercase tracking-widest text-[10px]">Vacina: {vaccineName}</span>
+                                                    <span className="font-black text-slate-900">R$ {parseFloat(baseValue).toFixed(2)}</span>
                                                 </div>
                                             )}
                                             {services.map(s => (
-                                                <div key={s.id} className="flex justify-between text-[10px]">
-                                                    <span>{s.name}</span>
-                                                    <span>R$ {s.value.toFixed(2)}</span>
+                                                <div key={s.id} className="flex justify-between text-[12px] border-b border-slate-100 pb-2">
+                                                    <span className="font-bold text-slate-500 uppercase tracking-widest text-[10px]">{s.name}</span>
+                                                    <span className="font-black text-slate-900">R$ {s.value.toFixed(2)}</span>
                                                 </div>
                                             ))}
-                                            <div className="flex justify-between pt-1 mt-1 border-t font-bold text-sm">
-                                                <span>Total Atendimento</span>
+                                            <div className="flex justify-between pt-4 mt-2 font-black text-xl text-emerald-600 tracking-tighter">
+                                                <span>VALOR TOTAL</span>
                                                 <span>R$ {(parseFloat(baseValue) + services.reduce((acc, s) => acc + s.value, 0)).toFixed(2)}</span>
                                             </div>
                                         </div>
@@ -444,12 +484,14 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
                                 )}
                             </div>
 
-                            <div className="mt-auto pt-10 flex justify-between items-end border-t border-dashed">
-                                <div className="text-[9px] opacity-50 italic">Validade jurídica para comprovante de vacinação animal.</div>
-                                <div className="text-center w-48">
-                                    <div className="h-[1px] w-full bg-slate-400 mb-2"></div>
-                                    <p className="text-[10px] font-bold uppercase">{veterinarian || 'Dr. Cleyton Chaves'}</p>
-                                    <p className="text-[8px] opacity-70">Médico Veterinário • CRMV-SP</p>
+                            <div className="mt-auto pt-12 flex justify-between items-end">
+                                <div className="text-[9px] opacity-40 italic max-w-[250px] leading-tight font-medium text-slate-500 uppercase">
+                                    Documento autêntico AgendaVet. Validade jurídica conforme normas sanitárias vigentes.
+                                </div>
+                                <div className="text-center w-64">
+                                    <div className="h-[2px] w-full bg-slate-300 mb-3"></div>
+                                    <p className="text-[12px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Dr. Cleyton Chaves'}</p>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
                                 </div>
                             </div>
                         </div>

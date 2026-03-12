@@ -1,0 +1,492 @@
+AgentVet AI Infrastructure
+Clinical Copilot + Agent Control System for Veterinary Clinics
+
+AgentVet é uma infraestrutura de inteligência artificial para clínicas veterinárias, integrada ao sistema AgendaVet.
+O sistema oferece um copiloto clínico assistido por IA, além de um controle centralizado de agentes, permitindo que cada veterinário tenha sua própria IA especializada operando dentro do sistema.
+
+A arquitetura foi projetada para permitir:
+
+Assistência clínica em tempo real durante consultas
+
+Automação de tarefas administrativas
+
+Interação completa por chat com o sistema
+
+Personalização da IA por veterinário
+
+Controle remoto e atualização dinâmica de agentes
+
+Sumário
+
+Visão Geral
+
+Arquitetura do Sistema
+
+Conceito de Agentes
+
+Fluxo de Funcionamento
+
+Componentes Principais
+
+Sistema de Controle de Agentes
+
+Estrutura de Banco de Dados
+
+Personalização de Linguagem
+
+Segurança e Isolamento de Dados
+
+Versionamento de Prompts
+
+Logging e Auditoria
+
+Escalabilidade
+
+Roadmap de Evolução
+
+Tecnologias Utilizadas
+
+Visão Geral
+
+O AgentVet foi projetado para atuar como um copiloto clínico inteligente, fornecendo suporte durante consultas veterinárias sem substituir o julgamento profissional.
+
+Cada veterinário possui um agente de IA dedicado, configurado com:
+
+contexto clínico
+
+histórico dos pacientes
+
+estilo de comunicação personalizado
+
+ferramentas médicas
+
+memória operacional
+
+Além disso, existe um sistema central de controle de agentes, que permite atualizar e gerenciar todas as IAs remotamente.
+
+Arquitetura do Sistema
+
+Arquitetura geral do AgentVet:
+
+┌─────────────────────────────────────────────┐
+│                FRONTEND                     │
+│                (React)                      │
+│                                             │
+│  Chat UI   |   Consulta Clínica   | Config  │
+└─────────────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────┐
+│           NEXT.JS API ROUTES                │
+│                                             │
+│ /api/vet-copilot                            │
+│ /api/agent-control                          │
+└─────────────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────┐
+│             AGENT RUNTIME                   │
+│                                             │
+│ Context Builder                             │
+│ Prompt Engine                               │
+│ Tool Executor                               │
+│ Memory Engine                               │
+└─────────────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────┐
+│               AI MODELS                     │
+│               (OpenRouter)                  │
+│                                             │
+│ Claude Sonnet                               │
+│ Claude Opus                                 │
+│ GPT-4o                                      │
+└─────────────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────┐
+│                DATABASE                     │
+│            Supabase PostgreSQL              │
+│                                             │
+│ pets                                        │
+│ appointments                                │
+│ pet_exams                                   │
+│ pet_vaccines                                │
+│ prescriptions                               │
+└─────────────────────────────────────────────┘
+Conceito de Agentes
+
+Cada veterinário possui um agente de IA isolado.
+
+Exemplo:
+
+AgentVet Dr. Cleyton
+AgentVet Dra. Mariana
+AgentVet Dr. Felipe
+
+Cada agente possui sua própria configuração:
+
+prompt do sistema
+
+estilo de linguagem
+
+permissões de ferramentas
+
+memória contextual
+
+histórico de interações
+
+Isso garante personalização e isolamento de dados por profissional.
+
+Fluxo de Funcionamento
+Inicialização da Consulta
+
+Quando um veterinário seleciona um pet:
+
+Selecionar Pet
+       │
+       ▼
+Context Builder coleta dados
+       │
+       ▼
+Histórico médico
+Vacinas
+Exames
+Observações clínicas
+       │
+       ▼
+System Prompt é montado
+       │
+       ▼
+IA inicia com contexto completo
+Durante a Consulta
+
+Veterinário faz uma pergunta:
+
+"Qual a última vacina deste pet?"
+
+Fluxo interno:
+
+Pergunta do veterinário
+        │
+        ▼
+Classificador de intenção
+        │
+        ▼
+Tool call se necessário
+        │
+        ▼
+Consulta banco Supabase
+        │
+        ▼
+Resultado enviado para IA
+        │
+        ▼
+Resposta gerada com contexto
+Componentes Principais
+VetCopilotContext
+
+Responsável por montar o contexto clínico do paciente.
+
+Funções principais:
+
+gatherPetContext(petId)
+
+formatMedicalHistory(records)
+
+buildSystemPrompt(context)
+
+VetCopilotTools
+
+Define ferramentas disponíveis para a IA.
+
+Tools disponíveis
+get_pet_info
+get_medical_history
+get_vaccination_status
+get_recent_exams
+calculate_medication_dosage
+search_clinical_knowledge
+
+Essas ferramentas permitem que a IA acesse dados estruturados do sistema.
+
+VetCopilotAPI
+
+Endpoint principal de comunicação com o modelo.
+
+Responsabilidades:
+
+autenticação
+
+validação de permissões
+
+montagem de contexto
+
+execução de ferramentas
+
+streaming de resposta
+
+VetCopilotUI
+
+Interface de chat integrada à consulta clínica.
+
+Componentes:
+
+VetCopilotChat
+
+VetCopilotSuggestions
+
+VetCopilotSummary
+
+DosageCalculator
+
+Sistema de Controle de Agentes
+
+O sistema possui um controle central de agentes, chamado informalmente de AI Control Brain.
+
+Esse sistema permite gerenciar todas as IAs do AgendaVet.
+
+Exemplo de comandos administrativos:
+
+/agents list
+/agent update_prompt cleyton
+/agent reload cleyton
+/agent disable_tool cleyton dosage
+
+Fluxo:
+
+Admin Console
+     │
+     ▼
+Agent Control API
+     │
+     ▼
+Atualiza configuração do agente
+     │
+     ▼
+Agente recarrega automaticamente
+Estrutura de Banco de Dados
+Tabela: agent_instances
+id
+vet_id
+system_prompt
+language_style
+tools_enabled
+version
+updated_at
+Tabela: vet_language_profile
+vet_id
+tone
+phrases
+greetings
+signature_style
+Tabela: copilot_interactions
+id
+veterinarian_id
+pet_id
+consultation_id
+query
+response
+tools_used
+timestamp
+rating
+Personalização de Linguagem
+
+Cada veterinário pode configurar a forma como a IA se comunica.
+
+Exemplo:
+
+Tom formal
+Tom amigável
+Tom técnico
+
+A IA pode também aprender o estilo do veterinário a partir das interações.
+
+Exemplo de resposta personalizada:
+
+"De acordo com os registros do sistema, a última vacina foi aplicada em 14/02/2026.
+
+Precisa de ajuda com mais alguma coisa, Dr. Cleyton?"
+Segurança e Isolamento de Dados
+
+O sistema utiliza Row Level Security (RLS) no Supabase.
+
+Isso garante que:
+
+veterinários só acessam dados da própria clínica
+
+dados de pacientes são isolados por login
+
+interações com IA são auditáveis
+
+Regra básica:
+
+vet_id = auth.uid()
+Versionamento de Prompts
+
+Prompts do sistema são versionados.
+
+Tabela:
+
+prompt_versions
+
+id
+version
+prompt_text
+created_at
+
+Isso permite:
+
+atualizar prompts de todos os agentes
+
+testar prompts em agentes específicos
+
+rollback de versões
+
+Exemplo:
+
+deploy_prompt v12 → todos veterinários
+deploy_prompt v12 → apenas Dr Cleyton
+Logging e Auditoria
+
+Todas as interações são registradas.
+
+Informações armazenadas:
+
+pergunta do veterinário
+
+resposta da IA
+
+ferramentas utilizadas
+
+timestamp
+
+feedback do usuário
+
+Isso permite:
+
+auditoria clínica
+
+melhoria de prompts
+
+análise de uso da IA
+
+Escalabilidade
+
+Arquitetura projetada para suportar milhares de agentes simultâneos.
+
+Cada agente é isolado por:
+
+login
+
+configuração
+
+contexto clínico
+
+memória de interação
+
+Estrutura escalável:
+
+Frontend
+   │
+API Layer
+   │
+Agent Runtime
+   │
+Tool System
+   │
+Database + Vector Search
+Roadmap de Evolução
+Fase 1 — Copilot Clínico
+
+chat clínico
+
+consulta de prontuário
+
+cálculo de doses
+
+histórico médico
+
+Fase 2 — RAG Veterinário
+
+Integração com literatura científica.
+
+Busca semântica em:
+
+artigos veterinários
+
+diretrizes WSAVA
+
+diretrizes AAHA
+
+Fase 3 — Assistente Proativo
+
+A IA começa a sugerir ações automaticamente.
+
+Exemplos:
+
+alerta de vacina atrasada
+
+sugestão de exames
+
+alerta de interação medicamentosa
+
+análise de risco clínico
+
+Tecnologias Utilizadas
+
+Frontend
+
+React
+
+Next.js
+
+Backend
+
+Next.js API Routes
+
+Node.js
+
+IA
+
+OpenRouter
+
+Claude Sonnet
+
+Claude Opus
+
+GPT-4o
+
+Banco de Dados
+
+Supabase
+
+PostgreSQL
+
+Busca Semântica
+
+pgvector
+
+Infraestrutura
+
+Vercel
+
+Supabase
+
+Conclusão
+
+O AgentVet não é apenas um chatbot.
+
+Ele representa uma infraestrutura de inteligência artificial para clínicas veterinárias, combinando:
+
+copiloto clínico
+
+automação administrativa
+
+agentes personalizados por veterinário
+
+controle central de IA
+
+suporte baseado em evidências
+
+O objetivo é transformar o AgendaVet em um sistema operacional assistido por IA para medicina veterinária.

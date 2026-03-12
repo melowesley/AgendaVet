@@ -7,15 +7,16 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
 
 export default function SolicitacoesScreen() {
     const colorScheme = useColorScheme();
-    const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+    const isDark = colorScheme === 'dark';
+    const theme = Colors[isDark ? 'dark' : 'light'];
     const queryClient = useQueryClient();
     const { requests, loading, refresh } = useAppointmentRequests();
-
-    // Filtramos apenas as pendentes para esta tela, ou mostramos todas com labels?
-    // No web "requests" mostra todas com filtros. Vamos permitir filtrar.
     const [filter, setFilter] = useState<'pending' | 'confirmed' | 'cancelled' | 'all'>('pending');
 
     const filteredRequests = requests.filter(r => filter === 'all' || r.status === filter);
@@ -44,86 +45,117 @@ export default function SolicitacoesScreen() {
         );
     };
 
-    const renderItem = ({ item }: { item: any }) => (
-        <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={styles.cardHeader}>
-                <View style={styles.petInfo}>
-                    <Text style={[styles.petName, { color: theme.text }]}>{item.pet?.name?.toUpperCase()}</Text>
-                    <Text style={[styles.petBreed, { color: theme.textSecondary }]}>{item.pet?.breed || 'SRD'}</Text>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
-                    <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-                        {getStatusLabel(item.status).toUpperCase()}
-                    </Text>
-                </View>
-            </View>
-
-            <View style={styles.details}>
-                <View style={styles.detailRow}>
-                    <Ionicons name="person-outline" size={14} color={theme.textMuted} />
-                    <Text style={[styles.detailText, { color: theme.textSecondary }]}>{item.profile?.full_name}</Text>
-                </View>
-                <View style={[styles.detailRow, { marginTop: 4 }]}>
-                    <Ionicons name="calendar-outline" size={14} color={theme.textMuted} />
-                    <Text style={[styles.detailText, { color: theme.textSecondary }]}>
-                        {format(parseISO(item.preferred_date), "dd/MM/yyyy", { locale: ptBR })} às {item.preferred_time}
-                    </Text>
-                </View>
-                {item.reason && (
-                    <View style={[styles.detailRow, { marginTop: 4 }]}>
-                        <Ionicons name="help-circle-outline" size={14} color={theme.textMuted} />
-                        <Text style={[styles.detailText, { color: theme.textSecondary }]} numberOfLines={1}>{item.reason}</Text>
+    const renderItem = ({ item }: { item: any }) => {
+        const statusColor = getStatusColor(item.status);
+        return (
+            <Card className="mb-4 border-l-4" style={{ borderLeftColor: statusColor }}>
+                <View className="p-4">
+                    <View className="flex-row justify-between items-start mb-4">
+                        <View className="flex-1">
+                            <Text className="text-base font-black text-foreground">{item.pet?.name?.toUpperCase()}</Text>
+                            <Text className="text-xs text-muted-foreground font-medium uppercase tracking-tighter">
+                                {item.pet?.breed || 'SRD'}
+                            </Text>
+                        </View>
+                        <View className="px-2 py-0.5 rounded-md" style={{ backgroundColor: statusColor + '20' }}>
+                            <Text className="text-[9px] font-black uppercase" style={{ color: statusColor }}>
+                                {getStatusLabel(item.status)}
+                            </Text>
+                        </View>
                     </View>
-                )}
-            </View>
 
-            {item.status === 'pending' && (
-                <View style={styles.actions}>
-                    <TouchableOpacity
-                        style={[styles.actionBtn, styles.cancelBtn]}
-                        onPress={() => handleAction(item.id, 'cancelled')}
-                    >
-                        <Ionicons name="close-circle-outline" size={18} color="#EF4444" />
-                        <Text style={styles.cancelBtnText}>Recusar</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.actionBtn, styles.confirmBtn, { backgroundColor: theme.primary }]}
-                        onPress={() => handleAction(item.id, 'confirmed')}
-                    >
-                        <Ionicons name="checkmark-circle-outline" size={18} color="white" />
-                        <Text style={styles.confirmBtnText}>Aprovar</Text>
-                    </TouchableOpacity>
+                    <View className="gap-2 mb-4">
+                        <View className="flex-row items-center gap-2">
+                            <Ionicons name="person" size={12} color={theme.primary} />
+                            <Text className="text-sm text-foreground font-semibold">{item.profile?.full_name}</Text>
+                        </View>
+                        <View className="flex-row items-center gap-2">
+                            <Ionicons name="calendar" size={12} color={theme.primary} />
+                            <Text className="text-sm text-foreground/80 font-medium">
+                                {format(parseISO(item.preferred_date), "dd/MM/yyyy", { locale: ptBR })} às {item.preferred_time}
+                            </Text>
+                        </View>
+                        {item.reason && (
+                            <View className="flex-row items-start gap-2 bg-muted/30 p-2 rounded-lg border border-border/40">
+                                <Ionicons name="chatbubble-ellipses" size={12} color={theme.textMuted} style={{ marginTop: 2 }} />
+                                <Text className="text-xs text-muted-foreground leading-4 italic flex-1">{item.reason}</Text>
+                            </View>
+                        )}
+                    </View>
+
+                    {item.status === 'pending' && (
+                        <View className="flex-row gap-3 mt-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                label="Recusar"
+                                className="flex-1 border-destructive/20"
+                                onPress={() => handleAction(item.id, 'cancelled')}
+                                leftIcon={<Ionicons name="close-circle" size={16} color="#EF4444" />}
+                            />
+                            <Button
+                                variant="default"
+                                size="sm"
+                                label="Aprovar"
+                                className="flex-1"
+                                onPress={() => handleAction(item.id, 'confirmed')}
+                                leftIcon={<Ionicons name="checkmark-circle" size={16} color="white" />}
+                            />
+                        </View>
+                    )}
                 </View>
-            )}
-        </View>
-    );
+            </Card>
+        );
+    };
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
-            <View style={styles.filterContainer}>
-                {(['pending', 'confirmed', 'all'] as const).map(f => (
-                    <TouchableOpacity
-                        key={f}
-                        style={[styles.filterBtn, filter === f && { backgroundColor: theme.primary, borderColor: theme.primary }]}
-                        onPress={() => setFilter(f)}
-                    >
-                        <Text style={[styles.filterText, { color: filter === f ? 'white' : theme.textSecondary }]}>
-                            {f === 'pending' ? 'Pendentes' : f === 'confirmed' ? 'Confirmados' : 'Todos'}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
+        <View className="flex-1" style={{ backgroundColor: theme.background }}>
+            <View className="px-5 pt-14 pb-4">
+                <View className="mb-6">
+                    <Text className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest">
+                        Novos Agendamentos
+                    </Text>
+                    <Text className="text-2xl font-black text-foreground tracking-tight">Solicitações</Text>
+                </View>
+
+                {/* Filters Premium Pill Style */}
+                <View className="flex-row bg-card/60 p-1.5 rounded-2xl border border-border/50 gap-2">
+                    {(['pending', 'confirmed', 'all'] as const).map(f => {
+                        const isSelected = filter === f;
+                        return (
+                            <TouchableOpacity
+                                key={f}
+                                activeOpacity={0.7}
+                                className={cn(
+                                    "flex-1 items-center justify-center py-2.5 rounded-xl",
+                                    isSelected ? "bg-primary shadow-sm shadow-primary/50" : "bg-transparent"
+                                )}
+                                onPress={() => setFilter(f)}
+                            >
+                                <Text className={cn(
+                                    "text-[10px] font-black uppercase tracking-tighter",
+                                    isSelected ? "text-white" : "text-muted-foreground"
+                                )}>
+                                    {f === 'pending' ? 'Pendentes' : f === 'confirmed' ? 'Confirmados' : 'Todos'}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
             </View>
 
             <FlatList
                 data={filteredRequests}
                 keyExtractor={item => item.id}
                 renderItem={renderItem}
-                contentContainerStyle={styles.list}
+                contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
                 refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={theme.primary} />}
                 ListEmptyComponent={
-                    <View style={styles.empty}>
-                        <Ionicons name="mail-open-outline" size={48} color={theme.textMuted} />
-                        <Text style={{ color: theme.textSecondary, marginTop: 12 }}>Nenhuma solicitação encontrada.</Text>
+                    <View className="items-center py-20 bg-card/40 rounded-3xl border border-dashed border-border/60 mx-4">
+                        <Ionicons name="mail-open-outline" size={64} color={theme.textMuted} />
+                        <Text className="text-muted-foreground mt-4 font-medium text-center px-6">
+                            Nenhuma solicitação encontrada para o filtro selecionado.
+                        </Text>
                     </View>
                 }
             />
@@ -147,28 +179,3 @@ const getStatusColor = (status: string) => {
         default: return '#F59E0B';
     }
 };
-
-const styles = StyleSheet.create({
-    container: { flex: 1 },
-    filterContainer: { flexDirection: 'row', padding: 16, gap: 8 },
-    filterBtn: { paddingHorizontal: 16, height: 36, borderRadius: 18, borderWidth: 1, borderColor: '#ddd', justifyContent: 'center' },
-    filterText: { fontSize: 13, fontWeight: '700' },
-    list: { padding: 16, paddingBottom: 100 },
-    card: { padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 12 },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-    petInfo: { flex: 1 },
-    petName: { fontSize: 16, fontWeight: '800' },
-    petBreed: { fontSize: 12 },
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-    statusText: { fontSize: 10, fontWeight: '800' },
-    details: { marginBottom: 16 },
-    detailRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    detailText: { fontSize: 13 },
-    actions: { flexDirection: 'row', gap: 12 },
-    actionBtn: { flex: 1, height: 44, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-    cancelBtn: { borderWidth: 1, borderColor: '#FEE2E2' },
-    confirmBtn: {},
-    cancelBtnText: { color: '#EF4444', fontWeight: '700', fontSize: 14 },
-    confirmBtnText: { color: 'white', fontWeight: '700', fontSize: 14 },
-    empty: { alignItems: 'center', justifyContent: 'center', marginTop: 60 }
-});

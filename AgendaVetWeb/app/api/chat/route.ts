@@ -97,10 +97,21 @@ export async function POST(req: Request) {
     let modelInstance;
     let calculatorEngine: 'gemini' | 'deepseek' = 'deepseek';
 
-    if (detectedMode === 'clinical' && isDeepseekAvailable) {
+    // Prioriza o modelo solicitado pelo cliente (Web ou Mobile)
+    const requestedModel = model?.toLowerCase();
+
+    if (requestedModel === 'deepseek' && isDeepseekAvailable) {
+      modelInstance = deepseekProvider('deepseek-chat');
+      calculatorEngine = 'gemini';
+    } else if (requestedModel === 'gemini') {
+      modelInstance = googleProvider('gemini-1.5-pro');
+      calculatorEngine = 'deepseek';
+    } else if (detectedMode === 'clinical' && isDeepseekAvailable) {
+      // Fallback padrão para modo clínico
       modelInstance = deepseekProvider('deepseek-chat');
       calculatorEngine = 'gemini';
     } else {
+      // Fallback absoluto
       modelInstance = googleProvider('gemini-1.5-pro');
       calculatorEngine = 'deepseek';
     }

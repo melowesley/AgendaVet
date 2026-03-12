@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { useAppointments, usePets, useOwners } from '@/lib/data-store'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, PawPrint } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, PawPrint, CheckCircle2 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import Link from 'next/link'
@@ -214,16 +214,27 @@ export function CalendarView({ onWeekSelect, selectedWeek, onDayDoubleClick }: C
                           }}>
                             <div className={`w-3 h-3 rounded-full border border-white/20 shadow-sm ${getStatusColor(apt.status)}`} />
                             <span className="font-mono text-emerald-200 font-bold">{apt.time || 'HH:mm'}</span>
-                            <span className="font-medium truncate border-l border-white/20 pl-3 ml-1">
-                              {owner?.fullName || 'Tutor Desconhecido'} |{' '}
+                            <span className="font-medium truncate border-l border-white/30 pl-3 ml-2 flex items-center flex-wrap gap-1.5 flex-1">
+                              <Link
+                                href={`/owners/${owner?.id}`}
+                                className="text-emerald-50 hover:text-emerald-300 hover:underline transition-colors font-semibold shadow-sm"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {owner?.fullName || 'Tutor Desconhecido'}
+                              </Link>
+                              <span className="text-white/40">|</span>
                               <Link
                                 href={`/pets/${pet?.id}`}
-                                className="text-emerald-200 hover:text-emerald-400 hover:underline transition-colors font-bold"
+                                className="text-emerald-300 hover:text-emerald-400 hover:underline transition-colors font-bold shadow-sm"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {pet?.name || 'Pet'}
-                              </Link>{' '}
-                              | <span className="opacity-80 text-xs uppercase tracking-wide bg-black/20 px-2 py-0.5 rounded ml-2">{apt.type}</span>
+                              </Link>
+                              <span className="text-white/40 mx-1">|</span>
+                              <span className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide bg-emerald-500/20 text-emerald-50 px-2 py-0.5 rounded border border-emerald-500/30">
+                                <CheckCircle2 className="size-3 text-emerald-400" />
+                                {apt.veterinarian || apt.type}
+                              </span>
                             </span>
                           </div>
                         )

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { supabase, usePet, useOwner } from '@/lib/data-store'
+import { supabase, usePet, useOwner, useMedicalRecords } from '@/lib/data-store'
 import { mutate } from 'swr'
 import {
     Dialog,
@@ -18,7 +18,7 @@ import { toast } from 'sonner'
 import { Skull, Save, ArrowLeft, Printer, DollarSign, Plus, Trash2, Heart, Clock, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import ReactToPrint from 'react-to-print'
+import { useReactToPrint } from 'react-to-print'
 
 interface ObitoDialogProps {
     open: boolean
@@ -31,6 +31,7 @@ interface ObitoDialogProps {
 export function ObitoDialog({ open, onOpenChange, onBack, petId, petName }: ObitoDialogProps) {
     const { pet } = usePet(petId)
     const { owner } = useOwner(pet?.profileId || '')
+    const { records: allRecords } = useMedicalRecords(petId)
 
     const isMale = pet?.gender === 'Macho'
     const themeColor = {
@@ -53,6 +54,7 @@ export function ObitoDialog({ open, onOpenChange, onBack, petId, petName }: Obit
     const [services, setServices] = useState<{ id: string, name: string, value: number }[]>([])
 
     const printRef = useRef<HTMLDivElement>(null)
+    const handlePrint = useReactToPrint({ contentRef: printRef })
 
     const handleSave = async () => {
         if (!causa.trim()) {
@@ -107,7 +109,7 @@ export function ObitoDialog({ open, onOpenChange, onBack, petId, petName }: Obit
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-7xl max-h-[95vh] flex flex-col p-0 overflow-hidden bg-background">
+            <DialogContent className="w-[95vw] max-w-[1400px] h-[95vh] flex flex-col p-0 overflow-hidden bg-background">
                 <DialogHeader className="p-6 pb-2 border-b border-border/50">
                     <div className="flex items-center gap-4">
                         {onBack && (
@@ -126,8 +128,37 @@ export function ObitoDialog({ open, onOpenChange, onBack, petId, petName }: Obit
                 </DialogHeader>
 
                 <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+                    {/* NEW: Left Sidebar with Patient History */}
+                    <div className="hidden lg:block w-[300px] bg-slate-50/50 border-r border-border/30 p-6 overflow-y-auto shrink-0 mt-0">
+                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 border-l-4 border-zinc-500 pl-3 mb-4">
+                            Histórico do Paciente
+                        </h3>
+                        
+                        {allRecords.length === 0 ? (
+                            <div className="text-center py-8">
+                                <p className="text-xs text-muted-foreground italic">Nenhum registro anterior.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {allRecords.map(record => (
+                                    <div key={record.id} className="p-3 bg-white border border-slate-100 rounded-lg shadow-sm hover:border-zinc-300 transition-colors">
+                                        <div className="flex justify-between items-start mb-1.5">
+                                            <span className="text-[9px] font-bold text-slate-400">
+                                                {format(new Date(record.date || record.createdAt), "dd/MM")}
+                                            </span>
+                                            <span className="text-[9px] font-black uppercase text-zinc-600 bg-zinc-100 px-1.5 py-0.5 rounded">
+                                                {record.type}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-xs font-bold text-slate-800 line-clamp-2">{record.title}</h4>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     {/* Form Side */}
-                    <div className="w-full md:w-1/2 p-6 border-r border-border/30 overflow-y-auto">
+                    <div className="w-full md:w-1/3 lg:w-[400px] p-6 border-r border-border/30 overflow-y-auto shrink-0">
                         <div className="space-y-6">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -235,78 +266,74 @@ export function ObitoDialog({ open, onOpenChange, onBack, petId, petName }: Obit
                                     {loading ? 'Processando...' : 'Finalizar Registro'}
                                 </Button>
 
-                                {/* @ts-ignore */}
-                                <ReactToPrint
-                                    trigger={() => (
-                                        <Button variant="outline" className="flex-1">
-                                            <Printer className="size-4 mr-2" />
-                                            Imprimir Declaração
-                                        </Button>
-                                    )}
-                                    content={() => printRef.current}
-                                />
+                                <Button variant="outline" className="flex-1" onClick={() => handlePrint()}>
+                                    <Printer className="size-4 mr-2" />
+                                    Imprimir Declaração
+                                </Button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Preview Side (Declaração de Óbito) */}
-                    <div className="hidden md:block w-1/2 bg-zinc-100/50 p-8 overflow-y-auto">
+                    <div className="hidden md:block flex-1 bg-zinc-100/50 p-4 lg:p-8 overflow-y-auto">
                         <div
                             ref={printRef}
-                            className="w-full max-w-[600px] mx-auto min-h-[842px] bg-white shadow-2xl rounded-sm border-2 border-zinc-200 p-12 flex flex-col text-zinc-900"
+                            className="w-full max-w-[600px] mx-auto min-h-[842px] bg-white shadow-2xl rounded-sm border-2 border-zinc-300 p-12 flex flex-col text-zinc-900"
                         >
-                            <div className="border-b-4 border-zinc-800 pb-8 mb-10 text-center">
-                                <h2 className="text-3xl font-serif font-bold uppercase tracking-[0.2em] text-zinc-800">Declaração de Óbito</h2>
-                                <p className="text-[10px] text-zinc-500 mt-2 tracking-widest uppercase">Documento Técnico Veterinário</p>
+                            <div className="border-b-4 border-zinc-900 pb-8 mb-10 text-center">
+                                <h2 className="text-3xl font-serif font-bold uppercase tracking-[0.2em] text-zinc-900">Declaração de Óbito</h2>
+                                <p className="text-[10px] text-zinc-500 mt-2 tracking-widest uppercase font-bold">Documento Técnico Veterinário Oficial</p>
                             </div>
 
                             <div className="flex-1 space-y-10">
                                 <section>
-                                    <p className="text-[11px] leading-relaxed text-zinc-700 text-justify">
+                                    <p className="text-[12px] leading-relaxed text-zinc-800 text-justify font-serif italic">
                                         Declaramos para os devidos fins que o paciente animal de estimação, cujas especificações seguem abaixo,
                                         veio a óbito nesta unidade hospitalar na data e horário informados, sob os cuidados da equipe médica veterinária.
                                     </p>
                                 </section>
 
-                                <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Paciente</p>
-                                        <p className="text-sm font-bold border-b border-zinc-100 pb-1">{petName}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Espécie/Raça</p>
-                                        <p className="text-sm border-b border-zinc-100 pb-1">{pet?.species} / {pet?.breed}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Tutor Responsável</p>
-                                        <p className="text-sm border-b border-zinc-100 pb-1">{owner?.fullName || "S/R"}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Data do Óbito</p>
-                                        <p className="text-sm border-b border-zinc-100 pb-1">{format(new Date(date), 'dd/MM/yyyy')} às {time}</p>
+                                <div className="border border-zinc-300 p-6 rounded-sm bg-zinc-50/50">
+                                    <div className="grid grid-cols-2 gap-x-12 gap-y-8">
+                                        <div className="space-y-1.5">
+                                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">PACIENTE</p>
+                                            <p className="text-base font-bold text-zinc-900 border-b border-zinc-200 pb-1">{petName}</p>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">ESPÉCIE / RAÇA</p>
+                                            <p className="text-base text-zinc-800 border-b border-zinc-200 pb-1">{pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : pet?.species} / {pet?.breed}</p>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">TUTOR RESPONSÁVEL</p>
+                                            <p className="text-base text-zinc-800 border-b border-zinc-200 pb-1">{owner?.fullName || "S/R"}</p>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">DATA E HORÁRIO</p>
+                                            <p className="text-base text-zinc-800 border-b border-zinc-200 pb-1">{format(new Date(date), 'dd/MM/yyyy')} às {time}</p>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <section className="pt-6">
-                                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3">Causa Provável do Óbito</h3>
-                                    <div className="p-6 bg-zinc-50 rounded border border-zinc-100 italic text-zinc-800 text-lg">
+                                <section>
+                                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-3 border-b border-zinc-200 pb-1">Causa Provável do Óbito</h3>
+                                    <div className="p-8 bg-zinc-900 text-white rounded-sm italic text-xl text-center shadow-inner break-words break-all whitespace-pre-wrap">
                                         {causa || "_________________________________"}
                                     </div>
                                 </section>
 
                                 <section>
-                                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3">Notas e Observações</h3>
-                                    <p className="text-sm text-zinc-600 leading-relaxed min-h-[100px] border-l-2 border-zinc-100 pl-4">
-                                        {observacoes || "Nenhuma observação adicional registrada."}
+                                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-3 border-b border-zinc-200 pb-1">Notas e Observações Adicionais</h3>
+                                    <p className="text-sm text-zinc-700 leading-relaxed min-h-[120px] bg-zinc-50/30 p-4 border-l-4 border-zinc-200 break-words break-all whitespace-pre-wrap">
+                                        {observacoes || "Nenhuma observação clínica adicional registrada para este evento."}
                                     </p>
                                 </section>
                             </div>
 
                             <div className="mt-auto pt-16 flex flex-col items-center">
-                                <div className="w-64 border-t border-zinc-800 mb-2"></div>
-                                <p className="text-sm font-bold uppercase">{veterinarian || 'Dr. Cleyton Chaves'}</p>
-                                <p className="text-[10px] text-zinc-500 tracking-wide">Médico Veterinário Responsável</p>
-                                <p className="text-[8px] text-zinc-400 mt-1 uppercase">AgendaVet Medical Unit - Hospital Veterinário</p>
+                                <div className="w-80 border-t-2 border-zinc-900 pt-3 text-center">
+                                    <p className="text-lg font-serif font-bold text-zinc-900 uppercase">{veterinarian || "Veterinário Responsável"}</p>
+                                    <p className="text-xs text-zinc-500 font-bold tracking-widest">Médico Veterinário • CRMV-SP</p>
+                                    <p className="text-[10px] text-zinc-400 mt-4 leading-tight">Emitido electronicamente em {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
+                                </div>
                             </div>
                         </div>
                     </div>

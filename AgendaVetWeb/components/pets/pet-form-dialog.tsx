@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { addPet, updatePet, useOwners, addTutorAndPet } from '@/lib/data-store'
+import { addPet, updatePet, useOwners, addTutorAndPet, updateOwner } from '@/lib/data-store'
 import { toast } from 'sonner'
 import type { Pet, Owner } from '@/lib/types'
 import { Button } from '@/components/ui/button'
@@ -132,6 +132,17 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
 
     try {
       if (isEditing && pet) {
+        await updateOwner(formData.tutorId, {
+          firstName: formData.tutorFirstName,
+          lastName: formData.tutorLastName,
+          gender: formData.tutorGender,
+          age: parseInt(formData.tutorAge) || 0,
+          address: formData.tutorAddress,
+          email: formData.tutorEmail,
+          whatsapp: formData.tutorWhatsapp,
+          phone: formData.tutorWhatsapp,
+        })
+
         await updatePet(pet.id, {
           name: formData.name,
           species: formData.species,
@@ -141,7 +152,7 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
           weight: parseFloat(formData.weight) || 0,
           notes: formData.notes,
         })
-        toast.success('Informações do pet atualizadas!')
+        toast.success('Informações atualizadas com sucesso!')
       } else if (useExistingTutor) {
         await addPet({
           name: formData.name,

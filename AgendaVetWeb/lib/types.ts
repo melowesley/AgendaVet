@@ -48,7 +48,7 @@ export interface MedicalRecord {
   petId: string
   appointmentId?: string
   date: string
-  type: 'vaccination' | 'prescription' | 'diagnosis' | 'procedure' | 'lab-result' | 'note'
+  type: 'vaccination' | 'prescription' | 'diagnosis' | 'procedure' | 'lab-result' | 'note' | 'peso' | 'cirurgia' | 'internacao' | 'banho-tosa' | 'obito' | 'documento' | 'fotos' | 'video' | 'retorno' | 'outros' | 'consulta' | 'exame' | 'procedimento' | 'receita' | 'vacina' | 'observacao'
   title: string
   description: string
   veterinarian: string

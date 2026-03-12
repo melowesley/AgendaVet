@@ -15,11 +15,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { FlaskConical, Save, Trash2, Download, Edit2, ArrowLeft, Plus, History } from 'lucide-react'
+import { FlaskConical, Save, Trash2, Download, Edit2, ArrowLeft, Plus, History, Clock, Printer, PawPrint, DollarSign, FileText } from 'lucide-react'
 import { format } from 'date-fns'
 import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
+import { usePet, useOwner, useMedicalRecords } from '@/lib/data-store'
+import { useRef } from 'react'
+import { useReactToPrint } from 'react-to-print'
 
 interface ExameDialogProps {
     open: boolean
@@ -41,6 +44,13 @@ interface Exam {
 }
 
 export function ExameDialog({ open, onOpenChange, onBack, petId, petName }: ExameDialogProps) {
+    const { pet } = usePet(petId)
+    const { owner } = useOwner(pet?.profileId || '')
+    const { records: allRecords } = useMedicalRecords(petId)
+    
+    const printRef = useRef<HTMLDivElement>(null)
+    const handlePrint = useReactToPrint({ contentRef: printRef })
+
     const [loading, setLoading] = useState(false)
     const [records, setRecords] = useState<Exam[]>([])
     const [examType, setExamType] = useState('')
@@ -147,152 +157,238 @@ export function ExameDialog({ open, onOpenChange, onBack, petId, petName }: Exam
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-4xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
-                <DialogHeader className="p-6 pb-0 border-b border-border/50">
-                    <div className="flex items-center gap-4 mb-4">
+            <DialogContent className="w-screen sm:max-w-none !max-w-none h-screen max-h-none rounded-none p-0 flex flex-col overflow-hidden border-none text-slate-800">
+                <DialogHeader className="p-4 md:p-6 border-b border-border/50 bg-white flex flex-row items-center justify-between shrink-0 z-20 shadow-sm">
+                    <div className="flex items-center gap-4">
                         {onBack && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={onBack}>
-                                <ArrowLeft size={18} />
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-slate-100" onClick={onBack}>
+                                <ArrowLeft className="size-5" />
                             </Button>
                         )}
-                        <div className="flex size-10 items-center justify-center rounded-full bg-violet-500/10 text-violet-500">
-                            <FlaskConical className="size-5" />
+                        <div className={`flex size-12 items-center justify-center rounded-xl bg-violet-500/10 text-violet-500 shadow-inner`}>
+                            <FlaskConical className="size-6" />
                         </div>
                         <div>
-                            <DialogTitle className="text-xl">Exames - {petName}</DialogTitle>
-                            <DialogDescription>Registro e acompanhamento de exames laboratoriais e de imagem</DialogDescription>
+                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-800">
+                                Central de Exames
+                            </DialogTitle>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5 font-medium">
+                                <span className="flex items-center gap-1"><PawPrint className="size-3.5" /> <span className="font-bold text-slate-700">{petName}</span></span>
+                                <span className="text-slate-300">•</span>
+                                <span className="flex items-center gap-1 font-bold text-violet-600 uppercase tracking-tighter text-[11px] bg-violet-50 px-2 py-0.5 rounded border border-violet-100">Laudos & Imagens</span>
+                            </div>
                         </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Button variant="outline" onClick={() => onOpenChange(false)} className="h-10 px-6 font-bold text-slate-500">
+                            Fechar
+                        </Button>
+                        <Button onClick={handleSave} disabled={loading} className={`h-10 px-6 font-black bg-violet-600 hover:bg-violet-700 text-white shadow-lg`}>
+                            <Save className="size-4 mr-2" />
+                            {loading ? 'Salvando...' : 'Salvar Registro'}
+                        </Button>
                     </div>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-                    {/* Form Side */}
-                    <div className="w-full md:w-1/2 p-6 border-r border-border/30 overflow-y-auto">
-                        <div className="space-y-6">
+                <div className="flex-1 overflow-hidden flex bg-slate-100/50">
+                    {/* NEW: Left Sidebar with Patient History */}
+                    <div className="hidden xl:block w-[380px] bg-slate-50/80 border-r border-border/30 p-8 overflow-y-auto shrink-0 shadow-inner">
+                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 border-l-4 border-violet-500 pl-4 mb-8">
+                            Histórico do Paciente
+                        </h3>
+                        
+                        {allRecords.length === 0 ? (
+                            <div className="text-center py-20 flex flex-col items-center gap-4 opacity-50">
+                                <Clock className="size-10 text-slate-300" />
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Sem registros prévios</p>
+                            </div>
+                        ) : (
                             <div className="space-y-4">
-                                <h3 className="font-semibold text-sm flex items-center gap-2">
-                                    <Plus className="size-4" />
-                                    {editingId ? 'Editar Resultado' : 'Novo Resultado'}
+                                {allRecords.map(record => (
+                                    <div key={record.id} className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-violet-500 transition-all hover:shadow-md group">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <span className="text-[11px] font-black text-white bg-slate-900 px-2 py-0.5 rounded-[3px]">
+                                                {format(new Date(record.date || record.createdAt), "dd/MM/yyyy")}
+                                            </span>
+                                            <span className="text-[10px] font-black uppercase text-violet-600 bg-violet-50 px-2 py-0.5 rounded border border-violet-100 group-hover:bg-violet-500 group-hover:text-white transition-colors">
+                                                {record.type}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-sm font-black text-slate-800 line-clamp-2 leading-snug">{record.title}</h4>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Form Side */}
+                    <div className="w-full md:w-[450px] p-8 bg-white border-r border-border/30 overflow-y-auto shrink-0 shadow-lg z-10 relative">
+                        <div className="space-y-8">
+                            <div className="flex justify-between items-center border-l-4 border-slate-900 pl-4">
+                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 leading-none py-1">
+                                    {editingId ? 'Editar Exame' : 'Novo Registro'}
                                 </h3>
-
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="exam-type">Tipo de Exame *</Label>
-                                    <Input id="exam-type" value={examType} onChange={(e) => setExamType(e.target.value)} placeholder="Ex: Hemograma, Raio-X, Ultrassom..." />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="exam-date">Data *</Label>
-                                        <Input id="exam-date" type="date" value={examDate} onChange={(e) => setExamDate(e.target.value)} />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="exam-vet">Veterinário Ref.</Label>
-                                        <Input id="exam-vet" value={veterinarian} onChange={(e) => setVeterinarian(e.target.value)} placeholder="Nome do Vet" />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="exam-results">Resultados / Conclusão</Label>
-                                    <Textarea id="exam-results" value={results} onChange={(e) => setResults(e.target.value)} placeholder="Valores de referência, achados, laudo..." className="min-h-[120px]" />
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="exam-url">URL do Laudo/Arquivo</Label>
-                                    <Input id="exam-url" value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} placeholder="https://..." />
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="exam-notes">Observações Internas</Label>
-                                    <Textarea id="exam-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex: Solicitar repetição em 30 dias..." className="min-h-[60px]" />
-                                </div>
-
-                                <div className="flex gap-2 pt-2">
-                                    <Button onClick={handleSave} disabled={loading} className="flex-1 bg-violet-600 hover:bg-violet-700 text-white">
-                                        <Save className="size-4 mr-2" />
-                                        {loading ? 'Salvando...' : 'Salvar Exame'}
+                                {editingId && (
+                                    <Button variant="ghost" size="sm" onClick={resetForm} className="h-7 text-xs font-bold text-slate-500">
+                                        Cancelar
                                     </Button>
-                                    {editingId && (
-                                        <Button variant="outline" onClick={resetForm}>Cancelar</Button>
-                                    )}
+                                )}
+                            </div>
+
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <Label htmlFor="exam-type" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tipo de Exame *</Label>
+                                    <Input
+                                        id="exam-type"
+                                        value={examType}
+                                        onChange={(e) => setExamType(e.target.value)}
+                                        placeholder="Ex: Hemograma, Raio-X, Ultrassom..."
+                                        className="h-12 border-slate-200 rounded-xl focus:ring-violet-500 font-bold"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="exam-date" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Data do Exame *</Label>
+                                        <Input id="exam-date" type="date" value={examDate} onChange={(e) => setExamDate(e.target.value)} className="h-12 border-slate-200 rounded-xl font-bold" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="exam-vet" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Veterinário Ref.</Label>
+                                        <Input id="exam-vet" value={veterinarian} onChange={(e) => setVeterinarian(e.target.value)} placeholder="Nome do Vet" className="h-12 border-slate-200 rounded-xl font-bold" />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="exam-results" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Laudo / Conclusão</Label>
+                                    <Textarea
+                                        id="exam-results"
+                                        value={results}
+                                        onChange={(e) => setResults(e.target.value)}
+                                        placeholder="Descreva os achados, valores de referência ou conclusão do exame..."
+                                        className="min-h-[150px] border-slate-200 rounded-xl font-medium"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="exam-url" className="text-[10px] font-black uppercase tracking-widest text-slate-400">URL do Arquivo (Laudo Digital)</Label>
+                                    <div className="relative">
+                                        <Input id="exam-url" value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} placeholder="https://..." className="h-12 border-slate-200 rounded-xl font-bold pl-10" />
+                                        <FileText className="absolute left-3.5 top-3.5 size-5 text-slate-300" />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="exam-notes" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Observações Internas</Label>
+                                    <Textarea
+                                        id="exam-notes"
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                        placeholder="Notas para controle interno (ex: repetir em 30 dias)..."
+                                        className="min-h-[80px] border-slate-200 rounded-xl font-medium bg-slate-50/50"
+                                    />
+                                </div>
+
+                                <div className="flex gap-4 pt-4">
+                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-16 text-lg font-black bg-violet-600 hover:bg-violet-700 text-white shadow-xl shadow-violet-100 rounded-2xl`}>
+                                        <Save className="size-6 mr-2" />
+                                        {loading ? 'Salvando...' : 'Salvar Registro'}
+                                    </Button>
+
+                                    <Button variant="outline" className="h-16 px-6 border-2 font-bold hover:bg-slate-50 rounded-2xl" title="Visualizar/Imprimir" onClick={() => handlePrint()}>
+                                        <Printer className="size-6" />
+                                    </Button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* List Side */}
-                    <div className="w-full md:w-1/2 bg-muted/20 flex flex-col overflow-hidden">
-                        <div className="p-4 border-b border-border/30 bg-muted/30 flex items-center justify-between">
-                            <h3 className="font-semibold text-sm flex items-center gap-2">
-                                <History className="size-4" />
-                                Histórico de Exames
-                            </h3>
-                            <Badge variant="outline" className="font-mono text-[10px]">{records.length} registros</Badge>
-                        </div>
-                        <ScrollArea className="flex-1">
-                            <div className="p-4 space-y-3">
-                                {records.length === 0 ? (
-                                    <div className="text-center py-10 border border-dashed rounded-xl border-border/50 bg-background/50">
-                                        <FlaskConical className="size-8 text-muted-foreground/30 mx-auto mb-2" />
-                                        <p className="text-sm text-muted-foreground">Nenhum exame cadastrado.</p>
+                    <div className="hidden md:flex flex-1 bg-slate-200/50 p-6 lg:p-12 overflow-y-auto justify-center items-start">
+                        <div
+                            ref={printRef}
+                            className={`w-full max-w-[650px] min-h-[920px] bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-sm border p-12 flex flex-col text-slate-900 border-violet-200 border-t-8 border-violet-600`}
+                        >
+                            <div className={`border-b-2 pb-4 mb-6 flex justify-between items-end border-violet-500`}>
+                                <div>
+                                    <h2 className={`text-xl font-bold uppercase tracking-widest text-violet-600`}>Relatório de Exame</h2>
+                                    <p className="text-[10px] opacity-70 mt-1 uppercase text-slate-500">Documento Auxiliar de Diagnóstico</p>
+                                </div>
+                                <div className={`text-right text-violet-600`}>
+                                    <FlaskConical className="size-8 ml-auto mb-1 opacity-20" />
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">AgendaVet System v2.0</p>
+                                </div>
+                            </div>
+
+                            <div className="border border-slate-400 p-6 mb-8 rounded-sm bg-slate-50/50">
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div className="space-y-1.5">
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">PACIENTE</p>
+                                        <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{petName}</p>
+                                        <div className="text-[10px] space-y-0.5 mt-2 border-t border-slate-200 pt-2 text-slate-600 font-medium">
+                                            <p><span className="font-bold text-slate-400 uppercase text-[9px]">Espécie:</span> {pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : pet?.species}</p>
+                                            <p><span className="font-bold text-slate-400 uppercase text-[9px]">Raça:</span> {pet?.breed}</p>
+                                        </div>
                                     </div>
-                                ) : (
-                                    records.map((record) => (
-                                        <Card key={record.id} className="border-border/50 shadow-sm overflow-hidden group">
-                                            <CardContent className="p-4">
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <div>
-                                                        <h4 className="font-bold text-sm text-violet-700">{record.exam_type}</h4>
-                                                        <div className="flex items-center gap-2 mt-1">
-                                                            <Badge variant="secondary" className="font-mono text-[10px] bg-violet-100 text-violet-700 border-none">
-                                                                {format(new Date(record.exam_date), 'dd/MM/yyyy')}
-                                                            </Badge>
-                                                            {record.veterinarian && (
-                                                                <span className="text-[10px] text-muted-foreground border-l border-border pl-2">
-                                                                    Vet: {record.veterinarian}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <Button variant="ghost" size="icon" className="size-7 rounded-full" onClick={() => handleEdit(record)}>
-                                                            <Edit2 size={12} />
-                                                        </Button>
-                                                        <Button variant="ghost" size="icon" className="size-7 rounded-full text-destructive hover:bg-destructive/10" onClick={() => handleDelete(record.id)}>
-                                                            <Trash2 size={12} />
-                                                        </Button>
-                                                    </div>
-                                                </div>
+                                    <div className="space-y-1.5 text-right border-l border-slate-200 pl-8">
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">TUTOR</p>
+                                        <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{owner?.fullName || 'S/R'}</p>
+                                        <p className="text-[10px] mt-2 border-t border-slate-200 pt-2 text-slate-600 font-medium">{owner?.phone || 'Sem contato'}</p>
+                                    </div>
+                                </div>
+                            </div>
 
-                                                {record.results && (
-                                                    <div className="bg-muted/30 rounded-md p-3 text-xs border border-border/30 mb-2">
-                                                        <p className="font-semibold mb-1 text-muted-foreground text-[10px] uppercase">Resultados</p>
-                                                        <p className="whitespace-pre-wrap">{record.results}</p>
-                                                    </div>
-                                                )}
+                            <div className="flex-1 space-y-8">
+                                <div className={`border border-slate-300 p-6 rounded-sm bg-white relative`}>
+                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-violet-600"></div>
+                                    <div className="flex items-center gap-5 mb-6 border-b border-slate-100 pb-5">
+                                        <div className={`p-4 rounded-xl bg-violet-600 text-white shadow-lg`}>
+                                            <FlaskConical className="size-8" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-black text-2xl text-slate-900 tracking-tighter uppercase">{examType || 'Aguardando tipo...'}</h3>
+                                            <p className="text-xs text-violet-600 font-black uppercase tracking-widest mt-0.5">Realizado em {format(new Date(examDate), 'dd/MM/yyyy')}</p>
+                                        </div>
+                                    </div>
 
-                                                <div className="flex items-center justify-between mt-3 text-xs">
-                                                    {record.notes ? (
-                                                        <p className="text-muted-foreground italic flex-1 truncate pr-2">Obs: {record.notes}</p>
-                                                    ) : <div className="flex-1"></div>}
+                                    <div className="space-y-2">
+                                        <p className="font-black text-slate-400 uppercase text-[9px] tracking-[0.2em]">Veterinário Responsável</p>
+                                        <p className="text-sm font-black text-slate-800 tracking-tight border-l-2 border-slate-200 pl-3">{veterinarian || 'Não informado'}</p>
+                                    </div>
+                                </div>
 
-                                                    {record.file_url && (
-                                                        <a
-                                                            href={record.file_url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium bg-blue-50 px-2 py-1 rounded"
-                                                        >
-                                                            <Download size={12} />
-                                                            Laudo
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    ))
+                                <div className="border border-slate-300 p-6 rounded-sm min-h-[300px] bg-slate-50/20">
+                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-200 pb-2 mb-4">Laudo Técnico / Resultados</h4>
+                                    <div className="text-[12px] leading-relaxed text-slate-700 font-medium whitespace-pre-wrap">
+                                        {results || "O laudo detalhado deste exame não foi preenchido ou está pendente de processamento laboratorial."}
+                                    </div>
+                                </div>
+
+                                {fileUrl && (
+                                    <div className="p-4 bg-violet-50 border border-violet-100 rounded-sm flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <FileText className="size-5 text-violet-500" />
+                                            <div>
+                                                <p className="text-[10px] font-black text-violet-700 uppercase tracking-widest">Documento Digital Disponível</p>
+                                                <p className="text-[11px] text-violet-600/70 font-medium truncate max-w-[300px]">{fileUrl}</p>
+                                            </div>
+                                        </div>
+                                        <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="bg-violet-600 text-white text-[10px] font-black px-4 py-2 rounded uppercase tracking-widest hover:bg-violet-700 transition-colors">
+                                            Ver Original
+                                        </a>
+                                    </div>
                                 )}
                             </div>
-                        </ScrollArea>
+
+                            <div className="mt-auto pt-12 flex justify-between items-end">
+                                <div className="text-[9px] opacity-40 italic max-w-[250px] leading-tight font-medium text-slate-500 uppercase">
+                                    Relatório gerado via AgendaVet Digital. As informações acima são de responsabilidade do profissional solicitante.
+                                </div>
+                                <div className="text-center w-64">
+                                    <div className="h-[2px] w-full bg-slate-300 mb-3"></div>
+                                    <p className="text-[12px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Dr. Cleyton Chaves'}</p>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Médico Veterinário</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </DialogContent>

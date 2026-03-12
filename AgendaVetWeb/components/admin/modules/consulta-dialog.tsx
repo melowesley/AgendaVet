@@ -5,9 +5,9 @@ import { supabase } from '@/lib/data-store'
 import { mutate } from 'swr'
 import dynamic from 'next/dynamic'
 import DOMPurify from 'dompurify'
-import 'react-quill/dist/quill.snow.css'
+import 'react-quill-new/dist/quill.snow.css'
 
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false, loading: () => <div className="h-[150px] w-full animate-pulse bg-muted rounded-md" /> })
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false, loading: () => <div className="h-[150px] w-full animate-pulse bg-muted rounded-md" /> })
 import { useRef } from 'react'
 import {
     Dialog,
@@ -21,11 +21,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { Stethoscope, Save, ArrowLeft, Plus, History, Printer, PawPrint, DollarSign, Trash2 } from 'lucide-react'
+import { Stethoscope, Save, ArrowLeft, Plus, History, Printer, PawPrint, DollarSign, Trash2, Clock } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import ReactToPrint from 'react-to-print'
-import { usePet, useOwner } from '@/lib/data-store'
+import { useReactToPrint } from 'react-to-print'
+import { usePet, useOwner, useMedicalRecords } from '@/lib/data-store'
 import { format } from 'date-fns'
 
 interface ConsultaDialogProps {
@@ -39,6 +39,7 @@ interface ConsultaDialogProps {
 export function ConsultaDialog({ open, onOpenChange, onBack, petId, petName }: ConsultaDialogProps) {
     const { pet } = usePet(petId)
     const { owner } = useOwner(pet?.profileId || '')
+    const { records: allRecords } = useMedicalRecords(petId)
 
     const isFemale = pet?.gender === 'Fêmea'
     const themeColor = {
@@ -65,6 +66,7 @@ export function ConsultaDialog({ open, onOpenChange, onBack, petId, petName }: C
     const [services, setServices] = useState<{ id: string, name: string, value: number }[]>([])
 
     const printRef = useRef<HTMLDivElement>(null)
+    const handlePrint = useReactToPrint({ contentRef: printRef, documentTitle: `Consulta_${petName}_${format(new Date(), 'dd_MM_yyyy')}` })
 
     const modules = {
         toolbar: [
@@ -120,34 +122,76 @@ export function ConsultaDialog({ open, onOpenChange, onBack, petId, petName }: C
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-screen-2xl h-[90vh] p-0 overflow-hidden flex flex-col">
-                <DialogHeader className="p-6 pb-2 border-b border-border/30 bg-muted/5">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
-                                <ArrowLeft className="size-4" />
+            <DialogContent className="w-screen sm:max-w-none !max-w-none h-screen max-h-none rounded-none p-0 flex flex-col overflow-hidden border-none">
+                <DialogHeader className="p-4 md:p-6 border-b border-border/50 bg-white flex flex-row items-center justify-between shrink-0 z-20 shadow-sm">
+                    <div className="flex items-center gap-4">
+                        {onBack && (
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-slate-100" onClick={onBack}>
+                                <ArrowLeft className="size-5" />
                             </Button>
-                            <div>
-                                <DialogTitle className="flex items-center gap-2 text-xl">
-                                    <Stethoscope className={`size-5 ${themeColor.text}`} />
-                                    Atendimento Clínico: <span className={themeColor.text}>{petName}</span>
-                                </DialogTitle>
-                                <DialogDescription>Registro completo de anamnese, exame físico e conduta médica</DialogDescription>
+                        )}
+                        <div className={`flex size-12 items-center justify-center rounded-xl ${themeColor.bgGhost} ${themeColor.text} shadow-inner`}>
+                            <Stethoscope className="size-6" />
+                        </div>
+                        <div>
+                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-800">
+                                Atendimento Clínico
+                            </DialogTitle>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5 font-medium">
+                                <span className="flex items-center gap-1"><PawPrint className="size-3.5" /> <span className="font-bold text-slate-700">{petName}</span></span>
+                                <span className="text-slate-300">•</span>
+                                <span className="flex items-center gap-1 font-bold text-slate-500 uppercase tracking-tighter text-[11px] bg-slate-100 px-2 py-0.5 rounded">Anamnese & Conduta</span>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" onClick={handleSave} disabled={loading} className="border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10">
-                                <Save className="size-4 mr-2" />
-                                {loading ? 'Salvando...' : 'Salvar Registro'}
-                            </Button>
-                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Button variant="outline" onClick={() => onOpenChange(false)} className="h-10 px-6 font-bold text-slate-500">
+                            Fechar
+                        </Button>
+                        <Button onClick={handleSave} disabled={loading} className={`h-10 px-6 font-black ${themeColor.bg} ${themeColor.bgHover} text-white shadow-lg`}>
+                            <Save className="size-4 mr-2" />
+                            {loading ? 'Salvando...' : 'Finalizar Atendimento'}
+                        </Button>
                     </div>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+                <div className="flex-1 overflow-hidden flex bg-slate-100/50">
+                    {/* NEW: Left Sidebar with Patient History - Styled more like a column */}
+                    <div className="hidden xl:block w-[380px] bg-slate-50/80 border-r border-border/30 p-8 overflow-y-auto shrink-0 shadow-inner">
+                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 border-l-4 border-blue-500 pl-4 mb-8">
+                            Histórico do Paciente
+                        </h3>
+                        
+                        {allRecords.length === 0 ? (
+                            <div className="text-center py-20 flex flex-col items-center gap-4 opacity-50">
+                                <Clock className="size-10 text-slate-300" />
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Sem registros prévios</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {allRecords.map(record => (
+                                    <div key={record.id} className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-blue-500 transition-all hover:shadow-md group">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <span className="text-[11px] font-black text-white bg-slate-900 px-2 py-0.5 rounded-[3px]">
+                                                {format(new Date(record.date || record.createdAt), "dd/MM/yyyy")}
+                                            </span>
+                                            <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                                                {record.type}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-sm font-black text-slate-800 line-clamp-2 leading-snug">{record.title}</h4>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     {/* Form Side */}
-                    <div className="w-full md:w-1/2 p-6 border-r border-border/30 overflow-y-auto">
-                        <div className="space-y-6">
+                    <div className="w-full md:w-[450px] p-8 bg-white border-r border-border/30 overflow-y-auto shrink-0 shadow-lg z-10 relative">
+                        <div className="space-y-8">
+                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 border-l-4 border-slate-900 pl-4">
+                                Registro de Atendimento
+                            </h3>
                             <Tabs defaultValue="anamnese" className="w-full">
                                 <TabsList className={`grid w-full grid-cols-2 mb-6 p-1 bg-muted/50 rounded-lg`}>
                                     <TabsTrigger value="anamnese" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">Anamnese</TabsTrigger>
@@ -286,97 +330,101 @@ export function ConsultaDialog({ open, onOpenChange, onBack, petId, petName }: C
                                 </div>
                             </div>
 
-                            <div className="flex gap-3">
-                                <Button onClick={handleSave} disabled={loading} className={`flex-1 ${themeColor.bg} ${themeColor.bgHover} text-white shadow-lg`}>
-                                    <Save className="size-4 mr-2" />
-                                    {loading ? 'Salvando...' : 'Finalizar Atendimento'}
+                            <div className="flex gap-4 pt-10">
+                                <Button onClick={handleSave} disabled={loading} className={`flex-1 h-14 text-lg font-black ${themeColor.bg} ${themeColor.bgHover} text-white shadow-xl shadow-blue-100 rounded-xl`}>
+                                    <Save className="size-5 mr-2" />
+                                    {loading ? 'Salvando...' : 'Salvar Registro'}
                                 </Button>
 
-                                {/* @ts-ignore */}
-                                <ReactToPrint
-                                    trigger={() => (
-                                        <Button variant="outline" className="flex-1">
-                                            <Printer className="size-4 mr-2" />
-                                            Gerar PDF/A4
-                                        </Button>
-                                    )}
-                                    content={() => printRef.current}
-                                    documentTitle={`Consulta_${petName}_${format(new Date(), 'dd_MM_yyyy')}`}
-                                />
+                                <Button variant="outline" className="h-14 px-6 border-2 font-bold hover:bg-slate-50 rounded-xl" title="Visualizar/Imprimir" onClick={() => handlePrint()}>
+                                    <Printer className="size-5" />
+                                </Button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Preview Side */}
-                    <div className="hidden md:block w-1/2 bg-muted/10 p-8 overflow-y-auto">
+                    <div className="hidden md:flex flex-1 bg-slate-200/50 p-6 lg:p-12 overflow-y-auto justify-center items-start">
                         <div
                             ref={printRef}
-                            className={`w-full max-w-[600px] mx-auto aspect-[1/1.414] bg-white shadow-2xl rounded-sm border-2 p-8 flex flex-col text-slate-900 ${themeColor.borderLight}`}
+                            className={`w-full max-w-[650px] min-h-[920px] bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-sm border p-12 flex flex-col text-slate-900 ${themeColor.borderLight} border-t-8 ${themeColor.border}`}
                         >
-                            <div className={`border-b-2 pb-4 mb-6 flex justify-between items-end ${themeColor.border}`}>
+                            <div className={`border-b-2 pb-6 mb-8 flex justify-between items-end ${themeColor.border}`}>
                                 <div>
-                                    <h2 className={`text-xl font-bold uppercase tracking-widest ${themeColor.text}`}>Ficha de Consulta Clínica</h2>
+                                    <h2 className={`text-2xl font-bold uppercase tracking-widest ${themeColor.text}`}>Ficha de Consulta Clínica</h2>
                                     <p className="text-[10px] opacity-70 mt-1 uppercase">Relatório de Atendimento Veterinário</p>
                                 </div>
                                 <div className={`text-right ${themeColor.text}`}>
-                                    <Stethoscope className="size-8 ml-auto mb-1 opacity-20" />
-                                    <p className="text-[8px] font-bold">AgendaVet System v2.0</p>
+                                    <Stethoscope className="size-10 ml-auto mb-1 opacity-20" />
+                                    <p className="text-[8px] font-bold text-slate-400">AgendaVet Medical Unit v2.0</p>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-6 mb-8 bg-muted/20 p-4 rounded-lg border border-border/50">
-                                <div className="space-y-1">
-                                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Paciente</p>
-                                    <p className="text-sm font-bold">{petName}</p>
-                                    <p className="text-[10px] opacity-70">Espécie: {pet?.species} | Raça: {pet?.breed}</p>
-                                    <p className="text-[10px] opacity-70">Sexo: {pet?.gender} | Peso: {pet?.weight || '-'} kg</p>
-                                </div>
-                                <div className="space-y-1 text-right">
-                                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Tutor(a)</p>
-                                    <p className="text-sm font-bold">{owner?.fullName || 'S/R'}</p>
-                                    <p className="text-[10px] opacity-70">Propriedade de {owner?.firstName}</p>
-                                    <p className="text-[10px] opacity-70">{owner?.phone || 'Sem contato'}</p>
+                            <div className="border border-slate-400 p-5 mb-8 rounded-sm bg-slate-50/30">
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div className="space-y-1.5">
+                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">DADOS DO PACIENTE</p>
+                                        <div className="space-y-0.5 border-t border-slate-200 pt-1 text-[10px]">
+                                            <p><span className="font-bold w-12 inline-block text-slate-700">Paciente:</span> {petName}</p>
+                                            <p><span className="font-bold w-12 inline-block text-slate-700">Espécie:</span> {pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : 'Animal'} | {pet?.breed}</p>
+                                            <p><span className="font-bold w-12 inline-block text-slate-700">Peso:</span> {pet?.weight || '-'} kg | Sexo: {pet?.gender}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5 border-l border-slate-200 pl-6 text-right">
+                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">DADOS DO TUTOR</p>
+                                        <div className="space-y-0.5 border-t border-slate-200 pt-1 text-[10px]">
+                                            <p><span className="font-bold text-slate-700">Tutor:</span> {owner?.fullName || 'Proprietário S/R'}</p>
+                                            <p>{owner?.phone || 'Sem contato registrado'}</p>
+                                            <p className="text-[11px] font-bold text-slate-800 mt-2">Data: {format(new Date(), 'dd/MM/yyyy')}</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex-1 space-y-6 text-slate-800">
-                                <section>
-                                    <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${themeColor.text} border-b pb-1`}>Anamnese e Queixa Principal</h3>
-                                    <p className="text-xs font-bold mb-2">"{queixa || "O paciente apresenta..."}"</p>
-                                    <div className="text-[11px] leading-relaxed prose prose-sm max-w-none prose-p:my-0.5" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(anamnese || "Histórico clínico inicial...") }} />
+                            <div className="flex-1 space-y-8 text-slate-800">
+                                <section className="border-l-4 border-slate-300 pl-4 py-1">
+                                    <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${themeColor.text} flex items-center gap-2`}>
+                                        <span className="size-1.5 rounded-full bg-slate-400"></span> Anamnese e Queixa Principal
+                                    </h3>
+                                    <p className="text-[13px] font-bold mb-2 text-slate-900 leading-tight">"{queixa || "O paciente apresenta..."}"</p>
+                                    <div className="text-[11px] leading-relaxed prose prose-sm max-w-none text-slate-700 break-words break-all whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(anamnese || "Histórico clínico inicial...") }} />
                                 </section>
 
-                                <section>
-                                    <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${themeColor.text} border-b pb-1`}>Exames Físicos e Clínicos</h3>
-                                    <div className="text-[11px] leading-relaxed prose prose-sm max-w-none prose-p:my-0.5" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(exameFisico || "Mucosas, TPC, FC, FR...") }} />
+                                <section className="border-l-4 border-slate-300 pl-4 py-1">
+                                    <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${themeColor.text} flex items-center gap-2`}>
+                                        <span className="size-1.5 rounded-full bg-slate-400"></span> Exames Físicos e Clínicos
+                                    </h3>
+                                    <div className="text-[11px] leading-relaxed prose prose-sm max-w-none text-slate-700 break-words break-all whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(exameFisico || "Mucosas, TPC, FC, FR...") }} />
                                 </section>
 
-                                <section className={`p-4 rounded-lg bg-muted/30 border-l-4 ${themeColor.border}`}>
-                                    <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${themeColor.text}`}>Diagnóstico / Suspeita</h3>
-                                    <p className="text-sm font-bold italic">{suspeita || "Em investigação..."}</p>
+                                <section className={`p-5 rounded-sm bg-white border border-slate-400 relative overflow-hidden`}>
+                                    <div className={`absolute top-0 left-0 w-1.5 h-full ${themeColor.bg}`}></div>
+                                    <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${themeColor.text}`}>Diagnóstico / Suspeita Médica</h3>
+                                    <p className="text-[15px] font-bold italic text-slate-900">{suspeita || "Em investigação..."}</p>
                                 </section>
 
-                                <section>
-                                    <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${themeColor.text} border-b pb-1`}>Tratamento e Recomendações</h3>
-                                    <div className="text-[11px] leading-relaxed prose prose-sm max-w-none prose-p:my-0.5" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(tratamento || "Conduta médica prescrita...") }} />
+                                <section className="border-l-4 border-slate-300 pl-4 py-1">
+                                    <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${themeColor.text} flex items-center gap-2`}>
+                                        <span className="size-1.5 rounded-full bg-slate-400"></span> Conduta e Recomendações
+                                    </h3>
+                                    <div className="text-[11px] leading-relaxed prose prose-sm max-w-none text-slate-700 break-words break-all whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(tratamento || "Conduta médica prescrita...") }} />
                                 </section>
 
                                 {(parseFloat(baseValue) > 0 || services.length > 0) && (
-                                    <div className="mt-4 border border-blue-500/10 rounded-lg overflow-hidden bg-white">
-                                        <div className={`px-3 py-1 text-[9px] font-bold uppercase text-white ${themeColor.bg}`}>Resumo Financeiro do Atendimento</div>
-                                        <div className="p-3 space-y-1">
-                                            <div className="flex justify-between text-[11px]">
-                                                <span>Consulta Clínica Geral</span>
-                                                <span>R$ {parseFloat(baseValue).toFixed(2)}</span>
+                                    <div className="mt-8 border border-slate-400 rounded-sm overflow-hidden bg-white shadow-sm">
+                                        <div className={`px-4 py-1.5 text-[9px] font-bold uppercase text-white tracking-widest ${themeColor.bg}`}>Resumo Financeiro do Atendimento</div>
+                                        <div className="p-4 space-y-2">
+                                            <div className="flex justify-between text-[11px] border-b border-slate-100 pb-1">
+                                                <span className="text-slate-600 font-medium whitespace-nowrap">Consulta Clínica Geral</span>
+                                                <span className="font-bold text-slate-900">R$ {parseFloat(baseValue).toFixed(2)}</span>
                                             </div>
                                             {services.map(s => (
-                                                <div key={s.id} className="flex justify-between text-[11px]">
-                                                    <span>{s.name}</span>
-                                                    <span>R$ {s.value.toFixed(2)}</span>
+                                                <div key={s.id} className="flex justify-between text-[11px] border-b border-slate-100 pb-1">
+                                                    <span className="text-slate-600 font-medium truncate pr-4">{s.name}</span>
+                                                    <span className="font-bold text-slate-900">R$ {s.value.toFixed(2)}</span>
                                                 </div>
                                             ))}
-                                            <div className={`flex justify-between pt-1 mt-1 border-t-2 font-bold text-sm ${themeColor.text}`}>
-                                                <span>Valor Total</span>
+                                            <div className={`flex justify-between pt-2 mt-2 font-bold text-base ${themeColor.text}`}>
+                                                <span>VALOR TOTAL</span>
                                                 <span>R$ {(parseFloat(baseValue) + services.reduce((acc, s) => acc + s.value, 0)).toFixed(2)}</span>
                                             </div>
                                         </div>
@@ -384,12 +432,14 @@ export function ConsultaDialog({ open, onOpenChange, onBack, petId, petName }: C
                                 )}
                             </div>
 
-                            <div className="mt-auto pt-8 flex justify-between items-end border-t border-dashed">
-                                <div className="text-[9px] opacity-40 italic">Documento gerado eletronicamente em {format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
-                                <div className="text-center w-56">
-                                    <div className={`h-[1px] w-full ${themeColor.border} mb-2`}></div>
-                                    <p className="text-[10px] font-bold uppercase">{veterinarian || 'Dr. Cleyton Chaves'}</p>
-                                    <p className="text-[8px] opacity-60">Médico Veterinário • CRMV-SP</p>
+                            <div className="mt-auto pt-12 flex justify-between items-end border-t border-slate-100 italic">
+                                <div className="text-[8px] opacity-40 leading-tight max-w-[200px]">
+                                    Relatório gerado via AgendaVet. As informações contidas neste documento são de responsabilidade do médico veterinário.
+                                </div>
+                                <div className="text-center w-64">
+                                    <div className={`h-[1px] w-full bg-slate-400 mb-2`}></div>
+                                    <p className="text-[11px] font-bold uppercase text-slate-800">{veterinarian || 'Dr. Cleyton Chaves'}</p>
+                                    <p className="text-[9px] text-slate-500 font-medium">Médico Veterinário • CRMV-SP</p>
                                 </div>
                             </div>
                         </div>

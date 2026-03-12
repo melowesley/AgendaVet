@@ -5,51 +5,74 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePets, Pet } from '@/hooks/usePets';
 import { AddPatientModal } from '@/components/AddPatientModal';
 import { useRouter } from 'expo-router';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function PacientesScreen() {
     const colorScheme = useColorScheme();
-    const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+    const isDark = colorScheme === 'dark';
+    const theme = Colors[isDark ? 'dark' : 'light'];
     const router = useRouter();
     const { pets, loading, refresh, addPet } = usePets();
     const [modalVisible, setModalVisible] = useState(false);
 
     const renderPet = ({ item }: { item: Pet }) => (
-        <TouchableOpacity
-            style={[styles.petCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
-            onPress={() => router.push({ pathname: '/pet/[id]', params: { id: item.id } })}
-        >
-            <View style={[styles.iconContainer, { backgroundColor: theme.primary + '15' }]}>
-                <Ionicons
-                    name={item.type === 'cat' ? 'logo-octocat' : 'paw'}
-                    size={24}
-                    color={theme.primary}
-                />
-            </View>
-            <View style={styles.petInfo}>
-                <Text style={[styles.petName, { color: theme.text }]}>{item.name}</Text>
-                <Text style={[styles.petBreed, { color: theme.textSecondary }]}>
-                    {item.breed || 'Raça não informada'} • {item.age || 'Idade n/i'}
-                </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
-        </TouchableOpacity>
+        <Card className="mb-4 border-l-4" style={{ borderLeftColor: theme.primary }}>
+            <TouchableOpacity
+                className="p-4 flex-row items-center"
+                activeOpacity={0.7}
+                onPress={() => router.push({ pathname: '/pet/[id]', params: { id: item.id } })}
+            >
+                <View className="w-12 h-12 rounded-full items-center justify-center bg-primary/10 mr-4">
+                    <Ionicons
+                        name={item.type === 'cat' ? 'logo-octocat' : 'paw'}
+                        size={22}
+                        color={theme.primary}
+                    />
+                </View>
+                <View className="flex-1">
+                    <Text className="text-base font-black text-foreground">{item.name}</Text>
+                    <Text className="text-xs text-muted-foreground font-medium uppercase tracking-tight">
+                        {item.breed || 'Raça não informada'} • {item.age || 'Idade n/i'}
+                    </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+        </Card>
     );
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View className="flex-1" style={{ backgroundColor: theme.background }}>
+            <View className="px-5 pt-14 pb-4 flex-row justify-between items-center">
+                <View>
+                    <Text className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest">
+                        Gestão de Clientes
+                    </Text>
+                    <Text className="text-2xl font-black text-foreground tracking-tight">Pacientes</Text>
+                </View>
+                <View className="bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20">
+                    <Text className="text-[10px] font-extrabold text-primary uppercase">
+                        {pets.length} totais
+                    </Text>
+                </View>
+            </View>
+
             <FlatList
                 data={pets}
                 keyExtractor={item => item.id}
                 renderItem={renderPet}
-                contentContainerStyle={styles.listContent}
+                contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
                 refreshControl={
                     <RefreshControl refreshing={loading && pets.length > 0} onRefresh={refresh} tintColor={theme.primary} />
                 }
                 ListEmptyComponent={
                     !loading ? (
-                        <View style={styles.emptyContainer}>
+                        <View className="items-center py-20 bg-card/40 rounded-3xl border border-dashed border-border/60 mx-4">
                             <Ionicons name="search-outline" size={48} color={theme.textMuted} />
-                            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Nenhum paciente encontrado</Text>
+                            <Text className="text-muted-foreground mt-4 font-medium">Nenhum paciente encontrado</Text>
                         </View>
                     ) : (
                         <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 40 }} />
@@ -57,12 +80,14 @@ export default function PacientesScreen() {
                 }
             />
 
-            <TouchableOpacity
-                style={[styles.fab, { backgroundColor: theme.primary }]}
-                onPress={() => setModalVisible(true)}
-            >
-                <Ionicons name="add" size={32} color="#fff" />
-            </TouchableOpacity>
+            <View className="absolute bottom-6 right-6">
+                <Button
+                    size="icon"
+                    className="w-16 h-16 rounded-full shadow-lg shadow-primary/40"
+                    onPress={() => setModalVisible(true)}
+                    leftIcon={<Ionicons name="add" size={32} color="white" />}
+                />
+            </View>
 
             <AddPatientModal
                 visible={modalVisible}
@@ -72,49 +97,3 @@ export default function PacientesScreen() {
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: { flex: 1 },
-    listContent: { padding: 16, paddingBottom: 100 },
-    petCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        borderRadius: 16,
-        borderWidth: 1,
-        marginBottom: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    iconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
-    },
-    petInfo: { flex: 1 },
-    petName: { fontSize: 17, fontWeight: '700', marginBottom: 2 },
-    petBreed: { fontSize: 13 },
-    emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 100 },
-    emptyText: { marginTop: 12, fontSize: 16, fontWeight: '500' },
-    fab: {
-        position: 'absolute',
-        bottom: 24,
-        right: 24,
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        elevation: 6,
-    },
-});

@@ -29,7 +29,11 @@ import {
   ClipboardList,
   Scale,
   Scissors,
-  Skull
+  Skull,
+  Camera,
+  Video,
+  RotateCcw,
+  MoreHorizontal
 } from 'lucide-react'
 import { AttendanceTypeDialog } from "../admin/attendance/attendance-type-dialog"
 import { ConsultaDialog } from "../admin/modules/consulta-dialog"
@@ -57,7 +61,24 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
+import { differenceInYears, differenceInMonths, parseISO } from 'date-fns'
+
 type TypeFilter = MedicalRecord['type'] | 'all'
+
+const calculateAge = (dob: string) => {
+  if (!dob) return 'Idade desconhecida'
+  try {
+    const dateOfBirth = parseISO(dob)
+    const years = differenceInYears(new Date(), dateOfBirth)
+    if (years === 0) {
+      const months = differenceInMonths(new Date(), dateOfBirth)
+      return `${months} Meses`
+    }
+    return `${years} Anos`
+  } catch (e) {
+    return dob
+  }
+}
 
 const recordTypeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   vaccination: Syringe,
@@ -77,6 +98,11 @@ const recordTypeIcons: Record<string, React.ComponentType<{ className?: string }
   peso: Scale,
   'banho-tosa': Scissors,
   obito: Skull,
+  documento: FileText,
+  fotos: Camera,
+  video: Video,
+  retorno: RotateCcw,
+  outros: MoreHorizontal,
 }
 
 const recordTypeLabels: Record<string, string> = {
@@ -97,6 +123,11 @@ const recordTypeLabels: Record<string, string> = {
   peso: 'Peso',
   'banho-tosa': 'Banho e Tosa',
   obito: 'Óbito',
+  documento: 'Documento',
+  fotos: 'Fotos',
+  video: 'Vídeo',
+  retorno: 'Retorno',
+  outros: 'Outros',
 }
 
 // Dialog to display Tutor info
@@ -106,6 +137,9 @@ function TutorInfoDialog({ open, onOpenChange, tutor, pet }: { open: boolean, on
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] overflow-hidden p-0 border-emerald-500/20 shadow-2xl">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Informações do Tutor</DialogTitle>
+        </DialogHeader>
         <div className="bg-emerald-500 p-6 flex items-center gap-4 text-primary-foreground">
           <div className="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border-2 border-white/40">
             <User className="h-8 w-8 text-white" />
@@ -195,10 +229,10 @@ export function MedicalRecordsContent() {
       if (!selectedPetId) return false
 
       const matchesSearch =
-        record.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        record.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getPetName(record.petId).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        record.veterinarian.toLowerCase().includes(searchQuery.toLowerCase())
+        (record.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (record.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (getPetName(record.petId) || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (record.veterinarian || '').toLowerCase().includes(searchQuery.toLowerCase())
       const matchesType = typeFilter === 'all' || record.type === typeFilter
       return matchesSearch && matchesType
     })
@@ -207,11 +241,21 @@ export function MedicalRecordsContent() {
   const typeOptions: { value: TypeFilter; label: string }[] = [
     { value: 'all', label: 'Todos tipos' },
     { value: 'vaccination', label: 'Vacinas' },
-    { value: 'diagnosis', label: 'Diagnósticos' },
+    { value: 'diagnosis', label: 'Consultas' },
     { value: 'prescription', label: 'Receitas' },
     { value: 'procedure', label: 'Procedimentos' },
     { value: 'lab-result', label: 'Exames' },
     { value: 'note', label: 'Observações' },
+    { value: 'peso', label: 'Peso' },
+    { value: 'cirurgia', label: 'Cirurgias' },
+    { value: 'internacao', label: 'Internações' },
+    { value: 'banho-tosa', label: 'Banho/Tosa' },
+    { value: 'obito', label: 'Óbitos' },
+    { value: 'documento', label: 'Documentos' },
+    { value: 'fotos', label: 'Fotos' },
+    { value: 'video', label: 'Vídeos' },
+    { value: 'retorno', label: 'Retornos' },
+    { value: 'outros', label: 'Outros' },
   ]
 
   if (isLoading) {
@@ -278,6 +322,62 @@ export function MedicalRecordsContent() {
         </div>
       </div>
 
+      {/* Cartão de Informações do Paciente Selecionado */}
+      {selectedPet && (
+        <Card className="bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-500/20 backdrop-blur-sm animate-in fade-in slide-in-from-top-4">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="size-16 rounded-full bg-emerald-100 dark:bg-emerald-900 border-2 border-emerald-500 flex items-center justify-center shrink-0">
+                  <PawPrint className="size-8 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    {selectedPet.name}
+                    <Badge variant="outline" className="bg-background/50 border-emerald-500/30 text-emerald-700 dark:text-emerald-400">
+                      {selectedPet.species}
+                    </Badge>
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+                    <User className="size-3.5" />
+                    Tutor: {selectedTutor?.fullName || `${selectedTutor?.firstName} ${selectedTutor?.lastName}`} 
+                    <span className="hidden sm:inline-block text-emerald-500 font-bold px-1 hover:underline cursor-pointer" onClick={() => setTutorDialogOpen(true)}>(Ver Perfil)</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 w-full sm:w-auto">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Raça</span>
+                  <span className="font-medium text-sm sm:text-base">{selectedPet.breed || 'SRD'}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Gênero</span>
+                  <span className="font-medium text-sm sm:text-base">{selectedPet.gender || 'Não informado'}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Idade</span>
+                  <span className="font-medium text-sm sm:text-base">{calculateAge(selectedPet.dateOfBirth)}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Peso</span>
+                  <span className="font-medium text-sm sm:text-base">{selectedPet.weight ? `${selectedPet.weight} kg` : 'N/D'}</span>
+                </div>
+              </div>
+            </div>
+            
+            {selectedPet.notes && (
+              <div className="mt-4 pt-4 border-t border-emerald-500/10">
+                <p className="text-sm text-muted-foreground flex gap-2">
+                  <StickyNote className="size-4 shrink-0 text-emerald-500" />
+                  <span className="leading-relaxed">{selectedPet.notes}</span>
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -339,8 +439,8 @@ export function MedicalRecordsContent() {
 
                     <div className="flex flex-col gap-4 rounded-xl border border-border/50 bg-card/40 backdrop-blur-sm p-4 hover:border-emerald-500/30 hover:shadow-md transition-all">
                       <div className="flex items-start gap-4">
-                        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
-                          <Icon className="size-6" />
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
+                          <Icon className="size-5" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">

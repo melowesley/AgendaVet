@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { mutate } from 'swr'
-import { supabase, usePet, useOwner } from '@/lib/data-store'
+import { supabase, usePet, useOwner, useMedicalRecords } from '@/lib/data-store'
 import {
     Dialog,
     DialogContent,
@@ -15,15 +15,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import dynamic from 'next/dynamic'
 import DOMPurify from 'dompurify'
-import 'react-quill/dist/quill.snow.css'
+import 'react-quill-new/dist/quill.snow.css'
 
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false, loading: () => <div className="h-[250px] w-full animate-pulse bg-muted rounded-md" /> })
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false, loading: () => <div className="h-[200px] w-full animate-pulse bg-muted rounded-md" /> })
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { Pill, Save, Trash2, ArrowLeft, FileDown, ScrollText, ShieldAlert, ChevronRight, Printer, PawPrint } from 'lucide-react'
+import { Pill, Save, Trash2, ArrowLeft, FileDown, ScrollText, ShieldAlert, ChevronRight, Printer, PawPrint, Stethoscope, History as HistoryIcon, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { Card, CardContent } from '@/components/ui/card'
-import ReactToPrint from 'react-to-print'
+import { useReactToPrint } from 'react-to-print'
 
 interface ReceitaDialogProps {
     open: boolean
@@ -47,6 +47,7 @@ interface Prescription {
 export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: ReceitaDialogProps) {
     const { pet } = usePet(petId)
     const { owner } = useOwner(pet?.profileId || '')
+    const { records: allRecords } = useMedicalRecords(petId)
 
     const isFemale = pet?.gender === 'Fêmea'
     const themeColor = {
@@ -82,6 +83,14 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
     const [editingId, setEditingId] = useState<string | null>(null)
 
     const printRef = useRef<HTMLDivElement>(null)
+    const handlePrint = useReactToPrint({
+        contentRef: printRef,
+        documentTitle: `Receituario_${receiptType}_${petName}`,
+        pageStyle: `
+          @page { size: auto; margin: 10mm; }
+          @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+        `
+    })
 
     useEffect(() => {
         if (open) loadRecords()
@@ -177,60 +186,77 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-4xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
-                <DialogHeader className="p-6 pb-0 border-b border-border/50">
-                    <div className="flex items-center gap-4 mb-4">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={receiptType ? () => setReceiptType(null) : onBack}>
-                            <ArrowLeft size={18} />
-                        </Button>
-                        <div className={`flex size-10 items-center justify-center rounded-full ${themeColor.bgGhost} ${themeColor.text}`}>
-                            <Pill className="size-5" />
+            <DialogContent className="w-screen sm:max-w-none !max-w-none h-screen max-h-none rounded-none p-0 flex flex-col overflow-hidden border-none">
+                <DialogHeader className="p-4 md:p-6 border-b border-border/50 bg-white flex flex-row items-center justify-between shrink-0 z-20 shadow-sm">
+                    <div className="flex items-center gap-4">
+                        {(receiptType || onBack) && (
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-slate-100" onClick={receiptType ? () => setReceiptType(null) : onBack}>
+                                <ArrowLeft className="size-5" />
+                            </Button>
+                        )}
+                        <div className={`flex size-12 items-center justify-center rounded-xl ${themeColor.bgGhost} ${themeColor.text} shadow-inner`}>
+                            <Pill className="size-6" />
                         </div>
                         <div>
-                            <DialogTitle className="text-xl">
-                                {receiptType === 'simples' ? 'Receituário Simples' : receiptType === 'controlado' ? 'Receituário Controlado' : 'Receitas'} - {petName}
+                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-800">
+                                {receiptType === 'simples' ? 'Receituário Simples' : receiptType === 'controlado' ? 'Receituário Controlado' : 'Receitas Médicas'}
                             </DialogTitle>
-                            <DialogDescription>Gestão de prescrições e receituários</DialogDescription>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5 font-medium">
+                                <span className="flex items-center gap-1"><PawPrint className="size-3.5" /> <span className="font-bold text-slate-700">{petName}</span></span>
+                                <span className="text-slate-300">•</span>
+                                <span className="flex items-center gap-1"><ScrollText className="size-3.5" /> Gestão de Prescrições</span>
+                            </div>
                         </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Button variant="outline" onClick={() => onOpenChange(false)} className="h-10 px-6 font-bold text-slate-500">
+                            Fechar
+                        </Button>
                     </div>
                 </DialogHeader>
 
                 <div className="flex-1 overflow-hidden">
                     {receiptType === null && !editingId ? (
-                        <div className="p-6 space-y-6 overflow-y-auto h-full">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="p-8 md:p-12 space-y-12 overflow-y-auto h-full max-w-[1200px] mx-auto">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                                 <button
                                     onClick={() => setReceiptType('simples')}
-                                    className={`group flex flex-col items-center gap-3 p-8 rounded-2xl border-2 border-border/50 ${themeColor.borderHover} transition-all duration-200 text-center ${themeColor.bgGhostHover}`}
+                                    className={`group flex flex-col items-center gap-6 p-12 rounded-3xl border-2 border-border/40 ${themeColor.borderHover} transition-all duration-300 text-center ${themeColor.bgGhostHover} hover:shadow-2xl hover:-translate-y-1`}
                                 >
-                                    <div className={`w-16 h-16 rounded-2xl ${themeColor.bgGhost} flex items-center justify-center transition-colors`}>
-                                        <ScrollText className={`w-8 h-8 ${themeColor.text}`} />
+                                    <div className={`w-24 h-24 rounded-3xl ${themeColor.bgGhost} flex items-center justify-center transition-all group-hover:scale-110`}>
+                                        <ScrollText className={`w-12 h-12 ${themeColor.text}`} />
                                     </div>
-                                    <div>
-                                        <p className="font-bold text-lg">Receituário Simples</p>
-                                        <p className="text-xs text-muted-foreground mt-1">Prescrição comum de medicamentos</p>
+                                    <div className="space-y-2">
+                                        <p className="font-black text-2xl tracking-tight">Receituário Simples</p>
+                                        <p className="text-sm text-muted-foreground font-medium">Prescrição comum de medicamentos e orientações gerais</p>
                                     </div>
-                                    <ChevronRight className={`w-5 h-5 text-muted-foreground group-hover:${themeColor.text} transition-colors`} />
+                                    <div className={`mt-4 w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:${themeColor.text} transition-all`}>
+                                        <ChevronRight className="w-6 h-6" />
+                                    </div>
                                 </button>
 
                                 <button
                                     onClick={() => setReceiptType('controlado')}
-                                    className={`group flex flex-col items-center gap-3 p-8 rounded-2xl border-2 border-border/50 ${themeColor.borderHover} transition-all duration-200 text-center ${themeColor.bgGhostHover}`}
+                                    className={`group flex flex-col items-center gap-6 p-12 rounded-3xl border-2 border-border/40 ${themeColor.borderHover} transition-all duration-300 text-center ${themeColor.bgGhostHover} hover:shadow-2xl hover:-translate-y-1`}
                                 >
-                                    <div className={`w-16 h-16 rounded-2xl ${themeColor.bgGhost} flex items-center justify-center transition-colors`}>
-                                        <ShieldAlert className={`w-8 h-8 ${themeColor.text}`} />
+                                    <div className={`w-24 h-24 rounded-3xl ${themeColor.bgGhost} flex items-center justify-center transition-all group-hover:scale-110`}>
+                                        <ShieldAlert className={`w-12 h-12 ${themeColor.text}`} />
                                     </div>
-                                    <div>
-                                        <p className="font-bold text-lg">Receituário Controlado</p>
-                                        <p className="text-xs text-muted-foreground mt-1">Controle especial</p>
+                                    <div className="space-y-2">
+                                        <p className="font-black text-2xl tracking-tight">Receituário Controlado</p>
+                                        <p className="text-sm text-muted-foreground font-medium">Medicamentos de controle especial (Lista A, B ou C)</p>
                                     </div>
-                                    <ChevronRight className={`w-5 h-5 text-muted-foreground group-hover:${themeColor.text} transition-colors`} />
+                                    <div className={`mt-4 w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:${themeColor.text} transition-all`}>
+                                        <ChevronRight className="w-6 h-6" />
+                                    </div>
                                 </button>
                             </div>
 
-                            <div className="space-y-4">
-                                <h3 className="font-semibold text-sm flex items-center gap-2">Histórico de Receitas</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-6 pt-10 border-t border-slate-100">
+                                <h3 className="text-sm font-black uppercase tracking-[0.25em] text-slate-400 border-l-4 border-emerald-500 pl-4 mb-8">
+                                    Histórico de Receitas Anteriores
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                                     {records.length === 0 ? (
                                         <div className="col-span-full text-center py-10 bg-muted/20 rounded-xl border border-dashed">
                                             <Pill className="size-8 text-muted-foreground/30 mx-auto mb-2" />
@@ -260,9 +286,42 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
                             </div>
                         </div>
                     ) : (
-                        <div className="flex flex-col md:flex-row h-full overflow-hidden">
-                            <div className="w-full md:w-1/2 p-6 border-r border-border/30 overflow-y-auto">
-                                <div className="space-y-4">
+                        <div className="flex-1 flex overflow-hidden bg-slate-100/50">
+                            {/* NEW: Left Sidebar with Patient History - Styled more like a column */}
+                            <div className="hidden xl:block w-[280px] bg-slate-50/80 border-r border-border/30 p-4 overflow-y-auto shrink-0 shadow-inner">
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-l-4 border-emerald-500 pl-3 mb-6">
+                                    Histórico de Consultas
+                                </h3>
+                                
+                                {allRecords.length === 0 ? (
+                                    <div className="text-center py-20 flex flex-col items-center gap-4 opacity-50">
+                                        <Clock className="size-10 text-slate-300" />
+                                        <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Sem registros prévios</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {allRecords.map(record => (
+                                            <div key={record.id} className="p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-emerald-500 transition-all hover:shadow-md group">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <span className="text-[9px] font-black text-white bg-slate-900 px-1.5 py-0.5 rounded-[3px]">
+                                                        {format(new Date(record.date || record.createdAt), "dd/MM/yyyy")}
+                                                    </span>
+                                                    <span className="text-[8px] font-black uppercase text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                                                        {record.type}
+                                                    </span>
+                                                </div>
+                                                <h4 className="text-xs font-black text-slate-800 line-clamp-2 leading-snug">{record.title}</h4>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="w-full xl:w-[480px] p-6 bg-white border-r border-border/30 overflow-y-auto shrink-0 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)] z-10 relative">
+                                <div className="space-y-8">
+                                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 border-l-4 border-slate-900 pl-4">
+                                        Nova Prescrição
+                                    </h3>
                                     <div className="space-y-1.5">
                                         <Label htmlFor="med-name">Medicamento Principal / Título *</Label>
                                         <Input id="med-name" value={medicationName} onChange={(e) => setMedicationName(e.target.value)} placeholder="Ex: Cloridrato de Fluoxetina" />
@@ -290,57 +349,71 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
                                             />
                                         </div>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <Button onClick={handleSave} disabled={loading} className={`flex-1 ${themeColor.bg} ${themeColor.bgHover} text-white`}>
-                                            <Save className="size-4 mr-2" />
-                                            {loading ? 'Salvando...' : 'Salvar Receita'}
+                                    <div className="flex gap-4 pt-10">
+                                        <Button onClick={handleSave} disabled={loading} className={`flex-1 h-14 text-lg font-black ${themeColor.bg} ${themeColor.bgHover} text-white shadow-xl shadow-emerald-100 rounded-xl`}>
+                                            <Save className="size-5 mr-2" />
+                                            {loading ? 'Salvando...' : 'Salvar e Registrar'}
                                         </Button>
 
-                                        {/* @ts-ignore - React 19 type mismatch */}
-                                        <ReactToPrint
-                                            trigger={() => (
-                                                <Button variant="outline" className="flex-1">
-                                                    <Printer className="size-4 mr-2" />
-                                                    Exportar PDF
-                                                </Button>
-                                            )}
-                                            content={() => printRef.current}
-                                            documentTitle={`Receituario_${receiptType}_${petName}`}
-                                            pageStyle={`
-                                              @page { size: auto; margin: 10mm; }
-                                              @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-                                            `}
-                                        />
+                                        <Button variant="outline" className="h-14 px-6 border-2 font-bold hover:bg-slate-50 rounded-xl" title="Visualizar/Imprimir" onClick={() => handlePrint()}>
+                                            <Printer className="size-5" />
+                                        </Button>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* PREVIEW PANE */}
-                            <div className={`hidden md:block w-1/2 bg-muted/10 p-4 md:p-8 overflow-y-auto`}>
+                            {/* PREVIEW PANE - Occupying the rest of the space as a second page */}
+                            <div className={`hidden md:flex flex-1 bg-slate-50 p-8 lg:p-12 overflow-y-auto justify-center items-center h-full`}>
                                 <div
                                     ref={printRef}
-                                    className={`w-full max-w-[600px] mx-auto aspect-[1/1.414] bg-white shadow-2xl rounded-sm border-2 p-6 flex flex-col text-slate-900 ${themeColor.borderLight}`}
-                                >
+                                    className={`w-full max-w-[595px] aspect-[1/1.414] bg-white shadow-[0_15px_40px_-15px_rgba(0,0,0,0.15)] rounded-md border p-8 flex flex-col text-slate-900 ${themeColor.borderLight} border-t-[12px] ${themeColor.border} m-auto`}
+                                >                                
                                     {/* SIMPLES LAYOUT */}
                                     {receiptType === 'simples' && (
                                         <>
-                                            <div className={`border-b-2 pb-4 mb-6 text-center ${themeColor.border}`}>
-                                                <h2 className={`text-xl font-bold uppercase tracking-widest ${themeColor.text}`}>Receituário Simples</h2>
-                                                <p className="text-[10px] opacity-70 mt-1">AgendaVet - Gestão Veterinária Profissional</p>
-                                            </div>
-                                            <div className="flex-1 py-4">
-                                                <div className="mb-4">
-                                                    <p className={`text-[11px] font-bold ${themeColor.text}`}>PACIENTE: <span className="font-normal opacity-80">{petName}</span></p>
+                                            <div className={`border-b-2 pb-6 mb-8 flex justify-between items-end ${themeColor.border}`}>
+                                                <div>
+                                                    <h2 className={`text-2xl font-bold uppercase tracking-widest ${themeColor.text}`}>Receituário Simples</h2>
+                                                    <p className="text-[10px] opacity-70 mt-1 uppercase">Prescrição e Orientação Veterinária</p>
                                                 </div>
-                                                <div
-                                                    className="space-y-4 text-sm italic leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1"
-                                                    dangerouslySetInnerHTML={{ __html: notes ? DOMPurify.sanitize(notes) : "A prescrição aparecerá aqui..." }}
-                                                />
+                                                <div className={`text-right ${themeColor.text}`}>
+                                                    <Stethoscope className="size-10 ml-auto mb-1 opacity-20" />
+                                                    <p className="text-[8px] font-bold text-slate-400">AgendaVet Prescrições</p>
+                                                </div>
                                             </div>
-                                            <div className={`mt-auto border-t pt-4 text-center ${themeColor.borderLight}`}>
-                                                <p className="text-xs font-bold">{veterinarian || "Veterinário Responsável"}</p>
-                                                <p className="text-[10px] opacity-70">Assinatura e Carimbo</p>
-                                                <p className="text-[9px] opacity-60 mt-4">{format(new Date(prescriptionDate), 'dd/MM/yyyy')}</p>
+
+                                            <div className="border border-slate-400 p-5 mb-8 rounded-sm bg-slate-50/30">
+                                                <div className="grid grid-cols-2 gap-8">
+                                                    <div className="space-y-1.5">
+                                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">PACIENTE</p>
+                                                        <div className="space-y-0.5 border-t border-slate-200 pt-1 text-[10px]">
+                                                            <p><span className="font-bold w-12 inline-block text-slate-700">Animal:</span> {petName}</p>
+                                                            <p className="font-bold text-slate-900 mt-1">Data: {format(new Date(prescriptionDate), 'dd/MM/yyyy')}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-1.5 border-l border-slate-200 pl-6 text-right flex flex-col justify-center">
+                                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">IDENTIFICAÇÃO</p>
+                                                        <p className="text-[10px] font-bold text-slate-900">RP: #REC-{Math.floor(Math.random() * 9000) + 1000}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex-1 py-4 space-y-6">
+                                                <section className="relative min-h-[300px] border-l-2 border-slate-100 pl-6">
+                                                    <h3 className="text-[10px] font-black text-slate-300 uppercase absolute -left-[2px] -top-6">Prescrição e Instruções</h3>
+                                                    <div
+                                                        className="text-base text-slate-800 leading-relaxed prose prose-sm max-w-none prose-p:my-2 break-words break-all whitespace-pre-wrap"
+                                                        dangerouslySetInnerHTML={{ __html: notes ? DOMPurify.sanitize(notes) : "<p class='italic opacity-30'>Aguardando preenchimento da prescrição...</p>" }}
+                                                    />
+                                                </section>
+                                            </div>
+
+                                            <div className="mt-auto pt-10 flex justify-center items-end border-t border-slate-100 italic">
+                                                <div className="text-center w-64">
+                                                    <div className={`h-[1.5px] w-full bg-slate-400 mb-2`}></div>
+                                                    <p className="text-[11px] font-bold uppercase text-slate-800">{veterinarian || 'Dr. Cleyton Chaves'}</p>
+                                                    <p className="text-[9px] text-slate-500 font-medium tracking-tight">Médico Veterinário • CRMV-SP</p>
+                                                </div>
                                             </div>
                                         </>
                                     )}
@@ -386,7 +459,7 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
                                             <div className="flex-1 border border-slate-400 p-2 mb-3 flex flex-col">
                                                 <h2 className="text-[9px] font-bold mb-1 border-b border-slate-300 pb-1">PRESCRIÇÃO</h2>
                                                 <div
-                                                    className="flex-1 text-[11px] font-serif leading-relaxed mt-2 pt-1 prose prose-sm max-w-none prose-p:my-0.5 prose-ul:my-0.5"
+                                                    className="flex-1 text-[11px] font-serif leading-relaxed mt-2 pt-1 prose prose-sm max-w-none prose-p:my-0.5 prose-ul:my-0.5 break-words break-all whitespace-pre-wrap"
                                                     dangerouslySetInnerHTML={{ __html: notes ? DOMPurify.sanitize(notes) : "O conteúdo da prescrição aparecerá aqui..." }}
                                                 />
                                             </div>

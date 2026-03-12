@@ -1,0 +1,301 @@
+Perfeito. Então vamos fazer de verdade: arquitetura de produção do AgentVet.
+Vou estruturar em 3 partes principais, exatamente como um sistema SaaS de IA precisa:
+
+1️⃣ Arquitetura de produção
+2️⃣ Schema final do banco
+3️⃣ Design de agentes
+
+1️⃣ Arquitetura de Produção (AgentVet)
+
+Arquitetura pensada para escala real.
+
+                        ┌─────────────────────┐
+                        │      Frontend       │
+                        │      React/Next     │
+                        │ Chat + Consulta     │
+                        └──────────┬──────────┘
+                                   │
+                                   ▼
+                        ┌─────────────────────┐
+                        │     API Gateway     │
+                        │   Next.js Routes    │
+                        └──────────┬──────────┘
+                                   │
+                 ┌─────────────────┼─────────────────┐
+                 ▼                 ▼                 ▼
+       ┌────────────────┐ ┌────────────────┐ ┌────────────────┐
+       │ Agent Runtime  │ │ Agent Control  │ │ Auth Layer     │
+       │                │ │ (Admin Brain)  │ │ Supabase Auth  │
+       └───────┬────────┘ └───────┬────────┘ └───────┬────────┘
+               │                  │                   │
+               ▼                  ▼                   ▼
+        ┌───────────────┐  ┌───────────────┐  ┌───────────────┐
+        │ Prompt Engine │  │ Config Engine │  │ RLS Security  │
+        └───────┬───────┘  └───────┬───────┘  └───────────────┘
+                │                  │
+                ▼                  ▼
+         ┌───────────────┐  ┌───────────────┐
+         │ Tool Engine   │  │ Memory Engine │
+         └───────┬───────┘  └───────┬───────┘
+                 │                  │
+                 ▼                  ▼
+          ┌────────────────────────────────┐
+          │         OpenRouter             │
+          │  Claude / GPT / outros        │
+          └───────────────┬────────────────┘
+                          │
+                          ▼
+               ┌─────────────────────────┐
+               │      SUPABASE DB        │
+               │ PostgreSQL + pgvector   │
+               └─────────────────────────┘
+2️⃣ Schema Final do Banco
+
+Agora vamos estruturar todas as tabelas críticas.
+
+Veterinários
+veterinarians
+campo	tipo
+id	uuid
+name	text
+email	text
+clinic_name	text
+created_at	timestamp
+Pets
+pets
+campo	tipo
+id	uuid
+vet_id	uuid
+name	text
+species	text
+breed	text
+birth_date	date
+weight	numeric
+created_at	timestamp
+Consultas
+consultations
+campo	tipo
+id	uuid
+vet_id	uuid
+pet_id	uuid
+date	timestamp
+notes	text
+created_at	timestamp
+Vacinas
+pet_vaccines
+campo	tipo
+id	uuid
+pet_id	uuid
+vaccine_name	text
+date_applied	date
+next_due	date
+vet_id	uuid
+Exames
+pet_exams
+campo	tipo
+id	uuid
+pet_id	uuid
+exam_type	text
+result	text
+file_url	text
+exam_date	date
+Prescrições
+pet_prescriptions
+campo	tipo
+id	uuid
+pet_id	uuid
+medication	text
+dosage	text
+instructions	text
+created_at	timestamp
+Observações clínicas
+pet_observations
+campo	tipo
+id	uuid
+pet_id	uuid
+observation	text
+created_at	timestamp
+Interações com IA
+copilot_interactions
+campo	tipo
+id	uuid
+vet_id	uuid
+pet_id	uuid
+query	text
+response	text
+tools_used	jsonb
+timestamp	timestamp
+rating	int
+Instâncias de Agentes
+
+Cada login possui um agente próprio.
+
+agent_instances
+campo	tipo
+id	uuid
+vet_id	uuid
+system_prompt	text
+language_style	text
+tools_enabled	jsonb
+version	int
+updated_at	timestamp
+Perfil de Linguagem do Veterinário
+vet_language_profiles
+campo	tipo
+vet_id	uuid
+tone	text
+phrases	jsonb
+greetings	text
+signature	text
+Versões de Prompt
+prompt_versions
+campo	tipo
+id	uuid
+version	int
+prompt_text	text
+created_at	timestamp
+Base de Conhecimento Veterinária (RAG)
+clinical_knowledge
+campo	tipo
+id	uuid
+title	text
+content	text
+source	text
+embedding	vector
+3️⃣ Design de Agentes
+
+Agora a parte mais importante.
+
+Cada veterinário roda um agente especializado.
+
+Estrutura do Agente
+AgentVet
+
+Componentes internos:
+
+Agent
+ ├── Prompt Engine
+ ├── Tool Engine
+ ├── Memory Engine
+ ├── Context Builder
+ └── Language Profile
+Prompt Engine
+
+Responsável por montar o prompt.
+
+Estrutura:
+
+SYSTEM PROMPT
++
+Vet Language Profile
++
+Pet Context
++
+Consulta atual
++
+Pergunta do usuário
+Tool Engine
+
+Ferramentas disponíveis:
+
+get_pet_info
+get_medical_history
+get_vaccination_status
+get_recent_exams
+calculate_dosage
+search_clinical_knowledge
+Memory Engine
+
+Armazena:
+
+conversas
+preferências
+estilo de comunicação
+
+Pode usar:
+
+pgvector
+Context Builder
+
+Sempre monta o contexto antes da IA.
+
+Pet
+Histórico
+Vacinas
+Exames recentes
+Observações clínicas
+Language Profile
+
+Define o estilo do agente.
+
+Exemplo:
+
+Tom: profissional
+Saudação: "Dr. Cleyton"
+Estilo: explicativo
+
+Resposta gerada:
+
+Dr. Cleyton, de acordo com o histórico do Thor:
+
+Última vacina aplicada:
+V10 — 14/02/2026
+
+O reforço está previsto para 14/02/2027.
+
+Posso ajudar com mais alguma coisa?
+Sistema de Controle (Seu Cérebro)
+
+Você terá um console administrativo.
+
+Comandos possíveis:
+
+/agents list
+/agent update_prompt cleyton
+/agent reload cleyton
+/agent train_language cleyton
+
+Fluxo:
+
+Admin Console
+      │
+      ▼
+Agent Control API
+      │
+      ▼
+Atualiza agent_config
+      │
+      ▼
+Agente recarrega automaticamente
+Escalabilidade
+
+Arquitetura preparada para:
+
+1.000+
+clínicas
+
+Cada agente roda isolado por:
+
+vet_id
+
+Com Row Level Security (RLS).
+
+Resultado Final
+
+Você não estará criando apenas um chatbot.
+
+Você estará criando um:
+
+AI Operating System para clínicas veterinárias
+
+com:
+
+copiloto clínico
+
+secretária IA
+
+automação administrativa
+
+agentes personalizados por veterinário
+
+controle central de IA

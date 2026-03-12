@@ -48,12 +48,12 @@ export function OwnerDetailContent({ ownerId }: OwnerDetailContentProps) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
         <Users className="size-12 text-muted-foreground/50 mb-4" />
-        <h2 className="text-xl font-semibold">Client Not Found</h2>
-        <p className="text-muted-foreground mb-4">The requested client could not be found.</p>
+        <h2 className="text-xl font-semibold">Cliente Não Encontrado</h2>
+        <p className="text-muted-foreground mb-4">O cliente solicitado não pôde ser encontrado.</p>
         <Button asChild>
           <Link href="/owners">
             <ArrowLeft className="size-4 mr-2" />
-            Back to Clients
+            Voltar para Clientes
           </Link>
         </Button>
       </div>
@@ -77,13 +77,13 @@ export function OwnerDetailContent({ ownerId }: OwnerDetailContentProps) {
               <h1 className="text-2xl font-bold">
                 {owner.firstName} {owner.lastName}
               </h1>
-              <p className="text-muted-foreground">Client since {new Date(owner.createdAt).toLocaleDateString()}</p>
+              <p className="text-muted-foreground">Cliente desde {new Date(owner.createdAt).toLocaleDateString('pt-BR')}</p>
             </div>
           </div>
         </div>
         <Button onClick={() => setEditDialogOpen(true)}>
           <Edit className="size-4 mr-2" />
-          Edit Client
+          Editar Cliente
         </Button>
       </div>
 
@@ -96,17 +96,17 @@ export function OwnerDetailContent({ ownerId }: OwnerDetailContentProps) {
                   <PawPrint className="size-5" />
                   Pets
                 </CardTitle>
-                <CardDescription>{ownerPets.length} registered pets</CardDescription>
+                <CardDescription>{ownerPets.length} pets cadastrados</CardDescription>
               </div>
               <Button size="sm" onClick={() => setAddPetDialogOpen(true)}>
                 <Plus className="size-4 mr-2" />
-                Add Pet
+                Adicionar Pet
               </Button>
             </CardHeader>
             <CardContent>
               {ownerPets.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No pets registered for this client
+                  Nenhum pet cadastrado para este cliente
                 </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -137,14 +137,14 @@ export function OwnerDetailContent({ ownerId }: OwnerDetailContentProps) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="size-5" />
-                Appointment History
+                Histórico de Atendimentos
               </CardTitle>
-              <CardDescription>All appointments for this client</CardDescription>
+              <CardDescription>Todos os agendamentos deste cliente</CardDescription>
             </CardHeader>
             <CardContent>
               {ownerAppointments.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No appointment history
+                  Nenhum histórico de agendamentos
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -157,19 +157,25 @@ export function OwnerDetailContent({ ownerId }: OwnerDetailContentProps) {
                       >
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">{pet?.name || 'Unknown Pet'}</span>
+                            <span className="font-medium">{pet?.name || 'Pet Desconhecido'}</span>
                             <Badge variant="outline" className="capitalize">
-                              {apt.type.replace('-', ' ')}
+                              {apt.type === 'checkup' ? 'Check-up' : 
+                               apt.type === 'vaccination' ? 'Vacinação' :
+                               apt.type === 'surgery' ? 'Cirurgia' :
+                               apt.type === 'grooming' ? 'Banho e Tosa' :
+                               apt.type === 'emergency' ? 'Emergência' :
+                               apt.type === 'follow-up' ? 'Retorno' :
+                               (apt.type as string).replace('-', ' ')}
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {new Date(apt.date).toLocaleDateString('en-US', {
+                            {new Date(apt.date).toLocaleDateString('pt-BR', {
                               weekday: 'short',
                               month: 'short',
                               day: 'numeric',
                               year: 'numeric',
                             })}{' '}
-                            at {apt.time}
+                            às {apt.time}
                           </p>
                           <p className="text-sm text-muted-foreground">{apt.veterinarian}</p>
                         </div>
@@ -184,7 +190,12 @@ export function OwnerDetailContent({ ownerId }: OwnerDetailContentProps) {
                                   : 'outline'
                           }
                         >
-                          {apt.status}
+                          {apt.status === 'completed' ? 'Concluído' :
+                           apt.status === 'confirmed' ? 'Confirmado' :
+                           apt.status === 'cancelled' ? 'Cancelado' :
+                           apt.status === 'scheduled' ? 'Agendado' :
+                           apt.status === 'in-progress' ? 'Em Andamento' :
+                           apt.status}
                         </Badge>
                       </div>
                     )
@@ -200,7 +211,7 @@ export function OwnerDetailContent({ ownerId }: OwnerDetailContentProps) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="size-5" />
-                Contact Information
+                Informações de Contato
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -209,7 +220,7 @@ export function OwnerDetailContent({ ownerId }: OwnerDetailContentProps) {
                   <Phone className="size-4" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Phone</p>
+                  <p className="text-sm text-muted-foreground">Telefone</p>
                   <p className="font-medium">{owner.phone}</p>
                 </div>
               </div>
@@ -219,7 +230,7 @@ export function OwnerDetailContent({ ownerId }: OwnerDetailContentProps) {
                   <Mail className="size-4" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="text-sm text-muted-foreground">E-mail</p>
                   <p className="font-medium break-all">{owner.email}</p>
                 </div>
               </div>
@@ -229,7 +240,7 @@ export function OwnerDetailContent({ ownerId }: OwnerDetailContentProps) {
                   <MapPin className="size-4" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Address</p>
+                  <p className="text-sm text-muted-foreground">Endereço</p>
                   <p className="font-medium">{owner.address}</p>
                 </div>
               </div>
@@ -238,19 +249,19 @@ export function OwnerDetailContent({ ownerId }: OwnerDetailContentProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Quick Stats</CardTitle>
+              <CardTitle>Estatísticas Rápidas</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Total Pets</span>
+                <span className="text-muted-foreground">Total de Pets</span>
                 <span className="font-medium">{ownerPets.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Total Appointments</span>
+                <span className="text-muted-foreground">Total de Agendamentos</span>
                 <span className="font-medium">{ownerAppointments.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Completed Visits</span>
+                <span className="text-muted-foreground">Visitas Concluídas</span>
                 <span className="font-medium">
                   {ownerAppointments.filter((a) => a.status === 'completed').length}
                 </span>

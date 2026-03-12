@@ -7,7 +7,7 @@
  * - Suggestions contextuais
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,11 +19,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePets, Pet } from '@/lib/data-store';
 
 interface Message {
@@ -46,7 +48,22 @@ export default function VetCopilotScreen() {
   const [selectedPetId, setSelectedPetId] = useState<string>(
     (initialPetId as string) || 'none'
   );
+  const [brainModel, setBrainModel] = useState<'gemini' | 'deepseek'>('gemini');
   const flatListRef = useRef<FlatList>(null);
+
+  // Carregar preferência
+  useEffect(() => {
+    AsyncStorage.getItem('agendavet-mobile-brain-model').then((val) => {
+      if (val === 'gemini' || val === 'deepseek') {
+        setBrainModel(val as 'gemini' | 'deepseek');
+      }
+    });
+  }, []);
+
+  const handleModelChange = (model: 'gemini' | 'deepseek') => {
+    setBrainModel(model);
+    AsyncStorage.setItem('agendavet-mobile-brain-model', model);
+  };
 
   const selectedPet = pets.find((p: Pet) => p.id === selectedPetId);
 
@@ -80,8 +97,9 @@ export default function VetCopilotScreen() {
             content: m.content,
           })),
           petId: selectedPetId,
-          model: 'gemini-1.5-pro',
+          model: brainModel,
           temperature: 0.3,
+          mode: 'clinical',
         }),
       });
 
@@ -203,7 +221,20 @@ export default function VetCopilotScreen() {
           </Text>
         </View>
         <View style={styles.headerIcon}>
-          <Ionicons name="medical" size={24} color={theme.primary} />
+          <View style={styles.modelSwitcher}>
+            <TouchableOpacity 
+              onPress={() => handleModelChange('gemini')}
+              style={[styles.modelOption, brainModel === 'gemini' && styles.modelOptionSelected]}
+            >
+              <Text style={[styles.modelOptionText, brainModel === 'gemini' && styles.modelOptionTextSelected]}>Gemini</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => handleModelChange('deepseek')}
+              style={[styles.modelOption, brainModel === 'deepseek' && styles.modelOptionSelected]}
+            >
+              <Text style={[styles.modelOptionText, brainModel === 'deepseek' && styles.modelOptionTextSelected]}>DeepSeek</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -493,5 +524,33 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  modelSwitcher: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderRadius: 12,
+    padding: 2,
+    alignItems: 'center',
+  },
+  modelOption: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
+  modelOptionSelected: {
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+  modelOptionText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#666',
+  },
+  modelOptionTextSelected: {
+    color: '#10b981',
   },
 });

@@ -373,7 +373,7 @@ export async function updateOwner(id: string, updates: Partial<Owner>) {
   if (updates.phone) supabaseUpdates.phone = updates.phone
   if (updates.address) supabaseUpdates.address = updates.address
 
-  const { data, error } = await supabase.from('profiles').update(supabaseUpdates).eq('user_id', id).select().single()
+  const { data, error } = await supabase.from('profiles').update(supabaseUpdates).eq('id', id).select().single()
   if (error) {
     console.error('Error updating owner profile:', error)
     throw error
