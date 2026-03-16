@@ -62,7 +62,8 @@ const medicalRecordTypeLabels: Record<string, string> = {
 
 export function PetDetailContent({ petId }: PetDetailContentProps) {
   const { pet, isLoading: petLoading } = usePet(petId)
-  const { owner, isLoading: ownerLoading } = useOwner(pet?.ownerId || '')
+  // Use profileId as the primary link; fall back to legacy ownerId
+  const { owner, isLoading: ownerLoading } = useOwner(pet?.profileId || pet?.ownerId || '')
   const { records } = useMedicalRecords(petId)
   const { appointments } = useAppointments()
   const [editDialogOpen, setEditDialogOpen] = useState(false)

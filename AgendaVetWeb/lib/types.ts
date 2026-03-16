@@ -1,10 +1,15 @@
 import React from "react"
+
+export const PET_SPECIES = ['dog', 'cat', 'bird', 'rabbit', 'reptile', 'other'] as const
+export const PET_GENDERS = ['Macho', 'Fêmea'] as const
+export const OWNER_GENDERS = ['Masculino', 'Feminino', 'Outro'] as const
+
 export interface Pet {
   id: string
   name: string
-  species: 'dog' | 'cat' | 'bird' | 'rabbit' | 'reptile' | 'other'
+  species: typeof PET_SPECIES[number]
   breed: string
-  gender?: 'Macho' | 'Fêmea'
+  gender?: typeof PET_GENDERS[number]
   dateOfBirth: string
   weight: number
   ownerId?: string // Legacy link to user_id (for tutores with login)
@@ -20,13 +25,23 @@ export interface Owner {
   firstName: string
   lastName: string
   fullName: string
-  gender?: 'Masculino' | 'Feminino' | 'Outro'
+  gender?: typeof OWNER_GENDERS[number]
   age?: number
   email: string
   phone: string
   whatsapp?: string
   address: string
   petIds: string[]
+  createdAt: string
+}
+
+export interface Service {
+  id: string
+  name: string
+  description?: string
+  price: number
+  durationMinutes?: number
+  active: boolean
   createdAt: string
 }
 

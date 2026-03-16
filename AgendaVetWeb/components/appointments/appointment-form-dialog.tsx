@@ -118,7 +118,8 @@ export function AppointmentFormDialog({
       }
       setPetSearch('')
     }
-  }, [open, appointment?.id, filteredPets.length, owners.length])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, appointment?.id])
 
   const handlePetChange = (petId: string) => {
     const pet = pets.find((p) => p.id === petId)
