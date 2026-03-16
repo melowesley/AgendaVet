@@ -193,7 +193,7 @@ export function CalendarView({ onWeekSelect, selectedWeek, onDayDoubleClick }: C
 
               {/* Floating Details Panel for Selected Day */}
               {selectedDayForDetails && week.some(d => isSameDay(d, selectedDayForDetails)) && (
-                <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-[#374151] border border-emerald-500/40 text-white rounded-xl p-4 shadow-2xl z-50 backdrop-blur-sm"
+                <div className="absolute top-[calc(100%+4px)] left-1/2 -translate-x-1/2 w-[70%] bg-[#374151] border border-emerald-500/40 text-white rounded-xl p-4 shadow-2xl z-50 backdrop-blur-sm"
                   style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2)' }}>
                   <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
                     <div className="flex items-center gap-2">
