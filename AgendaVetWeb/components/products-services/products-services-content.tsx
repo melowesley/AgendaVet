@@ -29,40 +29,44 @@ import {
   Edit,
   Trash2,
   Clock,
-  DollarSign,
   AlertCircle,
   LayoutGrid,
   List,
   FileDown,
+  Upload,
 } from 'lucide-react'
 import { ProductServiceFormDialog } from './product-service-form-dialog'
 
 type ViewMode = 'grid' | 'list'
+type StatFilter = 'all' | 'active' | 'inactive' | 'with-duration'
 
 export function ProductsServicesContent() {
   const { services, isLoading, error } = useServices()
   const [formOpen, setFormOpen] = useState(false)
   const [editingService, setEditingService] = useState<Service | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
-
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active')
-
-  const filtered = useMemo(() => {
-    return services.filter((s) => {
-      const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
-        (s.description || '').toLowerCase().includes(search.toLowerCase())
-      const matchStatus = statusFilter === 'all'
-        || (statusFilter === 'active' && s.active)
-        || (statusFilter === 'inactive' && !s.active)
-      return matchSearch && matchStatus
-    })
-  }, [services, search, statusFilter])
+  const [statFilter, setStatFilter] = useState<StatFilter>('all')
 
   const activeCount = services.filter(s => s.active).length
   const inactiveCount = services.length - activeCount
   const withDurationCount = services.filter(s => s.durationMinutes).length
+
+  const filtered = useMemo(() => {
+    return services.filter((s) => {
+      const matchSearch =
+        s.name.toLowerCase().includes(search.toLowerCase()) ||
+        (s.description || '').toLowerCase().includes(search.toLowerCase())
+
+      let matchStat = true
+      if (statFilter === 'active') matchStat = s.active
+      else if (statFilter === 'inactive') matchStat = !s.active
+      else if (statFilter === 'with-duration') matchStat = !!s.durationMinutes
+
+      return matchSearch && matchStat
+    })
+  }, [services, search, statFilter])
 
   const handleEdit = (service: Service) => {
     setEditingService(service)
@@ -150,6 +154,10 @@ export function ProductsServicesContent() {
     win.print()
   }
 
+  const handleImport = () => {
+    toast.info('Importação em breve disponível.')
+  }
+
   if (error) {
     return (
       <div className="p-6 flex flex-col items-center justify-center h-[50vh] text-center">
@@ -164,30 +172,60 @@ export function ProductsServicesContent() {
     )
   }
 
+  const statCards = [
+    {
+      key: 'all' as StatFilter,
+      label: 'Total',
+      value: services.length,
+      color: 'bg-zinc-800 text-white',
+      activeColor: 'bg-zinc-900 text-white ring-2 ring-zinc-500',
+    },
+    {
+      key: 'active' as StatFilter,
+      label: 'Ativos',
+      value: activeCount,
+      color: 'bg-emerald-600 text-white',
+      activeColor: 'bg-emerald-700 text-white ring-2 ring-emerald-400',
+    },
+    {
+      key: 'inactive' as StatFilter,
+      label: 'Inativos',
+      value: inactiveCount,
+      color: 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200',
+      activeColor: 'bg-zinc-300 text-zinc-900 ring-2 ring-zinc-400 dark:bg-zinc-600 dark:text-white',
+    },
+    {
+      key: 'with-duration' as StatFilter,
+      label: 'Com duração',
+      value: withDurationCount,
+      color: 'bg-blue-600 text-white',
+      activeColor: 'bg-blue-700 text-white ring-2 ring-blue-400',
+    },
+  ]
+
   return (
     <div className="p-4 md:p-6 space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Produtos & Serviços</h1>
           <p className="text-muted-foreground text-sm">
             Gerencie os serviços e produtos oferecidos pela clínica
           </p>
         </div>
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportPDF}
-            className="gap-2"
-          >
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <Button variant="outline" size="sm" onClick={handleImport} className="gap-1.5">
+            <Upload className="size-4" />
+            Importar
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1.5">
             <FileDown className="size-4" />
             Exportar PDF
           </Button>
           <Button
             onClick={handleNew}
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
           >
             <Plus className="size-4" />
             Novo Cadastro
@@ -195,28 +233,20 @@ export function ProductsServicesContent() {
         </div>
       </div>
 
-      {/* Stats — compact bar */}
-      <div className="flex items-center gap-0 rounded-lg border border-border/50 bg-muted/30 divide-x divide-border/50 overflow-hidden text-sm">
-        <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
-          <ShoppingBag className="size-3.5 text-emerald-500 shrink-0" />
-          <span className="text-muted-foreground whitespace-nowrap">Total</span>
-          <span className="font-semibold ml-auto">{services.length}</span>
-        </div>
-        <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
-          <div className="size-2 rounded-full bg-emerald-500 shrink-0" />
-          <span className="text-muted-foreground whitespace-nowrap">Ativos</span>
-          <span className="font-semibold ml-auto">{activeCount}</span>
-        </div>
-        <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
-          <div className="size-2 rounded-full bg-gray-400 shrink-0" />
-          <span className="text-muted-foreground whitespace-nowrap">Inativos</span>
-          <span className="font-semibold ml-auto">{inactiveCount}</span>
-        </div>
-        <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
-          <Clock className="size-3.5 text-blue-500 shrink-0" />
-          <span className="text-muted-foreground whitespace-nowrap">Com duração</span>
-          <span className="font-semibold ml-auto">{withDurationCount}</span>
-        </div>
+      {/* Stat cards — clicáveis como filtro */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {statCards.map((card) => (
+          <button
+            key={card.key}
+            onClick={() => setStatFilter(card.key)}
+            className={`rounded-xl px-4 py-3 text-left transition-all focus:outline-none ${
+              statFilter === card.key ? card.activeColor : card.color
+            } hover:opacity-90`}
+          >
+            <div className="text-2xl font-bold leading-none">{card.value}</div>
+            <div className="text-xs mt-1 opacity-80 font-medium">{card.label}</div>
+          </button>
+        ))}
       </div>
 
       {/* Filters + View Toggle */}
@@ -230,16 +260,6 @@ export function ProductsServicesContent() {
             className="pl-9 h-9"
           />
         </div>
-        <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
-          <SelectTrigger className="w-full sm:w-32 h-9">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="active">Ativos</SelectItem>
-            <SelectItem value="inactive">Inativos</SelectItem>
-          </SelectContent>
-        </Select>
         {/* View mode toggle */}
         <div className="flex border border-border/50 rounded-md overflow-hidden h-9 shrink-0">
           <button
@@ -267,7 +287,7 @@ export function ProductsServicesContent() {
         </div>
       </div>
 
-      {/* List */}
+      {/* Content */}
       {isLoading ? (
         <div className="flex items-center justify-center h-40">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
@@ -283,7 +303,7 @@ export function ProductsServicesContent() {
           <p className="text-muted-foreground text-sm max-w-sm mt-1">
             {services.length === 0
               ? 'Cadastre os serviços e produtos oferecidos pela sua clínica.'
-              : 'Tente ajustar os filtros de busca.'}
+              : 'Tente ajustar os filtros ou a busca.'}
           </p>
           {services.length === 0 && (
             <Button onClick={handleNew} className="mt-6 bg-emerald-600 hover:bg-emerald-700 text-white">
