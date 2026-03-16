@@ -71,6 +71,20 @@ export interface MedicalRecord {
   createdAt: string
 }
 
+export type ProductCategory = 'material' | 'medicamento'
+
+export interface Product {
+  id: string
+  name: string
+  description?: string
+  category: ProductCategory
+  price: number
+  unit?: string
+  stock?: number
+  active: boolean
+  createdAt: string
+}
+
 export interface AgentSettings {
   model: string
   temperature: number

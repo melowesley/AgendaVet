@@ -1,7 +1,7 @@
 'use client'
 
 import useSWR, { mutate } from 'swr'
-import type { Pet, Owner, Appointment, MedicalRecord, AgentSettings, Service } from './types'
+import type { Pet, Owner, Appointment, MedicalRecord, AgentSettings, Service, Product } from './types'
 import { supabase } from './supabase/client'
 export { supabase }
 import { useAuthStore } from './auth-store'
@@ -553,6 +553,80 @@ export async function deleteService(id: string) {
   const { error } = await supabase.from('services').delete().eq('id', id)
   if (error) throw error
   mutate('services')
+  return true
+}
+
+// Products (Materiais & Medicamentos)
+const mapSupabaseProduct = (p: any): Product => ({
+  id: p.id,
+  name: p.name,
+  description: p.description || undefined,
+  category: p.category === 'medicamento' ? 'medicamento' : 'material',
+  price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0,
+  unit: p.unit || undefined,
+  stock: p.stock != null ? Number(p.stock) : undefined,
+  active: p.active !== false,
+  createdAt: p.created_at,
+})
+
+const productsFetcher = async () => {
+  const { data, error } = await supabase
+    .from('products' as any)
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data || []).map(mapSupabaseProduct)
+}
+
+export function useProducts() {
+  const { data, error, isLoading } = useSWR<Product[]>('products', productsFetcher)
+  return { products: data ?? [], error, isLoading }
+}
+
+export async function addProduct(product: Omit<Product, 'id' | 'createdAt'>) {
+  const { data, error } = await (supabase.from('products' as any).insert([{
+    name: product.name,
+    description: product.description ?? null,
+    category: product.category,
+    price: product.price,
+    unit: product.unit ?? null,
+    stock: product.stock ?? null,
+    active: product.active,
+  }]) as any).select().single()
+
+  if (error) {
+    console.error('Error adding product:', error)
+    throw error
+  }
+  const newProduct = mapSupabaseProduct(data)
+  mutate('products')
+  return newProduct
+}
+
+export async function updateProduct(id: string, updates: Partial<Product>) {
+  const supabaseUpdates: any = {}
+  if (updates.name !== undefined) supabaseUpdates.name = updates.name
+  if (updates.description !== undefined) supabaseUpdates.description = updates.description ?? null
+  if (updates.category !== undefined) supabaseUpdates.category = updates.category
+  if (updates.price !== undefined) supabaseUpdates.price = updates.price
+  if (updates.unit !== undefined) supabaseUpdates.unit = updates.unit ?? null
+  if (updates.stock !== undefined) supabaseUpdates.stock = updates.stock ?? null
+  if (updates.active !== undefined) supabaseUpdates.active = updates.active
+
+  const { data, error } = await (supabase.from('products' as any).update(supabaseUpdates).eq('id', id) as any).select().single()
+  if (error) {
+    console.error('Error updating product:', error)
+    throw error
+  }
+  const updatedProduct = mapSupabaseProduct(data)
+  mutate('products')
+  return updatedProduct
+}
+
+export async function deleteProduct(id: string) {
+  const { error } = await supabase.from('products' as any).delete().eq('id', id)
+  if (error) throw error
+  mutate('products')
   return true
 }
 
