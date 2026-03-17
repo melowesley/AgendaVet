@@ -59,7 +59,7 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
     const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'))
     const [notes, setNotes] = useState('')
     const [editingId, setEditingId] = useState<string | null>(null)
-    const [veterinarian, setVeterinarian] = useState('Dr. Cleyton Chaves')
+    const [veterinarian, setVeterinarian] = useState('')
 
     const printRef = useRef<HTMLDivElement>(null)
     const handlePrint = useReactToPrint({ contentRef: printRef, documentTitle: `Peso_${petName}_${format(new Date(), 'dd_MM_yyyy')}` })
@@ -114,7 +114,7 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
                     type: 'procedure',
                     title: 'Pesagem',
                     description: `Peso: ${weight} kg. ${notes ? `Obs: ${notes}` : ''}`,
-                    veterinarian: 'Dr. Cleyton Chaves',
+                    veterinarian: '',
                 })
 
                 const { error } = await (supabase.from('pet_weight_records' as any).insert([payload] as any) as any)
@@ -443,16 +443,11 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
                                 )}
                             </div>
 
-                            <div className="mt-auto pt-12 flex justify-between items-end">
-                                <div className="text-[9px] opacity-40 italic max-w-[250px] leading-tight font-medium text-slate-500 uppercase">
-                                    Monitoramento realizado através da plataforma AgendaVet.
-                                </div>
-                                <div className="text-center w-64">
-                                    <div className="h-[2px] w-full bg-slate-300 mb-3"></div>
-                                    <p className="text-[12px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Dr. Cleyton Chaves'}</p>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
-                                </div>
-                            </div>
+                        {/* Footer context */}
+                        <div className="p-4 border-t border-border/30 bg-muted/20">
+                            <p className="text-[9px] text-center text-muted-foreground uppercase font-medium tracking-widest italic">
+                                Monitoramento de peso e crescimento · Plataforma AgendaVet
+                            </p>
                         </div>
                     </div>
                 </div>

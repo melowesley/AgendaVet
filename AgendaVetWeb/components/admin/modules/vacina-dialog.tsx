@@ -65,7 +65,7 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
     const [applicationDate, setApplicationDate] = useState(format(new Date(), 'yyyy-MM-dd'))
     const [nextDoseDate, setNextDoseDate] = useState('')
     const [batchNumber, setBatchNumber] = useState('')
-    const [veterinarian, setVeterinarian] = useState('Dr. Cleyton Chaves')
+    const [veterinarian, setVeterinarian] = useState('')
     const [notes, setNotes] = useState('')
     const [editingId, setEditingId] = useState<string | null>(null)
 
@@ -111,7 +111,7 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
                 application_date: applicationDate,
                 next_dose_date: nextDoseDate || null,
                 batch_number: batchNumber || null,
-                veterinarian: veterinarian || 'Dr. Cleyton Chaves',
+                veterinarian: veterinarian || '',
                 notes: JSON.stringify({
                     observation: notes,
                     billing: {

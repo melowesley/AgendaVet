@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { ClipboardList, Save, ArrowLeft, Printer, DollarSign, Plus, Trash2, Bed, Activity, Thermometer, HeartPulse, History, PawPrint, Clock } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useReactToPrint } from 'react-to-print'
 import { Badge } from '@/components/ui/badge'
@@ -63,7 +63,7 @@ export function InternacaoDialog({ open, onOpenChange, onBack, petId, petName }:
     const [estadoGeral, setEstadoGeral] = useState('')
     const [observacoes, setObservacoes] = useState('')
     const [conduta, setConduta] = useState('')
-    const [veterinarian, setVeterinarian] = useState('Dr. Cleyton Chaves')
+    const [veterinarian, setVeterinarian] = useState('')
 
     // Billing state
     const [baseValue, setBaseValue] = useState('0.00')
@@ -115,7 +115,7 @@ export function InternacaoDialog({ open, onOpenChange, onBack, petId, petName }:
                 title: `Internação - ${quarto}`,
                 description: JSON.stringify(description),
                 date: new Date(date).toISOString(),
-                veterinarian: veterinarian || 'Dr. Cleyton Chaves',
+                veterinarian: veterinarian || '',
             }] as any) as any)
 
             if (error) throw error
@@ -150,7 +150,7 @@ export function InternacaoDialog({ open, onOpenChange, onBack, petId, petName }:
                             <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5 font-medium">
                                 <span className="flex items-center gap-1"><PawPrint className="size-3.5" /> <span className="font-bold text-slate-700">{petName}</span></span>
                                 <span className="text-slate-300">•</span>
-                                <span className={`flex items-center gap-1 font-bold ${themeColor.text} uppercase tracking-tighter text-[11px] ${themeColor.bgGhost} px-2 py-0.5 rounded border ${themeColor.borderLight}`}>Hospital Care</span>
+                                <span className={`flex items-center gap-1 font-bold ${themeColor.text} uppercase tracking-tighter text-[11px] ${themeColor.bgGhost} px-2 py-0.5 rounded border ${themeColor.borderLight}`}>Unidade de Internação</span>
                             </div>
                         </div>
                     </div>
@@ -396,7 +396,7 @@ export function InternacaoDialog({ open, onOpenChange, onBack, petId, petName }:
                                         <div className="space-y-0.5 border-t border-slate-200 pt-3 text-[11px] font-medium text-slate-900 uppercase">
                                             <p className="text-sm font-black text-slate-800 mb-1 leading-none">{petName}</p>
                                             <p className="text-slate-600 truncate">{pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : 'Animal'} | {pet?.breed}</p>
-                                            <p className="text-slate-500">Peso: <span className="font-bold text-slate-800">{pet?.weight || '-'} kg</span> | Sexo: <span className="font-bold text-slate-800">{pet?.gender}</span></p>
+                                            <p className="text-slate-500">Peso: <span className="font-bold text-slate-800">{pet?.weight || '-'} kg</span> | Sexo: <span className="font-bold text-slate-800">{pet?.gender || 'N/I'}</span></p>
                                         </div>
                                     </div>
                                     <div className="space-y-1.5 border-l border-slate-200 pl-8 text-right font-medium">
@@ -404,7 +404,7 @@ export function InternacaoDialog({ open, onOpenChange, onBack, petId, petName }:
                                         <div className="space-y-0.5 border-t border-slate-200 pt-3 text-[11px]">
                                             <p className="font-black text-slate-800 text-sm uppercase mb-1">{quarto || "S/R"}</p>
                                             <p className={`font-black uppercase text-[10px] mt-2 inline-block px-2 py-0.5 rounded ${themeColor.bgGhost} ${themeColor.text}`}>
-                                                Internado em: {format(new Date(date), 'dd/MM/yyyy')}
+                                                Internado em: {format(parseISO(date), 'dd/MM/yyyy')}
                                             </p>
                                             <p className="text-[10px] text-slate-400 mt-2 font-black uppercase tracking-tighter">Tutor: {owner?.fullName || 'S/R'}</p>
                                         </div>
@@ -474,9 +474,9 @@ export function InternacaoDialog({ open, onOpenChange, onBack, petId, petName }:
                                     REGISTRO HOSPITALAR • AGEN DAVET SYSTEM • {format(new Date(), 'dd/MM/yyyy HH:mm')}
                                 </div>
                                 <div className="text-center w-56">
-                                    <div className="h-[2px] w-full bg-slate-300 mb-3"></div>
-                                    <p className="text-[12px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Médico Veterinário'}</p>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
+                                    <div className={`h-[2px] w-full ${themeColor.bg} opacity-20 mb-2`}></div>
+                                    <p className="text-[12px] font-black uppercase text-slate-900 tracking-tighter">{veterinarian || '____________________'}</p>
+                                    <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5">Hospital Staff / CRMV-XX</p>
                                 </div>
                             </div>
                         </div>
