@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/supabase'
+import { supabase } from '@/lib/supabase'
 
 export const contextBuilder = {
     async build(petId: string): Promise<string> {
