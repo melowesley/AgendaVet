@@ -181,7 +181,7 @@ export default function GuiaPage() {
         </footer>
       </main>
 
-      <style jsx global>{\`
+      <style>{`
         @media print {
           body { background-color: white !important; color: black !important; }
           .no-print { display: none !important; }
@@ -192,7 +192,7 @@ export default function GuiaPage() {
           .prose-h1 { background: none !important; -webkit-text-fill-color: black !important; }
           .prose-blockquote { background: #f9f9f9 !important; border-color: #333 !important; }
         }
-      \`}</style>
+      `}</style>
     </div>
   );
 }
