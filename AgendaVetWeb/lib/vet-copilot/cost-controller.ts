@@ -101,13 +101,25 @@ export const costController = {
       (sum: number, u: any) => sum + (u.total_tokens || 0),
       0
     )
-    const quota = PLAN_QUOTAS[plan]?.tokensPerMonth || 500_000
-    const usagePercent = totalUsed / quota
+    const quota = PLAN_QUOTAS[plan]
+    const usagePercent = totalUsed / (quota?.tokensPerMonth || 500_000)
+    const allowedModels = quota?.allowedModels || ['gemini-2.0-flash']
 
-    if (usagePercent > 0.8) return 'gemini-2.0-flash'
-    if (plan === 'enterprise') return 'gemini-1.5-pro'
-    if (plan === 'pro') return 'gemini-2.0-flash'
-    return 'gemini-2.0-flash'
+    // When budget is tight (>80% used), always fall back to the cheapest allowed model
+    if (usagePercent > 0.8) return allowedModels[0]
+
+    // Select best model that is allowed for the plan
+    if (plan === 'enterprise') {
+      // Prefer Claude Sonnet → GPT-4o → Gemini Pro, whichever is allowed
+      const preferred = ['claude-sonnet', 'gpt-4o', 'gemini-1.5-pro']
+      return preferred.find(m => allowedModels.includes(m)) || allowedModels[0]
+    }
+    if (plan === 'pro') {
+      const preferred = ['gemini-1.5-pro', 'gpt-4o-mini']
+      return preferred.find(m => allowedModels.includes(m)) || allowedModels[0]
+    }
+    // basic plan
+    return allowedModels[0]
   },
 
   estimateCost(

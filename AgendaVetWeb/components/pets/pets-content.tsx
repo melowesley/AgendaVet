@@ -31,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, Search, MoreHorizontal, Edit, Trash2, PawPrint, Eye } from 'lucide-react'
+import { Plus, Search, MoreHorizontal, Edit, Trash2, PawPrint, Eye, Printer } from 'lucide-react'
 import Link from 'next/link'
 import { PetFormDialog } from './pet-form-dialog'
 
@@ -56,9 +56,24 @@ export function PetsContent() {
   const [editingPet, setEditingPet] = useState<Pet | null>(null)
   const [deletingPet, setDeletingPet] = useState<Pet | null>(null)
 
-  const getOwnerName = (ownerId: string) => {
-    const owner = owners.find((o) => o.id === ownerId)
-    return owner ? `${owner.firstName} ${owner.lastName}` : 'Desconhecido'
+  const getOwnerFromPet = (pet: Pet) => {
+    // 1. Try profileId (new system)
+    if (pet.profileId) {
+      const owner = owners.find(o => o.id === pet.profileId)
+      if (owner) return owner
+    }
+    // 2. Try ownerId (legacy system)
+    if (pet.ownerId) {
+      const owner = owners.find(o => o.userId === pet.ownerId || o.id === pet.ownerId)
+      if (owner) return owner
+    }
+    return null
+  }
+
+  const getOwnerName = (pet: Pet) => {
+    const owner = getOwnerFromPet(pet)
+    if (owner) return owner.fullName || `${owner.firstName} ${owner.lastName}`
+    return 'Desconhecido'
   }
 
   const calculateAge = (dateOfBirth: string) => {
@@ -76,10 +91,11 @@ export function PetsContent() {
   }
 
   const filteredPets = pets.filter((pet) => {
+    const ownerName = getOwnerName(pet)
     const matchesSearch =
       pet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       pet.breed.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      getOwnerName(pet.ownerId).toLowerCase().includes(searchQuery.toLowerCase())
+      ownerName.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesSpecies = speciesFilter === 'all' || pet.species === speciesFilter
     return matchesSearch && matchesSpecies
   })
@@ -232,24 +248,29 @@ export function PetsContent() {
                       <TableCell className="hidden lg:table-cell text-muted-foreground">{pet.weight} kg</TableCell>
                       <TableCell>
                         <Link
-                          href={`/owners/${pet.ownerId}`}
+                          href={`/owners/${getOwnerFromPet(pet)?.id || pet.ownerId}`}
                           className="hover:text-emerald-500 transition-colors font-medium"
                         >
-                          {getOwnerName(pet.ownerId)}
+                          {getOwnerName(pet)}
                         </Link>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                            className="hidden lg:flex border-emerald-500/30 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all"
+                          <Link
+                            href={`/pets/${pet.id}`}
+                            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-3 hidden sm:flex text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 transition-all cursor-pointer"
                           >
-                            <Link href={`/pets/${pet.id}`}>
-                              <Eye className="size-4 mr-1.5" />
-                              Ver Ficha
-                            </Link>
+                            <Eye className="size-4 mr-1.5" />
+                            Visualizar
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="hidden sm:flex text-slate-600 hover:text-slate-700 hover:bg-slate-500/10 transition-all"
+                            onClick={() => window.print()}
+                          >
+                            <Printer className="size-4 mr-1.5" />
+                            Imprimir
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -259,7 +280,7 @@ export function PetsContent() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild className="lg:hidden">
+                              <DropdownMenuItem asChild>
                                 <Link href={`/pets/${pet.id}`}>
                                   <Eye className="size-4 mr-2 text-emerald-500" />
                                   Ver Ficha

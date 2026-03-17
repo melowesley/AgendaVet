@@ -49,7 +49,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
               <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <PawPrint className="size-5" />
               </div>
-              <SheetTitle className="text-lg font-semibold">VetCRM</SheetTitle>
+              <SheetTitle className="text-lg font-semibold">AgendaVet</SheetTitle>
             </div>
             <Button
               variant="ghost"
@@ -74,8 +74,8 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                 target={item.external ? "_blank" : undefined}
                 rel={item.external ? "noopener noreferrer" : undefined}
                 className={`flex items-center gap-4 rounded-lg px-4 py-4 text-lg transition-colors ${isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-muted'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'hover:bg-muted'
                   }`}
               >
                 <item.icon className="size-6" />

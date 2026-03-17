@@ -9,6 +9,8 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 import { AuthProvider } from "@/components/auth-provider"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/sonner"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 export const metadata: Metadata = {
   title: 'AgendaVet - Gestão Veterinária',
@@ -31,9 +33,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <ErrorBoundary>
+            <AuthProvider>
+              {children}
+              <Toaster position="top-right" richColors />
+            </AuthProvider>
+          </ErrorBoundary>
           <Analytics />
         </ThemeProvider>
       </body>

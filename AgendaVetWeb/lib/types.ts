@@ -1,25 +1,47 @@
 import React from "react"
+
+export const PET_SPECIES = ['dog', 'cat', 'bird', 'rabbit', 'reptile', 'other'] as const
+export const PET_GENDERS = ['Macho', 'Fêmea'] as const
+export const OWNER_GENDERS = ['Masculino', 'Feminino', 'Outro'] as const
+
 export interface Pet {
   id: string
   name: string
-  species: 'dog' | 'cat' | 'bird' | 'rabbit' | 'reptile' | 'other'
+  species: typeof PET_SPECIES[number]
   breed: string
+  gender?: typeof PET_GENDERS[number]
   dateOfBirth: string
   weight: number
-  ownerId: string
+  ownerId?: string // Legacy link to user_id (for tutores with login)
+  profileId: string // New primary link to profile (tutor)
   notes: string
   imageUrl?: string
   createdAt: string
 }
 
 export interface Owner {
-  id: string
+  id: string // This is the profile.id (UUID)
+  userId?: string // Optional link to auth.users (for login)
   firstName: string
   lastName: string
+  fullName: string
+  gender?: typeof OWNER_GENDERS[number]
+  age?: number
   email: string
   phone: string
+  whatsapp?: string
   address: string
   petIds: string[]
+  createdAt: string
+}
+
+export interface Service {
+  id: string
+  name: string
+  description?: string
+  price: number
+  durationMinutes?: number
+  active: boolean
   createdAt: string
 }
 
@@ -41,11 +63,25 @@ export interface MedicalRecord {
   petId: string
   appointmentId?: string
   date: string
-  type: 'vaccination' | 'prescription' | 'diagnosis' | 'procedure' | 'lab-result' | 'note'
+  type: 'vaccination' | 'prescription' | 'diagnosis' | 'procedure' | 'lab-result' | 'note' | 'peso' | 'cirurgia' | 'internacao' | 'banho-tosa' | 'obito' | 'documento' | 'fotos' | 'video' | 'retorno' | 'outros' | 'consulta' | 'exame' | 'procedimento' | 'receita' | 'vacina' | 'observacao'
   title: string
   description: string
   veterinarian: string
   attachments?: string[]
+  createdAt: string
+}
+
+export type ProductCategory = 'material' | 'medicamento'
+
+export interface Product {
+  id: string
+  name: string
+  description?: string
+  category: ProductCategory
+  price: number
+  unit?: string
+  stock?: number
+  active: boolean
   createdAt: string
 }
 

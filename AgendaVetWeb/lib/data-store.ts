@@ -1,15 +1,16 @@
 'use client'
 
 import useSWR, { mutate } from 'swr'
-import type { Pet, Owner, Appointment, MedicalRecord, AgentSettings } from './types'
+import type { Pet, Owner, Appointment, MedicalRecord, AgentSettings, Service, Product } from './types'
 import { supabase } from './supabase/client'
+export { supabase }
 import { useAuthStore } from './auth-store'
 
 // AI Agent Settings (kept in-memory for now or could be moved to a settings table)
 let agentSettingsStore: AgentSettings = {
   model: 'anthropic/claude-opus-4.5',
   temperature: 0.7,
-  systemPrompt: `You are a helpful veterinary assistant for VetCRM. You help staff with:
+  systemPrompt: `You are a helpful veterinary assistant for AgendaVet. You help staff with:
 - Looking up patient and owner information
 - Scheduling appointments
 - Answering common veterinary questions
@@ -19,27 +20,47 @@ Always be professional, empathetic, and accurate in your responses.`,
 }
 
 // Mappers
-const mapSupabasePet = (p: any): Pet => ({
-  id: p.id,
-  name: p.name,
-  species: (p.type || 'other') as Pet['species'],
-  breed: p.breed || '',
-  dateOfBirth: p.age || '',
-  weight: parseFloat(p.weight) || 0,
-  ownerId: p.user_id,
-  notes: p.notes || '',
-  imageUrl: p.imageUrl,
-  createdAt: p.created_at,
-})
+const mapSupabasePet = (p: any): Pet => {
+  let notesText = p.notes || ''
+  let genderVal: 'Macho' | 'Fêmea' | undefined = undefined
+
+  if (notesText.includes(' | Gênero: Fêmea')) {
+    genderVal = 'Fêmea'
+    notesText = notesText.replace(' | Gênero: Fêmea', '')
+  } else if (notesText.includes(' | Gênero: Macho')) {
+    genderVal = 'Macho'
+    notesText = notesText.replace(' | Gênero: Macho', '')
+  }
+
+  return {
+    id: p.id,
+    name: p.name,
+    species: (p.type || 'other') as Pet['species'],
+    breed: p.breed || '',
+    gender: genderVal,
+    dateOfBirth: p.age || '',
+    weight: parseFloat(p.weight) || 0,
+    ownerId: p.user_id, // Legacy link
+    profileId: p.profile_id, // New link to profile UUID
+    notes: notesText,
+    imageUrl: p.imageUrl,
+    createdAt: p.created_at,
+  }
+}
 
 const mapSupabaseOwner = (p: any): Owner => {
   const parts = (p.full_name || '').split(' ')
   return {
-    id: p.id,
+    id: p.id, // Profile UUID
+    userId: p.user_id, // Optional Auth User UUID
     firstName: parts[0] || '',
     lastName: parts.slice(1).join(' ') || '',
+    fullName: p.full_name || '',
+    gender: p.gender,
+    age: p.age,
     email: p.email || '',
     phone: p.phone || '',
+    whatsapp: p.whatsapp || '',
     address: p.address || '',
     petIds: [],
     createdAt: p.created_at,
@@ -70,7 +91,10 @@ const mapSupabaseAppointment = (a: any): Appointment => {
 
 // Fetchers
 const petsFetcher = async () => {
-  const { data, error } = await supabase.from('pets').select('*').order('created_at', { ascending: false })
+  const { data, error } = await supabase
+    .from('pets')
+    .select('*, profiles(full_name, id)')
+    .order('created_at', { ascending: false })
   if (error) throw error
   return (data || []).map(mapSupabasePet)
 }
@@ -89,11 +113,14 @@ const appointmentsFetcher = async () => {
 
 const medicalRecordsFetcher = async () => {
   // Combining different record types from Supabase
-  const [exams, vaccines, observations, prescriptions] = await Promise.all([
+  const [exams, vaccines, observations, prescriptions, surgeries, photos, videos] = await Promise.all([
     supabase.from('pet_exams').select('*'),
     supabase.from('pet_vaccines').select('*'),
     supabase.from('pet_observations').select('*'),
     supabase.from('pet_prescriptions').select('*'),
+    supabase.from('medical_records' as any).select('*'),
+    supabase.from('pet_photos' as any).select('*'),
+    supabase.from('pet_videos' as any).select('*'),
   ])
 
   const records: MedicalRecord[] = [
@@ -136,6 +163,36 @@ const medicalRecordsFetcher = async () => {
       description: p.medication_name || '',
       veterinarian: p.veterinarian || '',
       createdAt: p.created_at,
+    })),
+    ...(surgeries.data || []).map((s: any) => ({
+      id: s.id,
+      petId: s.pet_id,
+      date: s.date || s.observation_date,
+      type: (s.type === 'surgery' ? 'procedure' : s.type) as any,
+      title: s.type === 'surgery' ? `Cirurgia: ${s.title}` : s.title,
+      description: s.description || s.observation || '',
+      veterinarian: s.veterinarian || '',
+      createdAt: s.created_at,
+    })),
+    ...(photos.data || []).map((p: any) => ({
+      id: p.id,
+      petId: p.pet_id,
+      date: p.date,
+      type: 'note' as const,
+      title: `Foto: ${p.title || 'Mídia Anexada'}`,
+      description: p.description || p.photo_url || '',
+      veterinarian: '',
+      createdAt: p.created_at || new Date(p.date).toISOString(),
+    })),
+    ...(videos.data || []).map((v: any) => ({
+      id: v.id,
+      petId: v.pet_id,
+      date: v.date,
+      type: 'note' as const,
+      title: `Vídeo: ${v.title || 'Mídia Anexada'}`,
+      description: v.description || v.video_url || '',
+      veterinarian: '',
+      createdAt: v.created_at || new Date(v.date).toISOString(),
     })),
   ]
 
@@ -185,17 +242,24 @@ export function useAgentSettings() {
 
 // Mutations
 export async function addPet(pet: Omit<Pet, 'id' | 'createdAt'>) {
-  const { data, error } = await supabase.from('pets').insert([{
+  const { data: userData } = await supabase.auth.getUser()
+  const currentUserId = userData.user?.id
+
+  const { data, error } = await (supabase.from('pets').insert([{
     name: pet.name,
     type: pet.species,
     breed: pet.breed,
     age: pet.dateOfBirth,
     weight: pet.weight.toString(),
-    user_id: pet.ownerId,
-    notes: pet.notes,
-  }]).select().single()
+    user_id: currentUserId || null, // ID of the logged-in vet
+    profile_id: pet.profileId,     // ID of the tutor profile
+    notes: pet.notes + (pet.gender ? ` | Gênero: ${pet.gender}` : ''),
+  }] as any) as any).select().single()
 
-  if (error) throw error
+  if (error) {
+    console.error('Error adding pet:', error)
+    throw error
+  }
   const newPet = mapSupabasePet(data)
   mutate('pets')
   return newPet
@@ -208,10 +272,17 @@ export async function updatePet(id: string, updates: Partial<Pet>) {
   if (updates.breed) supabaseUpdates.breed = updates.breed
   if (updates.dateOfBirth) supabaseUpdates.age = updates.dateOfBirth
   if (updates.weight !== undefined) supabaseUpdates.weight = updates.weight.toString()
-  if (updates.notes) supabaseUpdates.notes = updates.notes
+  if (updates.notes !== undefined || updates.gender !== undefined) {
+    const currentNotes = updates.notes !== undefined ? updates.notes : ''
+    const currentGender = updates.gender !== undefined ? updates.gender : ''
+    supabaseUpdates.notes = currentNotes + (currentGender ? ` | Gênero: ${currentGender}` : '')
+  }
 
   const { data, error } = await supabase.from('pets').update(supabaseUpdates).eq('id', id).select().single()
-  if (error) throw error
+  if (error) {
+    console.error('Error updating pet:', error)
+    throw error
+  }
   const updatedPet = mapSupabasePet(data)
   mutate('pets')
   return updatedPet
@@ -224,21 +295,76 @@ export async function deletePet(id: string) {
   return true
 }
 
-export async function addOwner(owner: Omit<Owner, 'id' | 'createdAt' | 'petIds'>) {
-  const user = useAuthStore.getState().user
-  if (!user?.id) throw new Error('User not authenticated')
-
-  const { data, error } = await supabase.from('profiles').insert([{
+export async function addOwner(owner: Omit<Owner, 'id' | 'createdAt' | 'petIds' | 'fullName' | 'userId'>) {
+  const { data, error } = await (supabase.from('profiles').insert([{
     full_name: `${owner.firstName} ${owner.lastName}`,
     phone: owner.phone,
     address: owner.address,
-    user_id: user.id,
-  }]).select().single()
+    email: owner.email,
+    gender: owner.gender,
+    age: owner.age,
+    whatsapp: owner.whatsapp,
+  }] as any) as any).select().single()
 
-  if (error) throw error
+  if (error) {
+    console.error('Error adding owner profile:', error)
+    throw error
+  }
   const newOwner = mapSupabaseOwner(data)
   mutate('owners')
   return newOwner
+}
+
+export async function addTutorAndPet(
+  tutorData: Omit<Owner, 'id' | 'createdAt' | 'petIds' | 'fullName' | 'userId'>,
+  petData: Omit<Pet, 'id' | 'createdAt' | 'profileId'>
+) {
+  // 1. Create the Tutor Profile
+  const { data: tutor, error: tutorError } = await (supabase.from('profiles').insert([{
+    full_name: `${tutorData.firstName} ${tutorData.lastName}`.trim(),
+    phone: tutorData.phone,
+    address: tutorData.address,
+    email: tutorData.email,
+    gender: tutorData.gender,
+    age: tutorData.age,
+    whatsapp: tutorData.whatsapp,
+  }] as any) as any).select().single()
+
+  if (tutorError) {
+    console.error('Error adding tutor during unified registration:', tutorError)
+    throw tutorError
+  }
+
+  // 2. Create the Pet linked to the new Profile ID
+  const { data: userData } = await supabase.auth.getUser()
+  const currentUserId = userData.user?.id
+
+  const { data: pet, error: petError } = await (supabase.from('pets').insert([{
+    name: petData.name,
+    type: petData.species,
+    breed: petData.breed,
+    age: petData.dateOfBirth,
+    weight: petData.weight.toString(),
+    user_id: currentUserId || null, // Logged in Vet ID
+    profile_id: tutor.id,         // Newly created Tutor Profile ID
+    notes: petData.notes + (petData.gender ? ` | Gênero: ${petData.gender}` : ''),
+  }] as any) as any).select().single()
+
+  if (petError) {
+    console.error('Error adding pet during unified registration:', petError)
+    // Rollback: delete the tutor profile that was just created
+    await supabase.from('profiles').delete().eq('id', tutor.id)
+    throw petError
+  }
+
+  // 3. Mutate caches
+  mutate('owners')
+  mutate('pets')
+
+  return {
+    owner: mapSupabaseOwner(tutor),
+    pet: mapSupabasePet(pet)
+  }
 }
 
 export async function updateOwner(id: string, updates: Partial<Owner>) {
@@ -250,7 +376,10 @@ export async function updateOwner(id: string, updates: Partial<Owner>) {
   if (updates.address) supabaseUpdates.address = updates.address
 
   const { data, error } = await supabase.from('profiles').update(supabaseUpdates).eq('id', id).select().single()
-  if (error) throw error
+  if (error) {
+    console.error('Error updating owner profile:', error)
+    throw error
+  }
   const updatedOwner = mapSupabaseOwner(data)
   mutate('owners')
   return updatedOwner
@@ -258,7 +387,10 @@ export async function updateOwner(id: string, updates: Partial<Owner>) {
 
 export async function deleteOwner(id: string) {
   const { error } = await supabase.from('profiles').delete().eq('id', id)
-  if (error) throw error
+  if (error) {
+    console.error('Error deleting owner profile:', error)
+    throw error
+  }
   mutate('owners')
   return true
 }
@@ -354,5 +486,147 @@ export function updateAgentSettings(settings: Partial<AgentSettings>) {
   agentSettingsStore = { ...agentSettingsStore, ...settings }
   mutate('agent-settings')
   return agentSettingsStore
+}
+
+// Services (Produtos & Serviços)
+const mapSupabaseService = (s: any): Service => ({
+  id: s.id,
+  name: s.name,
+  description: s.description || undefined,
+  price: typeof s.price === 'number' ? s.price : parseFloat(s.price) || 0,
+  durationMinutes: s.duration_minutes ?? undefined,
+  active: s.active !== false, // default to true if null/undefined
+  createdAt: s.created_at,
+})
+
+const servicesFetcher = async () => {
+  const { data, error } = await supabase
+    .from('services')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data || []).map(mapSupabaseService)
+}
+
+export function useServices() {
+  const { data, error, isLoading } = useSWR<Service[]>('services', servicesFetcher)
+  return { services: data ?? [], error, isLoading }
+}
+
+export async function addService(service: Omit<Service, 'id' | 'createdAt'>) {
+  const { data, error } = await supabase.from('services').insert([{
+    name: service.name,
+    description: service.description ?? null,
+    price: service.price,
+    duration_minutes: service.durationMinutes ?? null,
+    active: service.active,
+  }]).select().single()
+
+  if (error) {
+    console.error('Error adding service:', error)
+    throw error
+  }
+  const newService = mapSupabaseService(data)
+  mutate('services')
+  return newService
+}
+
+export async function updateService(id: string, updates: Partial<Service>) {
+  const supabaseUpdates: any = {}
+  if (updates.name !== undefined) supabaseUpdates.name = updates.name
+  if (updates.description !== undefined) supabaseUpdates.description = updates.description ?? null
+  if (updates.price !== undefined) supabaseUpdates.price = updates.price
+  if (updates.durationMinutes !== undefined) supabaseUpdates.duration_minutes = updates.durationMinutes ?? null
+  if (updates.active !== undefined) supabaseUpdates.active = updates.active
+
+  const { data, error } = await supabase.from('services').update(supabaseUpdates).eq('id', id).select().single()
+  if (error) {
+    console.error('Error updating service:', error)
+    throw error
+  }
+  const updatedService = mapSupabaseService(data)
+  mutate('services')
+  return updatedService
+}
+
+export async function deleteService(id: string) {
+  const { error } = await supabase.from('services').delete().eq('id', id)
+  if (error) throw error
+  mutate('services')
+  return true
+}
+
+// Products (Materiais & Medicamentos)
+const mapSupabaseProduct = (p: any): Product => ({
+  id: p.id,
+  name: p.name,
+  description: p.description || undefined,
+  category: p.category === 'medicamento' ? 'medicamento' : 'material',
+  price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0,
+  unit: p.unit || undefined,
+  stock: p.stock != null ? Number(p.stock) : undefined,
+  active: p.active !== false,
+  createdAt: p.created_at,
+})
+
+const productsFetcher = async () => {
+  const { data, error } = await supabase
+    .from('products' as any)
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data || []).map(mapSupabaseProduct)
+}
+
+export function useProducts() {
+  const { data, error, isLoading } = useSWR<Product[]>('products', productsFetcher)
+  return { products: data ?? [], error, isLoading }
+}
+
+export async function addProduct(product: Omit<Product, 'id' | 'createdAt'>) {
+  const { data, error } = await (supabase.from('products' as any).insert([{
+    name: product.name,
+    description: product.description ?? null,
+    category: product.category,
+    price: product.price,
+    unit: product.unit ?? null,
+    stock: product.stock ?? null,
+    active: product.active,
+  }]) as any).select().single()
+
+  if (error) {
+    console.error('Error adding product:', error)
+    throw error
+  }
+  const newProduct = mapSupabaseProduct(data)
+  mutate('products')
+  return newProduct
+}
+
+export async function updateProduct(id: string, updates: Partial<Product>) {
+  const supabaseUpdates: any = {}
+  if (updates.name !== undefined) supabaseUpdates.name = updates.name
+  if (updates.description !== undefined) supabaseUpdates.description = updates.description ?? null
+  if (updates.category !== undefined) supabaseUpdates.category = updates.category
+  if (updates.price !== undefined) supabaseUpdates.price = updates.price
+  if (updates.unit !== undefined) supabaseUpdates.unit = updates.unit ?? null
+  if (updates.stock !== undefined) supabaseUpdates.stock = updates.stock ?? null
+  if (updates.active !== undefined) supabaseUpdates.active = updates.active
+
+  const { data, error } = await (supabase.from('products' as any).update(supabaseUpdates).eq('id', id) as any).select().single()
+  if (error) {
+    console.error('Error updating product:', error)
+    throw error
+  }
+  const updatedProduct = mapSupabaseProduct(data)
+  mutate('products')
+  return updatedProduct
+}
+
+export async function deleteProduct(id: string) {
+  const { error } = await supabase.from('products' as any).delete().eq('id', id)
+  if (error) throw error
+  mutate('products')
+  return true
 }
 

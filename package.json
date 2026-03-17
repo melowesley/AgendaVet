@@ -1,0 +1,16 @@
+{
+  "name": "agendavet",
+  "private": true,
+  "workspaces": [
+    "AgendaVetWeb",
+    "AgendaVetVet",
+    "AgendaVetTutor",
+    "shared",
+    "packages/*"
+  ],
+  "scripts": {
+    "web": "npm run dev -w AgendaVetWeb",
+    "vet": "npm run start -w AgendaVetVet",
+    "tutor": "npm run start -w AgendaVetTutor"
+  }
+}

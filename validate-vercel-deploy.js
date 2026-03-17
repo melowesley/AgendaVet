@@ -6,9 +6,7 @@
  */
 
 const VET_URLS = [
-    "https://agendavet-vet.vercel.app/api/chat",
-    "https://agendavet-vet-app.vercel.app/api/chat",
-    "https://agendavet-vet-web.vercel.app/api/chat"
+    "https://agendavet-web.vercel.app/api/chat"
 ];
 
 const WEB_URLS = [

@@ -5,7 +5,7 @@
  * Estas tools são executadas no servidor e retornam dados estruturados para o modelo.
  */
 
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '../supabase';
 import { z } from 'zod';
 import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';

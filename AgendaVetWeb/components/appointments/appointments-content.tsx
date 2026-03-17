@@ -64,6 +64,7 @@ export function AppointmentsContent() {
   const [deletingAppointment, setDeletingAppointment] = useState<Appointment | null>(null)
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar')
   const [selectedWeek, setSelectedWeek] = useState<{ start: Date; end: Date } | null>(null)
+  const [selectedDateForNew, setSelectedDateForNew] = useState<Date | undefined>(undefined)
 
   const getPetName = (petId: string) => pets.find((p) => p.id === petId)?.name || 'Unknown'
   const getOwnerName = (ownerId: string) => {
@@ -129,6 +130,13 @@ export function AppointmentsContent() {
   const handleDialogClose = () => {
     setDialogOpen(false)
     setEditingAppointment(null)
+    setSelectedDateForNew(undefined)
+  }
+
+  const handleDayDoubleClick = (day: Date) => {
+    setSelectedDateForNew(day)
+    setEditingAppointment(null)
+    setDialogOpen(true)
   }
 
   const handleWeekSelect = (weekStart: Date, weekEnd: Date) => {
@@ -189,10 +197,11 @@ export function AppointmentsContent() {
 
       {viewMode === 'calendar' ? (
         <div className="space-y-6">
-          <CalendarView onWeekSelect={handleWeekSelect} selectedWeek={selectedWeek} />
-          {selectedWeek && (
-            <WeekAppointments weekStart={selectedWeek.start} weekEnd={selectedWeek.end} />
-          )}
+          <CalendarView
+            onWeekSelect={handleWeekSelect}
+            selectedWeek={selectedWeek}
+            onDayDoubleClick={handleDayDoubleClick}
+          />
         </div>
       ) : (
         <Card>
@@ -368,6 +377,7 @@ export function AppointmentsContent() {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         appointment={editingAppointment}
+        initialDate={selectedDateForNew}
       />
 
       <AlertDialog open={!!deletingAppointment} onOpenChange={() => setDeletingAppointment(null)}>

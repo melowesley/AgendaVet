@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
 import { Search } from 'lucide-react'
 import {
   Dialog,
@@ -30,6 +31,7 @@ interface AppointmentFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   appointment?: Appointment | null
+  initialDate?: Date
 }
 
 const typeOptions: { value: Appointment['type']; label: string }[] = [
@@ -60,10 +62,12 @@ export function AppointmentFormDialog({
   open,
   onOpenChange,
   appointment,
+  initialDate,
 }: AppointmentFormDialogProps) {
   const { pets } = usePets()
   const { owners } = useOwners()
   const isEditing = !!appointment
+  const [loading, setLoading] = useState(false)
 
   const [formData, setFormData] = useState({
     petId: '',
@@ -98,10 +102,13 @@ export function AppointmentFormDialog({
         })
       } else {
         const today = new Date().toISOString().split('T')[0]
+        const defaultDate = initialDate
+          ? new Date(initialDate.getTime() - (initialDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0]
+          : today
         setFormData({
           petId: filteredPets[0]?.id || '',
           ownerId: filteredPets[0]?.ownerId || owners[0]?.id || '',
-          date: today,
+          date: defaultDate,
           time: '09:00',
           type: 'checkup',
           status: 'scheduled',
@@ -111,7 +118,8 @@ export function AppointmentFormDialog({
       }
       setPetSearch('')
     }
-  }, [open, appointment?.id, filteredPets.length, owners.length])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, appointment?.id])
 
   const handlePetChange = (petId: string) => {
     const pet = pets.find((p) => p.id === petId)
@@ -122,16 +130,25 @@ export function AppointmentFormDialog({
     })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (isEditing && appointment) {
-      updateAppointment(appointment.id, formData)
-    } else {
-      addAppointment(formData)
+    setLoading(true)
+    try {
+      if (isEditing && appointment) {
+        await updateAppointment(appointment.id, formData)
+        toast.success("Agendamento atualizado com sucesso!")
+      } else {
+        await addAppointment(formData)
+        toast.success("Novo agendamento criado com sucesso!")
+      }
+      onOpenChange(false)
+    } catch (error: any) {
+      console.error("Error saving appointment:", error)
+      toast.error(error?.message || "Erro ao salvar agendamento")
+    } finally {
+      setLoading(false)
     }
-
-    onOpenChange(false)
   }
 
   return (
@@ -299,7 +316,9 @@ export function AppointmentFormDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit">{isEditing ? 'Salvar Alterações' : 'Agendar'}</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Salvando...' : isEditing ? 'Salvar Alterações' : 'Agendar'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

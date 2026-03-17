@@ -1,0 +1,10 @@
+{
+  "name": "@agendavet/theme",
+  "version": "1.0.0",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "private": true,
+  "dependencies": {
+    "tailwindcss": "^4.0.0"
+  }
+}

@@ -12,6 +12,9 @@ import { logPetAdminHistory } from '@/lib/services/petHistory';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
 
 const MODULE_COLORS: Record<string, string> = {
     consulta: '#0284C7',          // sky-600
@@ -196,7 +199,7 @@ export default function PetDetailScreen() {
 
     if (petLoading || timelineLoading) {
         return (
-            <View style={[styles.center, { backgroundColor: theme.background }]}>
+            <View className="flex-1 items-center justify-center" style={{ backgroundColor: theme.background }}>
                 <ActivityIndicator size="large" color={theme.primary} />
             </View>
         );
@@ -206,348 +209,429 @@ export default function PetDetailScreen() {
         <View style={[styles.container, { backgroundColor: theme.background }]}>
             <Stack.Screen options={{ title: pet?.name?.toUpperCase() || 'Paciente', headerBackTitle: 'Voltar' }} />
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                {/* Header Info */}
-                <View style={[styles.headerCard, { backgroundColor: theme.surface }]}>
-                    <View style={styles.headerTop}>
-                        <View style={[styles.avatar, { backgroundColor: theme.primary + '15' }]}>
-                            <Ionicons name={pet?.type === 'cat' ? 'logo-octocat' : 'paw'} size={32} color={theme.primary} />
+            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+                {/* Header Card Premium */}
+                <Card className="mb-6 border-primary/20 bg-primary/5">
+                    <View className="p-5">
+                        <View className="flex-row items-center mb-5">
+                            <View className="w-16 h-16 rounded-full items-center justify-center bg-primary shadow-lg shadow-primary/30 mr-4">
+                                <Ionicons name={pet?.type === 'cat' ? 'logo-octocat' : 'paw'} size={32} color="white" />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-xl font-black text-foreground">{pet?.name?.toUpperCase()}</Text>
+                                <Text className="text-xs text-muted-foreground font-medium uppercase mt-0.5">
+                                    {pet?.breed || 'SRD'} • {pet?.age || 'Idade n/i'}
+                                </Text>
+                            </View>
                         </View>
-                        <View style={styles.headerInfo}>
-                            <Text style={[styles.petName, { color: theme.text }]}>{pet?.name?.toUpperCase()}</Text>
-                            <Text style={[styles.petMeta, { color: theme.textSecondary }]}>
-                                {pet?.breed || 'SRD'} • {pet?.age || 'Idade n/i'}
-                            </Text>
-                        </View>
-                    </View>
 
-                    <View style={styles.statusRow}>
-                        <View style={[styles.statusBadge, { backgroundColor: theme.surfaceElevated }]}>
-                            <Text style={[styles.statusText, { color: theme.textSecondary }]}>{pet?.type === 'cat' ? 'FELINO' : 'CANINO'}</Text>
+                        <View className="flex-row gap-2 mb-5">
+                            <View className="bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+                                <Text className="text-[10px] font-black text-primary uppercase">
+                                    {pet?.type === 'cat' ? 'FELINO' : 'CANINO'}
+                                </Text>
+                            </View>
+                            {pet?.is_hospitalized && (
+                                <View className="bg-destructive/10 px-3 py-1 rounded-full border border-destructive/20">
+                                    <Text className="text-[10px] font-black text-destructive uppercase">INTERNADO</Text>
+                                </View>
+                            )}
                         </View>
-                        {pet?.is_hospitalized && (
-                            <View style={[styles.statusBadge, { backgroundColor: theme.error + '20' }]}>
-                                <Text style={[styles.statusText, { color: theme.error }]}>INTERNADO</Text>
+
+                        <View className="h-[1px] bg-border/40 w-full mb-5" />
+
+                        <View className="flex-row items-center justify-between">
+                            <View>
+                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                                    Tutor Responsável
+                                </Text>
+                                <Text className="text-base font-black text-foreground">{owner?.full_name || 'Desconhecido'}</Text>
+                            </View>
+                            {owner?.phone && (
+                                <TouchableOpacity 
+                                    className="w-10 h-10 rounded-full bg-emerald-500/10 items-center justify-center border border-emerald-500/20"
+                                    onPress={handleWhatsApp}
+                                >
+                                    <Ionicons name="logo-whatsapp" size={22} color="#10B981" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+
+                        {pendingBalance > 0 && (
+                            <View className="mt-5 p-3 rounded-2xl bg-destructive/5 border border-destructive/20 flex-row justify-between items-center">
+                                <View className="flex-row items-center gap-2">
+                                    <View className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                                    <Text className="text-xs font-black text-destructive uppercase">Saldo Aberto</Text>
+                                </View>
+                                <Text className="text-lg font-black text-destructive">{formatCurrency(pendingBalance)}</Text>
                             </View>
                         )}
                     </View>
-
-                    <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-                    <View style={styles.ownerRow}>
-                        <View style={styles.ownerInfo}>
-                            <Text style={[styles.ownerLabel, { color: theme.textMuted }]}>Tutor responsável</Text>
-                            <Text style={[styles.ownerName, { color: theme.text }]}>{owner?.full_name || 'Desconhecido'}</Text>
-                        </View>
-                        {owner?.phone && (
-                            <TouchableOpacity style={styles.whatsappBtn} onPress={handleWhatsApp}>
-                                <Ionicons name="logo-whatsapp" size={24} color="#25D366" />
-                            </TouchableOpacity>
-                        )}
-                    </View>
-
-                    {pendingBalance > 0 && (
-                        <View style={[styles.balanceBox, { backgroundColor: theme.error + '10', borderColor: theme.error + '20' }]}>
-                            <Text style={[styles.balanceLabel, { color: theme.error }]}>Saldo em aberto</Text>
-                            <Text style={[styles.balanceValue, { color: theme.error }]}>{formatCurrency(pendingBalance)}</Text>
-                        </View>
-                    )}
-                </View>
+                </Card>
 
                 {/* Timeline Section */}
-                <View style={styles.timelineHeader}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Linha do Tempo</Text>
-                    <TouchableOpacity onPress={() => refresh()}>
-                        <Ionicons name="refresh" size={18} color={theme.primary} />
+                <View className="flex-row items-center justify-between mb-4 px-1">
+                    <Text className="text-lg font-black text-foreground">Linha do Tempo</Text>
+                    <TouchableOpacity onPress={() => refresh()} activeOpacity={0.7}>
+                        <View className="bg-primary/10 p-2 rounded-full">
+                            <Ionicons name="refresh" size={16} color={theme.primary} />
+                        </View>
                     </TouchableOpacity>
                 </View>
 
-                {/* ── Filtros ── */}
-                <View style={{ marginBottom: 16, gap: 10 }}>
-                    {/* Filtro por data */}
-                    <View style={[styles.filterInput, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                        <Ionicons name="calendar-outline" size={16} color={theme.textMuted} style={{ marginRight: 6 }} />
+                {/* Filters Section */}
+                <View className="mb-6 gap-3">
+                    {/* Search Field */}
+                    <View className={cn(
+                        "flex-row items-center px-4 h-12 rounded-2xl border bg-card/50",
+                        filterDate ? "border-primary" : "border-border/50"
+                    )}>
+                        <Ionicons name="calendar-outline" size={16} color={filterDate ? theme.primary : theme.textMuted} />
                         <TextInput
-                            style={{ flex: 1, color: theme.text, fontSize: 13 }}
+                            className="flex-1 ml-3 text-sm text-foreground font-medium"
                             placeholder="Filtrar por data (ex: 04/03/2026)"
-                            placeholderTextColor={theme.textMuted}
+                            placeholderTextColor="#9ca3af"
                             value={filterDate}
                             onChangeText={setFilterDate}
                             keyboardType="numeric"
                         />
-                        {filterDate ? <TouchableOpacity onPress={() => setFilterDate('')}><Ionicons name="close-circle" size={16} color={theme.textMuted} /></TouchableOpacity> : null}
-                    </View>
-                    {/* Chips de tipo */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 2 }}>
-                        <TouchableOpacity
-                            style={[styles.chip, !filterType && { backgroundColor: theme.primary }]}
-                            onPress={() => setFilterType(null)}>
-                            <Text style={[styles.chipText, { color: !filterType ? '#fff' : theme.textSecondary }]}>Todos</Text>
-                        </TouchableOpacity>
-                        {moduleTypes.map(mod => (
-                            <TouchableOpacity key={mod}
-                                style={[styles.chip, filterType === mod && { backgroundColor: MODULE_COLORS[mod] || theme.primary }]}
-                                onPress={() => setFilterType(filterType === mod ? null : mod)}>
-                                <Ionicons name={MODULE_ICONS[mod] || 'document-text-outline'} size={12}
-                                    color={filterType === mod ? '#fff' : theme.textSecondary} style={{ marginRight: 4 }} />
-                                <Text style={[styles.chipText, { color: filterType === mod ? '#fff' : theme.textSecondary, textTransform: 'capitalize' }]}>
-                                    {mod.replace('_', ' ')}
-                                </Text>
+                        {filterDate ? (
+                            <TouchableOpacity onPress={() => setFilterDate('')}>
+                                <Ionicons name="close-circle" size={18} color={theme.textMuted} />
                             </TouchableOpacity>
-                        ))}
+                        ) : null}
+                    </View>
+
+                    {/* Module Chips */}
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 2, paddingBottom: 4 }}>
+                        <TouchableOpacity
+                            activeOpacity={0.7}
+                            className={cn(
+                                "flex-row items-center px-4 py-2 rounded-xl",
+                                !filterType ? "bg-primary shadow-sm shadow-primary/30" : "bg-card border border-border/50"
+                            )}
+                            onPress={() => setFilterType(null)}
+                        >
+                            <Text className={cn("text-[11px] font-black uppercase", !filterType ? "text-white" : "text-muted-foreground")}>
+                                Todos
+                            </Text>
+                        </TouchableOpacity>
+                        {moduleTypes.map(mod => {
+                            const isSelected = filterType === mod;
+                            const modColor = MODULE_COLORS[mod] || theme.primary;
+                            return (
+                                <TouchableOpacity 
+                                    key={mod}
+                                    activeOpacity={0.7}
+                                    className={cn(
+                                        "flex-row items-center px-4 py-2 rounded-xl border",
+                                        isSelected ? "border-transparent" : "border-border/50 bg-card"
+                                    )}
+                                    style={isSelected ? { backgroundColor: modColor } : {}}
+                                    onPress={() => setFilterType(isSelected ? null : mod)}
+                                >
+                                    <Ionicons 
+                                        name={MODULE_ICONS[mod] || 'document-text-outline'} 
+                                        size={12}
+                                        color={isSelected ? '#fff' : theme.textMuted} 
+                                        style={{ marginRight: 6 }} 
+                                    />
+                                    <Text className={cn(
+                                        "text-[11px] font-black uppercase",
+                                        isSelected ? "text-white" : "text-muted-foreground"
+                                    )}>
+                                        {mod.replace('_', ' ')}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </ScrollView>
                 </View>
 
                 {filteredTimeline.length === 0 ? (
-                    <View style={styles.emptyTimeline}>
-                        <Text style={{ color: theme.textMuted }}>
-                            {timeline.length === 0 ? 'Nenhum registro no histórico' : 'Nenhum resultado para este filtro'}
+                    <View className="items-center py-20 bg-card/40 rounded-3xl border border-dashed border-border/60 mx-1">
+                        <Ionicons name="documents-outline" size={48} color={theme.textMuted} />
+                        <Text className="text-muted-foreground mt-4 font-medium text-center">
+                            {timeline.length === 0 ? 'Nenhum registro no histórico' : 'Nenhum resultado encontrado'}
                         </Text>
                     </View>
                 ) : (
-                    filteredTimeline.map((item, index) => (
-                        <TouchableOpacity key={item.id} onPress={() => setSelectedItem(item)} activeOpacity={0.85}>
-                            <View style={styles.timelineItem}>
-                                <View style={styles.timelineLeft}>
-                                    <View style={[styles.timelineDot, { backgroundColor: MODULE_COLORS[item.module || ''] || theme.textMuted }]} />
-                                    {index !== filteredTimeline.length - 1 && <View style={[styles.timelineLine, { backgroundColor: theme.border }]} />}
-                                </View>
-                                <View style={[styles.timelineCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                                    <View style={styles.timelineCardHeader}>
-                                        <View style={[styles.moduleIcon, { backgroundColor: (MODULE_COLORS[item.module || ''] || theme.textMuted) + '20' }]}>
-                                            <Ionicons
-                                                name={MODULE_ICONS[item.module || ''] || 'document-text-outline'}
-                                                size={16}
-                                                color={MODULE_COLORS[item.module || ''] || theme.textMuted}
-                                            />
-                                        </View>
-                                        <View style={styles.timelineMeta}>
-                                            <Text style={[styles.timelineDate, { color: theme.textMuted }]}>
-                                                {format(parseISO(item.date), 'dd/MM/yyyy', { locale: ptBR })} às {item.time}
-                                            </Text>
-                                            <Text style={[styles.timelineTitle, { color: theme.text }]}>{item.title}</Text>
-                                        </View>
-                                        <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
-                                    </View>
-                                    {item.veterinarian && (
-                                        <Text style={[styles.timelineVet, { color: theme.primary }]}>🩺 {item.veterinarian}</Text>
+                    filteredTimeline.map((item, index) => {
+                        const modColor = MODULE_COLORS[item.module || ''] || theme.textMuted;
+                        return (
+                            <TouchableOpacity 
+                                key={item.id} 
+                                onPress={() => setSelectedItem(item)} 
+                                activeOpacity={0.85}
+                                className="flex-row mb-4"
+                            >
+                                <View className="w-8 items-center pt-2.5">
+                                    <View className="w-2.5 h-2.5 rounded-full z-10 shadow-sm" style={{ backgroundColor: modColor }} />
+                                    {index !== filteredTimeline.length - 1 && (
+                                        <View className="w-[1.5px] flex-1 bg-border/40 absolute top-5 bottom-[-16px]" />
                                     )}
-
-                                    {/* Exibir Status da Fatura / Comprovante se for cobrança */}
-                                    {item.module === 'cobranca' && item.details && (() => {
-                                        try {
-                                            const details = typeof item.details === 'string' ? JSON.parse(item.details) : item.details;
-                                            return (
-                                                <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, backgroundColor: details.status === 'paid' ? theme.success + '20' : theme.error + '20' }}>
-                                                        <Text style={{ fontSize: 11, fontWeight: '700', color: details.status === 'paid' ? theme.success : theme.error }}>
-                                                            {details.status === 'paid' ? 'PAGO' : 'PENDENTE'}
-                                                        </Text>
-                                                    </View>
-                                                    <Text style={{ fontSize: 13, fontWeight: '800', color: theme.text }}>{formatCurrency(details.total_amount || 0)}</Text>
-                                                </View>
-                                            )
-                                        } catch (e) {
-                                            return null;
-                                        }
-                                    })()}
                                 </View>
-                            </View>
-                        </TouchableOpacity>
-                    ))
+                                
+                                <Card className="flex-1 overflow-hidden">
+                                    <View className="p-4">
+                                        <View className="flex-row items-start">
+                                            <View 
+                                                className="w-9 h-9 rounded-xl items-center justify-center mr-3"
+                                                style={{ backgroundColor: modColor + '15' }}
+                                            >
+                                                <Ionicons
+                                                    name={MODULE_ICONS[item.module || ''] || 'document-text-outline'}
+                                                    size={16}
+                                                    color={modColor}
+                                                />
+                                            </View>
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-muted-foreground mb-1">
+                                                    {format(parseISO(item.date), 'dd/MM/yyyy', { locale: ptBR })} às {item.time}
+                                                </Text>
+                                                <Text className="text-sm font-black text-foreground tracking-tight leading-4">
+                                                    {item.title}
+                                                </Text>
+                                            </View>
+                                            <Ionicons name="chevron-forward" size={14} color={theme.textMuted} />
+                                        </View>
+                                        
+                                        {item.veterinarian && (
+                                            <View className="mt-3 flex-row items-center bg-primary/5 self-start px-2 py-0.5 rounded-md border border-primary/10">
+                                                <Text className="text-[10px] font-bold text-primary">🩺 {item.veterinarian}</Text>
+                                            </View>
+                                        )}
+
+                                        {item.module === 'cobranca' && item.details && (() => {
+                                            try {
+                                                const details = typeof item.details === 'string' ? JSON.parse(item.details) : item.details;
+                                                const isPaid = details.status === 'paid';
+                                                return (
+                                                    <View className="mt-3 pt-3 border-t border-border/40 flex-row items-center justify-between">
+                                                        <View className={cn(
+                                                            "px-2 py-0.5 rounded-md border",
+                                                            isPaid ? "bg-emerald-500/10 border-emerald-500/20" : "bg-destructive/10 border-destructive/20"
+                                                        )}>
+                                                            <Text className={cn(
+                                                                "text-[9px] font-black uppercase",
+                                                                isPaid ? "text-emerald-500" : "text-destructive"
+                                                            )}>
+                                                                {isPaid ? 'PAGO' : 'PENDENTE'}
+                                                            </Text>
+                                                        </View>
+                                                        <Text className="text-sm font-black text-foreground">{formatCurrency(details.total_amount || 0)}</Text>
+                                                    </View>
+                                                )
+                                            } catch (e) {
+                                                return null;
+                                            }
+                                        })()}
+                                    </View>
+                                </Card>
+                            </TouchableOpacity>
+                        );
+                    })
                 )}
 
                 {/* ── Modal de Detalhe do Procedimento ── */}
-                <Modal visible={!!selectedItem} animationType="slide" transparent presentationStyle="overFullScreen">
-                    <View style={styles.modalOverlay}>
-                        <View style={[styles.modalBox, { backgroundColor: theme.surface }]}>
+                <Modal visible={!!selectedItem} animationType="fade" transparent>
+                    <BlurView intensity={20} className="flex-1 justify-center p-6 bg-black/20">
+                        <Card className="max-h-[80%] border-none shadow-2xl">
                             {selectedItem && (() => {
                                 let dets: any = {};
                                 try { dets = typeof selectedItem.details === 'string' ? JSON.parse(selectedItem.details) : (selectedItem.details || {}); } catch (e) { }
+                                const modColor = MODULE_COLORS[selectedItem.module] || theme.primary;
 
                                 return (
-                                    <>
-                                        <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
-                                            <View style={[styles.moduleIcon, { backgroundColor: (MODULE_COLORS[selectedItem.module] || theme.primary) + '20', width: 40, height: 40, borderRadius: 12 }]}>
-                                                <Ionicons name={MODULE_ICONS[selectedItem.module] || 'document-text-outline'} size={20}
-                                                    color={MODULE_COLORS[selectedItem.module] || theme.primary} />
+                                    <View className="p-6">
+                                        <View className="flex-row items-center mb-6">
+                                            <View 
+                                                className="w-12 h-12 rounded-2xl items-center justify-center mr-4"
+                                                style={{ backgroundColor: modColor + '15' }}
+                                            >
+                                                <Ionicons 
+                                                    name={MODULE_ICONS[selectedItem.module] || 'document-text-outline'} 
+                                                    size={24}
+                                                    color={modColor} 
+                                                />
                                             </View>
-                                            <View style={{ flex: 1, marginLeft: 12 }}>
-                                                <Text style={[styles.modalTitle, { color: theme.text }]}>{selectedItem.title}</Text>
-                                                <Text style={[styles.timelineDate, { color: theme.textMuted }]}>
+                                            <View className="flex-1">
+                                                <Text className="text-xl font-black text-foreground leading-6">{selectedItem.title}</Text>
+                                                <Text className="text-xs font-bold text-muted-foreground uppercase mt-1">
                                                     {format(parseISO(selectedItem.date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                                                 </Text>
                                             </View>
-                                            <TouchableOpacity onPress={() => setSelectedItem(null)}>
-                                                <Ionicons name="close" size={22} color={theme.textMuted} />
+                                            <TouchableOpacity 
+                                                onPress={() => setSelectedItem(null)}
+                                                className="w-10 h-10 items-center justify-center rounded-full bg-muted/50"
+                                            >
+                                                <Ionicons name="close" size={24} color={theme.text} />
                                             </TouchableOpacity>
                                         </View>
 
-                                        {selectedItem.module === 'cobranca' && dets.services && (
-                                            <View style={styles.modalRow}>
-                                                <Text style={[styles.modalLabel, { color: theme.textMuted }]}>Itens Faturados</Text>
-                                                {dets.services.map((sItem: any, i: number) => (
-                                                    <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                                                        <Text style={{ color: theme.text, fontSize: 13 }}>{sItem.quantity}x {sItem.name}</Text>
-                                                        <Text style={{ color: theme.textSecondary, fontSize: 13 }}>{formatCurrency(sItem.price)}</Text>
-                                                    </View>
-                                                ))}
-                                                <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: theme.border, flexDirection: 'row', justifyContent: 'space-between' }}>
-                                                    <Text style={{ fontWeight: '800', color: theme.text }}>Total:</Text>
-                                                    <Text style={{ fontWeight: '800', color: theme.primary }}>{formatCurrency(dets.total_amount)}</Text>
-                                                </View>
-                                            </View>
-                                        )}
-
-                                        {selectedItem.veterinarian && (
-                                            <View style={[styles.modalRow, { borderBottomColor: theme.border }]}>
-                                                <Text style={[styles.modalLabel, { color: theme.textMuted }]}>Profissional</Text>
-                                                <Text style={[styles.modalValue, { color: theme.text }]}>🩺 {selectedItem.veterinarian}</Text>
-                                            </View>
-                                        )}
-                                        {selectedItem.description ? (
-                                            <View style={styles.modalRow}>
-                                                <Text style={[styles.modalLabel, { color: theme.textMuted }]}>Detalhes</Text>
-                                                <Text style={[styles.modalValue, { color: theme.text }]}>{selectedItem.description}</Text>
-                                            </View>
-                                        ) : (
-                                            selectedItem.module !== 'cobranca' && (
-                                                <View style={styles.modalRow}>
-                                                    <Text style={{ color: theme.textMuted, fontSize: 14 }}>Nenhum detalhe adicional registrado.</Text>
-                                                </View>
-                                            )
-                                        )}
-
-                                        <View style={[styles.modalFooterStrip, { paddingBottom: insets.bottom > 0 ? insets.bottom + 8 : 24, backgroundColor: colorScheme === 'dark' ? '#0F172A' : '#1E293B' }]}>
-                                            <View style={{ flexDirection: 'row', gap: 12, flex: 1 }}>
-                                                {selectedItem.id.startsWith('history-') && selectedItem.module !== 'cobranca' && (
-                                                    <TouchableOpacity
-                                                        style={[styles.modalPremiumBtn, { backgroundColor: MODULE_COLORS[selectedItem.module] || theme.primary }]}
-                                                        activeOpacity={0.8}
-                                                        onPress={() => {
-                                                            const historyId = selectedItem.id.replace('history-', '');
-                                                            setSelectedItem(null);
-                                                            router.push({ pathname: '/pet/document-viewer', params: { historyId } });
-                                                        }}>
-                                                        <Ionicons name="document-text-outline" size={18} color="white" />
-                                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Ver Doc.</Text>
-                                                    </TouchableOpacity>
-                                                )}
-
-                                                {selectedItem.module === 'cobranca' && dets.status !== 'paid' && (
-                                                    <TouchableOpacity
-                                                        style={[styles.modalPremiumBtn, { backgroundColor: theme.primary }]}
-                                                        activeOpacity={0.8}
-                                                        onPress={() => {
-                                                            setSelectedItem(null);
-                                                            router.push({ pathname: '/pet/pagamento', params: { invoiceId: dets.invoiceId, petId } });
-                                                        }}>
-                                                        <Ionicons name="card-outline" size={18} color="white" />
-                                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Pagar</Text>
-                                                    </TouchableOpacity>
-                                                )}
-
-                                                {selectedItem.module === 'cobranca' && dets.status === 'paid' && dets.receipt_url && (
-                                                    <TouchableOpacity
-                                                        style={[styles.modalPremiumBtn, { backgroundColor: theme.success }]}
-                                                        activeOpacity={0.8}
-                                                        onPress={() => Linking.openURL(dets.receipt_url)}>
-                                                        <Ionicons name="receipt-outline" size={18} color="white" />
-                                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Ver Comp.</Text>
-                                                    </TouchableOpacity>
-                                                )}
-
-                                                {selectedItem.module === 'video' && dets.link && (
-                                                    <TouchableOpacity
-                                                        style={[styles.modalPremiumBtn, { backgroundColor: MODULE_COLORS.video }]}
-                                                        activeOpacity={0.8}
-                                                        onPress={() => Linking.openURL(dets.link)}>
-                                                        <Ionicons name="play-circle-outline" size={18} color="white" />
-                                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Ver Vídeo</Text>
-                                                    </TouchableOpacity>
-                                                )}
-
-                                                {selectedItem.module === 'fotos' && dets.fotos && dets.fotos.length > 0 && (
-                                                    <TouchableOpacity
-                                                        style={[styles.modalPremiumBtn, { backgroundColor: MODULE_COLORS.fotos }]}
-                                                        activeOpacity={0.8}
-                                                        onPress={() => Linking.openURL(dets.fotos[0])}>
-                                                        <Ionicons name="image-outline" size={18} color="white" />
-                                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Ver Foto</Text>
-                                                    </TouchableOpacity>
-                                                )}
-                                            </View>
-
-                                            <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                                                <TouchableOpacity
-                                                    style={[styles.modalPremiumBtn, { backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }]}
-                                                    activeOpacity={0.8}
-                                                    onPress={() => setSelectedItem(null)}>
-                                                    <Ionicons name="close" size={18} color={'white'} />
-                                                    <Text style={{ color: 'white', fontWeight: '800', fontSize: 13 }}>Fechar</Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                        </View>
-
-                                        {/* Foto Preview if applicable */}
-                                        {selectedItem.module === 'fotos' && dets.fotos && dets.fotos.length > 0 && (
-                                            <View style={{ padding: 20, paddingTop: 10 }}>
-                                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-                                                    {dets.fotos.map((url: string, i: number) => (
-                                                        <TouchableOpacity key={i} onPress={() => Linking.openURL(url)} activeOpacity={0.7}>
-                                                            <Image source={{ uri: url }} style={{ width: 140, height: 140, borderRadius: 16 }} />
-                                                        </TouchableOpacity>
+                                        <ScrollView showsVerticalScrollIndicator={false} className="mb-6">
+                                            {selectedItem.module === 'cobranca' && dets.services && (
+                                                <View className="mb-6 p-4 rounded-2xl bg-muted/30 border border-border/40">
+                                                    <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">Itens Faturados</Text>
+                                                    {dets.services.map((sItem: any, i: number) => (
+                                                        <View key={i} className="flex-row justify-between mb-2">
+                                                            <Text className="text-sm font-medium text-foreground">{sItem.quantity}x {sItem.name}</Text>
+                                                            <Text className="text-sm font-bold text-foreground">{formatCurrency(sItem.price)}</Text>
+                                                        </View>
                                                     ))}
-                                                </ScrollView>
+                                                    <View className="mt-3 pt-3 border-t border-border/40 flex-row justify-between">
+                                                        <Text className="font-black text-foreground">Total:</Text>
+                                                        <Text className="font-black text-primary text-base">{formatCurrency(dets.total_amount)}</Text>
+                                                    </View>
+                                                </View>
+                                            )}
+
+                                            {selectedItem.veterinarian && (
+                                                <View className="mb-4">
+                                                    <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Profissional</Text>
+                                                    <Text className="text-sm font-bold text-primary">🩺 {selectedItem.veterinarian}</Text>
+                                                </View>
+                                            )}
+
+                                            <View className="mb-4">
+                                                <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Detalhes</Text>
+                                                <Text className="text-sm text-foreground leading-5 font-medium">
+                                                    {selectedItem.description || "Nenhum detalhe adicional registrado."}
+                                                </Text>
                                             </View>
-                                        )}
-                                    </>
+
+                                            {/* Foto Preview if applicable */}
+                                            {selectedItem.module === 'fotos' && dets.fotos && dets.fotos.length > 0 && (
+                                                <View className="mt-2">
+                                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+                                                        {dets.fotos.map((url: string, i: number) => (
+                                                            <TouchableOpacity key={i} onPress={() => Linking.openURL(url)} activeOpacity={0.8}>
+                                                                <Image source={{ uri: url }} className="w-40 h-40 rounded-2xl" />
+                                                            </TouchableOpacity>
+                                                        ))}
+                                                    </ScrollView>
+                                                </View>
+                                            )}
+                                        </ScrollView>
+
+                                        <View className="flex-row gap-3">
+                                            {selectedItem.id.startsWith('history-') && selectedItem.module !== 'cobranca' && (
+                                                <Button
+                                                    label="Ver documento"
+                                                    className="flex-1"
+                                                    leftIcon={<Ionicons name="document-text-outline" size={18} color="white" />}
+                                                    onPress={() => {
+                                                        const historyId = selectedItem.id.replace('history-', '');
+                                                        setSelectedItem(null);
+                                                        router.push({ pathname: '/pet/document-viewer', params: { historyId } });
+                                                    }}
+                                                />
+                                            )}
+
+                                            {selectedItem.module === 'cobranca' && dets.status !== 'paid' && (
+                                                <Button
+                                                    label="Pagar agora"
+                                                    className="flex-1"
+                                                    leftIcon={<Ionicons name="card-outline" size={18} color="white" />}
+                                                    onPress={() => {
+                                                        setSelectedItem(null);
+                                                        router.push({ pathname: '/pet/pagamento', params: { invoiceId: dets.invoiceId, petId } });
+                                                    }}
+                                                />
+                                            )}
+
+                                            {selectedItem.module === 'cobranca' && dets.status === 'paid' && dets.receipt_url && (
+                                                <Button
+                                                    label="Comprovante"
+                                                    variant="secondary"
+                                                    className="flex-1"
+                                                    leftIcon={<Ionicons name="receipt-outline" size={18} color={theme.primary} />}
+                                                    onPress={() => Linking.openURL(dets.receipt_url)}
+                                                />
+                                            )}
+                                            
+                                            <Button
+                                                label="Fechar"
+                                                variant="outline"
+                                                className={selectedItem.module === 'cobranca' || selectedItem.id.startsWith('history-') ? "px-6" : "flex-1"}
+                                                onPress={() => setSelectedItem(null)}
+                                            />
+                                        </View>
+                                    </View>
                                 );
                             })()}
-                        </View>
-                    </View>
+                        </Card>
+                    </BlurView>
                 </Modal>
             </ScrollView>
 
             {/* FAB Actions (Grid Bottom Sheet) */}
-            <Modal visible={menuOpen} animationType="fade" transparent presentationStyle="overFullScreen">
-                <View style={styles.modalOverlay}>
-                    <TouchableOpacity style={StyleSheet.absoluteFillObject} onPress={handleCloseMenu} />
-
-                    <View style={[styles.menuContainer, { backgroundColor: theme.surface }]}>
-                        <View style={styles.menuHeaderDark}>
-                            <View style={styles.menuHandleContainer}>
-                                <View style={[styles.menuHandle, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
-                            </View>
-                            <Text style={[styles.menuTitle, { color: 'white', textAlign: 'center', marginBottom: 12 }]}>Novo Registro</Text>
+            <Modal visible={menuOpen} animationType="slide" transparent>
+                <View className="flex-1 justify-end bg-black/40">
+                    <TouchableOpacity 
+                        className="absolute inset-0" 
+                        activeOpacity={1} 
+                        onPress={handleCloseMenu} 
+                    />
+                    
+                    <View 
+                        className="bg-card rounded-t-[40px] shadow-2xl border-t border-border/20"
+                        style={{ paddingBottom: insets.bottom + 20 }}
+                    >
+                        <View className="items-center py-4">
+                            <View className="w-12 h-1.5 rounded-full bg-muted-foreground/20" />
                         </View>
 
-                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 20 }}>
-                            <View style={styles.gridContainer}>
+                        <View className="px-6 mb-4">
+                            <Text className="text-[11px] font-black text-muted-foreground uppercase tracking-widest text-center">
+                                Novo Registro Clínico
+                            </Text>
+                            <Text className="text-xl font-black text-foreground text-center mt-1">
+                                O que deseja registrar?
+                            </Text>
+                        </View>
+
+                        <ScrollView 
+                            showsVerticalScrollIndicator={false} 
+                            contentContainerStyle={{ padding: 20 }}
+                            className="max-h-[60vh]"
+                        >
+                            <View className="flex-row flex-wrap justify-center gap-y-6">
                                 {[
-                                    { icon: 'cash-outline', label: 'Cobrança', color: '#10B981', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/cobrar', params: { petId, ownerId: owner?.id || pet?.user_id } }); } },
+                                    { icon: 'cash-outline', label: 'Cobrar', color: '#10B981', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/cobrar', params: { petId, ownerId: owner?.id || pet?.user_id } }); } },
                                     { icon: 'medkit', label: 'Consulta', color: '#3B82F6', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/consulta', params: { petId } }); } },
-                                    { icon: 'clipboard-outline', label: 'Avaliação Cirúrgica', color: '#8B5CF6', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/avaliacao_cirurgica', params: { petId } }); } },
+                                    { icon: 'clipboard-outline', label: 'Avaliação', color: '#8B5CF6', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/avaliacao_cirurgica', params: { petId } }); } },
                                     { icon: 'cut-outline', label: 'Cirurgia', color: '#EF4444', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/cirurgia', params: { petId } }); } },
                                     { icon: 'refresh-outline', label: 'Retorno', color: '#10B981', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/retorno', params: { petId, userId: pet?.user_id } }); } },
                                     { icon: 'scale-outline', label: 'Peso', color: '#6366F1', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/peso', params: { petId } }); } },
                                     { icon: 'bandage-outline', label: 'Patologia', color: '#6D28D9', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/patologia', params: { petId } }); } },
-                                    { icon: 'document-attach-outline', label: 'Documento', color: '#0D9488', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/documento', params: { petId } }); } },
+                                    { icon: 'document-attach-outline', label: 'Anexo', color: '#0D9488', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/documento', params: { petId } }); } },
                                     { icon: 'flask-outline', label: 'Exame', color: '#14B8A6', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/exame', params: { petId } }); } },
                                     { icon: 'camera-outline', label: 'Fotos', color: '#D946EF', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/fotos', params: { petId } }); } },
-                                    { icon: 'medical-outline', label: 'Aplicações', color: '#EC4899', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/vacina', params: { petId } }); } },
+                                    { icon: 'medical-outline', label: 'Vacina', color: '#EC4899', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/vacina', params: { petId } }); } },
                                     { icon: 'document-text-outline', label: 'Receita', color: '#F59E0B', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/receita', params: { petId, petName: pet?.name } }); } },
-                                    { icon: 'chatbox-ellipses-outline', label: 'Observações', color: '#64748B', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/observacao', params: { petId } }); } },
-                                    { icon: 'videocam-outline', label: 'Gravações', color: '#047857', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/gravacoes', params: { petId } }); } },
-                                    { icon: 'bed-outline', label: 'Internação', color: '#64748B', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/internacao', params: { petId } }); } },
-                                    { icon: 'pulse-outline', label: 'Diagnóstico', color: '#059669', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/diagnostico', params: { petId } }); } },
-                                    { icon: 'water-outline', label: 'Banho/Tosa', color: '#06B6D4', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/banho_tosa', params: { petId } }); } },
+                                    { icon: 'chatbox-ellipses-outline', label: 'Obs.', color: '#64748B', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/observacao', params: { petId } }); } },
+                                    { icon: 'videocam-outline', label: 'Vídeo', color: '#047857', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/gravacoes', params: { petId } }); } },
+                                    { icon: 'bed-outline', label: 'Internar', color: '#64748B', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/internacao', params: { petId } }); } },
+                                    { icon: 'pulse-outline', label: 'Diagnost.', color: '#059669', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/diagnostico', params: { petId } }); } },
+                                    { icon: 'water-outline', label: 'Estética', color: '#06B6D4', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/banho_tosa', params: { petId } }); } },
                                     { icon: 'skull-outline', label: 'Óbito', color: '#374151', onPress: () => { handleCloseMenu(); router.push({ pathname: '/pet/obito', params: { petId, petName: pet?.name } }); } },
                                 ].map(item => (
-                                    <ActionButton key={item.label} icon={item.icon} label={item.label} color={item.color} onPress={item.onPress} />
+                                    <View key={item.label} className="w-1/4 items-center">
+                                        <ActionButton icon={item.icon} label={item.label} color={item.color} onPress={item.onPress} />
+                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase text-center mt-1">{item.label}</Text>
+                                    </View>
                                 ))}
                             </View>
                         </ScrollView>
+                        
+                        <View className="px-6 mt-4">
+                            <Button
+                                label="Cancelar"
+                                variant="secondary"
+                                onPress={handleCloseMenu}
+                            />
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -566,90 +650,6 @@ export default function PetDetailScreen() {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    scrollContent: { padding: 16, paddingBottom: 100 },
-    headerCard: {
-        padding: 20,
-        borderRadius: 24,
-        marginBottom: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-        elevation: 4,
-    },
-    headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-    avatar: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
-    headerInfo: { flex: 1 },
-    petName: { fontSize: 22, fontWeight: '800', marginBottom: 4 },
-    petMeta: { fontSize: 14 },
-    statusRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-    statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-    statusText: { fontSize: 10, fontWeight: '900' },
-    divider: { height: 1, marginVertical: 16, opacity: 0.5 },
-    ownerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    ownerInfo: { flex: 1 },
-    ownerLabel: { fontSize: 12, fontWeight: '600', marginBottom: 2 },
-    ownerName: { fontSize: 16, fontWeight: '700' },
-    whatsappBtn: { padding: 8 },
-    balanceBox: { marginTop: 16, padding: 12, borderRadius: 12, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    balanceLabel: { fontSize: 13, fontWeight: '700' },
-    balanceValue: { fontSize: 16, fontWeight: '800' },
-    timelineHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingHorizontal: 4 },
-    sectionTitle: { fontSize: 18, fontWeight: '800' },
-    emptyTimeline: { alignItems: 'center', padding: 40 },
-    filterInput: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, height: 40 },
-    chip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-    chipText: { fontSize: 12, fontWeight: '600' },
-    // Modal
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end', margin: 0 },
-    modalBox: {
-        borderTopLeftRadius: 28,
-        borderTopRightRadius: 28,
-        paddingTop: 24,
-        paddingHorizontal: 20,
-        paddingBottom: 0,
-        overflow: 'hidden'
-    },
-    modalHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16, paddingBottom: 16, borderBottomWidth: 1 },
-    modalTitle: { fontSize: 16, fontWeight: '800' },
-    modalRow: { paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
-    modalLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginBottom: 4 },
-    modalValue: { fontSize: 14, lineHeight: 22 },
-
-    modalFooterStrip: {
-        marginTop: 20,
-        marginHorizontal: -20,
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-    },
-    modalPremiumBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 16,
-        height: 46,
-        borderRadius: 23,
-        gap: 6,
-    },
-
-    timelineItem: { flexDirection: 'row', marginBottom: 16 },
-    timelineLeft: { width: 30, alignItems: 'center', paddingTop: 10 },
-    timelineDot: { width: 10, height: 10, borderRadius: 5, zIndex: 1 },
-    timelineLine: { width: 2, flex: 1, position: 'absolute', top: 20, bottom: -10 },
-    timelineCard: { flex: 1, padding: 12, borderRadius: 16, borderWidth: 1 },
-    timelineCardHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
-    moduleIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-    timelineMeta: { flex: 1 },
-    timelineDate: { fontSize: 11, fontWeight: '600', marginBottom: 2 },
-    timelineTitle: { fontSize: 14, fontWeight: '700' },
-    timelineDesc: { fontSize: 13, marginBottom: 4 },
-    timelineVet: { fontSize: 12, fontWeight: '600' },
     fab: {
         position: 'absolute',
         bottom: 24,
@@ -665,39 +665,13 @@ const styles = StyleSheet.create({
         shadowRadius: 16,
         elevation: 8,
     },
-    menuContainer: {
-        borderTopLeftRadius: 36,
-        borderTopRightRadius: 36,
-        height: '80%',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -10 },
-        shadowOpacity: 0.2,
-        shadowRadius: 20,
-        elevation: 20,
-        overflow: 'hidden'
-    },
-    menuHeaderDark: {
-        backgroundColor: '#0F172A',
-        paddingTop: 12,
-        paddingBottom: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.1)'
-    },
-    menuHandleContainer: { width: '100%', alignItems: 'center', paddingBottom: 12 },
-    menuHandle: { width: 40, height: 5, borderRadius: 3 },
-    menuTitle: { fontSize: 20, fontWeight: '800' },
-
-    gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: '3%' },
+    // Action Button Tooltip
     gridItem: {
-        width: '22%', // ~4 columns
+        width: '100%',
         alignItems: 'center',
         justifyContent: 'flex-start',
-        marginBottom: 20,
     },
-    gridIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-    gridLabel: { fontSize: 10, fontWeight: '700', textAlign: 'center', paddingHorizontal: 2, lineHeight: 14 },
-
-    // FAB Tooltip Styles
+    gridIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
     tooltipBubble: {
         position: 'absolute',
         top: -46,
@@ -728,9 +702,4 @@ const styles = StyleSheet.create({
         backgroundColor: '#1E293B',
         transform: [{ rotate: '45deg' }],
     },
-
-    menuSearch: { height: 48, borderRadius: 12, borderWidth: 1, paddingHorizontal: 16, fontSize: 16 },
-    modalInput: { height: 56, borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, fontSize: 18, marginBottom: 20 },
-    modalButtons: { flexDirection: 'row', gap: 12 },
-    modalBtn: { flex: 1, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
 });

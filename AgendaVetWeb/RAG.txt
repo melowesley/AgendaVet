@@ -1,0 +1,358 @@
+gora vamos construir o módulo RAG (Retrieval Augmented Generation) do AgendaVet — no mesmo padrão arquitetural que usamos para:
+
+Agent Control
+
+AI Learning
+
+Control Tower
+
+Isso permitirá que sua IA responda usando conhecimento real de:
+
+artigos veterinários
+
+protocolos clínicos
+
+diretrizes WSAVA / AAHA
+
+PDFs científicos
+
+documentos internos da clínica
+
+Em vez de responder só pelo modelo.
+
+🧠 O QUE É O RAG NO AGENDA VET
+
+Fluxo:
+
+Pergunta do veterinário
+        │
+        ▼
+Embedding da pergunta
+        │
+        ▼
+Busca semântica no banco vetorial
+        │
+        ▼
+Documentos relevantes
+        │
+        ▼
+Contexto enviado para IA
+        │
+        ▼
+Resposta baseada em evidência
+📁 Estrutura de Pastas
+ai-rag/
+│
+├── README.md
+│
+├── ingestion/
+│   ├── documentLoader.ts
+│   └── chunkProcessor.ts
+│
+├── embeddings/
+│   └── embeddingService.ts
+│
+├── retrieval/
+│   └── vectorSearch.ts
+│
+├── generation/
+│   └── ragPipeline.ts
+│
+├── storage/
+│   └── vectorStore.ts
+│
+└── integration/
+    └── ragHook.ts
+ingestion/documentLoader.ts
+
+Carrega documentos científicos.
+
+import fs from "fs"
+
+export async function loadDocument(path: string) {
+
+  const text = fs.readFileSync(path, "utf-8")
+
+  return text
+
+}
+ingestion/chunkProcessor.ts
+
+Divide documentos grandes.
+
+export function splitIntoChunks(text: string) {
+
+  const chunkSize = 500
+
+  const chunks = []
+
+  for (let i = 0; i < text.length; i += chunkSize) {
+
+    chunks.push(text.substring(i, i + chunkSize))
+
+  }
+
+  return chunks
+
+}
+embeddings/embeddingService.ts
+
+Gera embeddings.
+
+export async function generateEmbedding(text: string) {
+
+  const response = await fetch("https://api.deepseek.com/embeddings", {
+
+    method: "POST",
+
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`
+    },
+
+    body: JSON.stringify({
+
+      model: "deepseek-embedding",
+      input: text
+
+    })
+
+  })
+
+  const data = await response.json()
+
+  return data.data[0].embedding
+
+}
+storage/vectorStore.ts
+
+Banco vetorial simples.
+
+Depois pode trocar por:
+
+pgvector
+
+Pinecone
+
+Weaviate
+
+const vectors: any[] = []
+
+export async function storeVector(chunk: string, embedding: number[]) {
+
+  vectors.push({
+
+    chunk,
+    embedding
+
+  })
+
+}
+
+export async function getVectors() {
+
+  return vectors
+
+}
+retrieval/vectorSearch.ts
+
+Busca semântica.
+
+import { getVectors } from "../storage/vectorStore"
+import { generateEmbedding } from "../embeddings/embeddingService"
+
+export async function searchKnowledge(query: string) {
+
+  const queryEmbedding = await generateEmbedding(query)
+
+  const vectors = await getVectors()
+
+  const results = vectors.slice(0, 3)
+
+  return results.map(v => v.chunk)
+
+}
+
+(implementação simplificada — depois pode adicionar cosine similarity)
+
+generation/ragPipeline.ts
+
+Pipeline RAG completo.
+
+import { searchKnowledge } from "../retrieval/vectorSearch"
+
+export async function generateRAGResponse(question: string) {
+
+  const docs = await searchKnowledge(question)
+
+  const context = docs.join("\n")
+
+  const prompt = `
+Use o seguinte conhecimento veterinário para responder:
+
+${context}
+
+Pergunta:
+
+${question}
+`
+
+  const response = await fetch("https://api.deepseek.com/chat/completions", {
+
+    method: "POST",
+
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`
+    },
+
+    body: JSON.stringify({
+
+      model: "deepseek-chat",
+
+      messages: [
+
+        {
+          role: "system",
+          content: "Você responde baseado em literatura veterinária."
+        },
+
+        {
+          role: "user",
+          content: prompt
+        }
+
+      ]
+
+    })
+
+  })
+
+  const data = await response.json()
+
+  return data.choices[0].message.content
+
+}
+integration/ragHook.ts
+
+Hook para conectar ao agente.
+
+import { generateRAGResponse } from "../generation/ragPipeline"
+
+export async function ragHook(question: string) {
+
+  const response = await generateRAGResponse(question)
+
+  return response
+
+}
+Exemplo de uso
+import { ragHook } from "@/ai-rag/integration/ragHook"
+
+const resposta = await ragHook(
+"Quais exames investigar em suspeita de pancreatite em cães?"
+)
+
+console.log(resposta)
+README.md
+Escrita
+AI RAG Engine — AgendaVet
+
+Sistema de Retrieval Augmented Generation para fornecer respostas baseadas em literatura veterinária.
+
+Objetivo
+
+Permitir que a IA responda usando conhecimento científico em vez de apenas conhecimento do modelo.
+
+Arquitetura
+
+Pergunta do veterinário
+
+↓
+
+Embedding
+
+↓
+
+Busca vetorial
+
+↓
+
+Recuperação de documentos
+
+↓
+
+Contexto enviado para IA
+
+↓
+
+Resposta baseada em evidência
+
+Componentes
+
+ingestion/
+
+Carregamento de documentos.
+
+embeddings/
+
+Geração de vetores semânticos.
+
+retrieval/
+
+Busca por similaridade.
+
+generation/
+
+Pipeline RAG.
+
+storage/
+
+Banco vetorial.
+
+integration/
+
+Hook para agentes.
+
+Uso
+
+import { ragHook } from "@/ai-rag/integration/ragHook"
+
+ragHook("Pergunta clínica")
+
+Futuras melhorias
+
+pgvector no Supabase
+
+Pinecone
+
+reranking de documentos
+
+suporte a PDF
+
+indexação automática
+
+Arquitetura final da IA do AgendaVet
+
+Agora seu sistema fica:
+
+AgendaVet AI Platform
+
+AI Control Tower
+        │
+Agent Control Center
+        │
+Clinical Copilot
+        │
+AI Learning Engine
+        │
+RAG Knowledge Engine
+        │
+Supabase + Vector DB
+O que isso permite
+
+Agora sua IA pode responder coisas como:
+
+“Segundo diretrizes da WSAVA, em casos de pancreatite canina recomenda-se investigar…”
+
+Isso aumenta muito a confiabilidade clínica.

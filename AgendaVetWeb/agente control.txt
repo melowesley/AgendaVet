@@ -1,0 +1,360 @@
+Estrutura do AI Control Tower
+ai-control-tower/
+│
+├── README.md
+│
+├── backend/
+│   ├── server.ts
+│   ├── routes/
+│   │   ├── agents.ts
+│   │   ├── metrics.ts
+│   │   └── prompts.ts
+│   │
+│   └── services/
+│       ├── agentService.ts
+│       ├── metricsService.ts
+│       └── promptService.ts
+│
+├── frontend/
+│   ├── package.json
+│   └── src/
+│       ├── App.tsx
+│       ├── api.ts
+│       │
+│       ├── pages/
+│       │   ├── Dashboard.tsx
+│       │   └── Agents.tsx
+│       │
+│       └── components/
+│           ├── AgentCard.tsx
+│           ├── MetricsPanel.tsx
+│           └── PromptDeploy.tsx
+BACKEND
+backend/server.ts
+import express from "express"
+import agentsRoute from "./routes/agents"
+import metricsRoute from "./routes/metrics"
+import promptsRoute from "./routes/prompts"
+
+const app = express()
+
+app.use(express.json())
+
+app.use("/agents", agentsRoute)
+app.use("/metrics", metricsRoute)
+app.use("/prompts", promptsRoute)
+
+app.listen(4000, () => {
+  console.log("AI Control Tower rodando na porta 4000")
+})
+backend/routes/agents.ts
+import express from "express"
+import { getAgents } from "../services/agentService"
+
+const router = express.Router()
+
+router.get("/", async (req, res) => {
+
+  const agents = await getAgents()
+
+  res.json(agents)
+
+})
+
+export default router
+backend/routes/metrics.ts
+import express from "express"
+import { getMetrics } from "../services/metricsService"
+
+const router = express.Router()
+
+router.get("/", async (req, res) => {
+
+  const metrics = await getMetrics()
+
+  res.json(metrics)
+
+})
+
+export default router
+backend/routes/prompts.ts
+import express from "express"
+import { deployPrompt } from "../services/promptService"
+
+const router = express.Router()
+
+router.post("/deploy", async (req, res) => {
+
+  const { prompt } = req.body
+
+  const result = await deployPrompt(prompt)
+
+  res.json({ result })
+
+})
+
+export default router
+backend/services/agentService.ts
+export async function getAgents() {
+
+  return [
+    {
+      id: "agent1",
+      vet: "Dr Cleyton",
+      status: "online",
+      tokensToday: 4300
+    },
+    {
+      id: "agent2",
+      vet: "Dra Ana",
+      status: "online",
+      tokensToday: 2100
+    }
+  ]
+
+}
+backend/services/metricsService.ts
+export async function getMetrics() {
+
+  return {
+
+    totalAgents: 12,
+    activeAgents: 9,
+    tokensToday: 48320,
+    estimatedCost: 12.40
+
+  }
+
+}
+backend/services/promptService.ts
+export async function deployPrompt(prompt: string) {
+
+  console.log("Deploy de prompt:", prompt)
+
+  return "Prompt enviado para todos os agentes"
+
+}
+FRONTEND (Dashboard)
+frontend/src/api.ts
+export async function getAgents() {
+
+  const res = await fetch("http://localhost:4000/agents")
+
+  return res.json()
+
+}
+
+export async function getMetrics() {
+
+  const res = await fetch("http://localhost:4000/metrics")
+
+  return res.json()
+
+}
+
+export async function deployPrompt(prompt: string) {
+
+  const res = await fetch("http://localhost:4000/prompts/deploy", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ prompt })
+  })
+
+  return res.json()
+
+}
+Dashboard principal
+frontend/src/pages/Dashboard.tsx
+import { useEffect, useState } from "react"
+import { getMetrics } from "../api"
+
+export default function Dashboard() {
+
+  const [metrics, setMetrics] = useState<any>()
+
+  useEffect(() => {
+
+    getMetrics().then(setMetrics)
+
+  }, [])
+
+  if (!metrics) return <div>Carregando...</div>
+
+  return (
+
+    <div>
+
+      <h1>AI Control Tower</h1>
+
+      <p>Agentes totais: {metrics.totalAgents}</p>
+      <p>Agentes ativos: {metrics.activeAgents}</p>
+      <p>Tokens hoje: {metrics.tokensToday}</p>
+      <p>Custo estimado: ${metrics.estimatedCost}</p>
+
+    </div>
+
+  )
+
+}
+Lista de agentes
+frontend/src/pages/Agents.tsx
+import { useEffect, useState } from "react"
+import { getAgents } from "../api"
+
+export default function Agents() {
+
+  const [agents, setAgents] = useState<any[]>([])
+
+  useEffect(() => {
+
+    getAgents().then(setAgents)
+
+  }, [])
+
+  return (
+
+    <div>
+
+      <h2>Agentes ativos</h2>
+
+      {agents.map(agent => (
+
+        <div key={agent.id}>
+
+          <p>{agent.vet}</p>
+          <p>Status: {agent.status}</p>
+          <p>Tokens hoje: {agent.tokensToday}</p>
+
+        </div>
+
+      ))}
+
+    </div>
+
+  )
+
+}
+Deploy de prompts
+frontend/src/components/PromptDeploy.tsx
+import { useState } from "react"
+import { deployPrompt } from "../api"
+
+export default function PromptDeploy() {
+
+  const [prompt, setPrompt] = useState("")
+
+  async function handleDeploy() {
+
+    await deployPrompt(prompt)
+
+    alert("Prompt enviado")
+
+  }
+
+  return (
+
+    <div>
+
+      <h3>Deploy de Prompt</h3>
+
+      <textarea
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+      />
+
+      <button onClick={handleDeploy}>
+        Enviar para todos agentes
+      </button>
+
+    </div>
+
+  )
+
+}
+README.md
+Escrita
+AI Control Tower - AgendaVet
+
+Painel central de monitoramento e controle dos agentes de IA do sistema AgendaVet.
+
+Funcionalidades
+
+Monitoramento de agentes ativos
+
+Estatísticas de uso de tokens
+
+Estimativa de custo de IA
+
+Deploy de prompts
+
+Visualização de clínicas conectadas
+
+Arquitetura
+
+Frontend (React Dashboard)
+
+↓
+
+API Backend (Express)
+
+↓
+
+Agent Control System
+
+↓
+
+Agentes IA por veterinário
+
+Endpoints
+
+GET /agents
+Lista agentes ativos
+
+GET /metrics
+Estatísticas globais
+
+POST /prompts/deploy
+Atualiza prompts para todos agentes
+
+Executar backend
+
+node backend/server.ts
+
+Executar frontend
+
+npm install
+npm run dev
+
+Futuras melhorias
+
+Monitoramento em tempo real
+
+Controle individual de agentes
+
+Alertas de custo
+
+Gráficos de uso
+
+Controle de ferramentas por agente
+
+Resultado final
+
+Você terá um painel de controle de IA profissional.
+
+Visualmente algo assim:
+
+AI CONTROL TOWER
+
+Agentes ativos: 12
+Tokens hoje: 48k
+Custo estimado: $12.40
+
+[Lista de veterinários]
+
+Dr Cleyton — online
+Dra Ana — online
+Dr Marcos — offline
+
+[Deploy de Prompt]

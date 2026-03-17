@@ -16,7 +16,6 @@ import { MessageSquare, Send, Bot, User, Stethoscope, FileText, Syringe, Pill, A
 import { cn } from '@/lib/utils'
 import ReactMarkdown from 'react-markdown'
 import { ConversationSidebar } from './conversation-sidebar'
-import { VET_MODEL_SPECIALIZATIONS } from '@/lib/vet-copilot/model-specializations'
 import { AI_MODELS } from '@agendavet/shared/constants'
 
 const CLINICAL_SUGGESTIONS = [
@@ -222,10 +221,10 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
                       <span className="text-xs text-muted-foreground">Seleção inteligente baseada na tarefa</span>
                     </div>
                   </SelectItem>
-                  
+
                   {/* Modelos Gratuitos */}
                   <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">Modelos Gratuitos</div>
-                  
+
                   <SelectItem value="deepseek-r1">
                     <div className="flex flex-col items-start gap-1">
                       <div className="flex items-center gap-2">
@@ -236,7 +235,7 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
                       <span className="text-xs text-muted-foreground">Raciocínio Clínico - Diagnóstico diferencial</span>
                     </div>
                   </SelectItem>
-                  
+
                   <SelectItem value="gemini-2.0-flash">
                     <div className="flex flex-col items-start gap-1">
                       <div className="flex items-center gap-2">
@@ -247,7 +246,7 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
                       <span className="text-xs text-muted-foreground">Emergências - Triagem rápida</span>
                     </div>
                   </SelectItem>
-                  
+
                   <SelectItem value="gemini-2.5-flash">
                     <div className="flex flex-col items-start gap-1">
                       <div className="flex items-center gap-2">
@@ -258,7 +257,7 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
                       <span className="text-xs text-muted-foreground">Análise Laboratorial - Exames</span>
                     </div>
                   </SelectItem>
-                  
+
                   <SelectItem value="gemini-1.5-flash">
                     <div className="flex flex-col items-start gap-1">
                       <div className="flex items-center gap-2">
@@ -269,10 +268,10 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
                       <span className="text-xs text-muted-foreground">Medicina Preventiva - Wellness</span>
                     </div>
                   </SelectItem>
-                  
+
                   {/* Modelos Premium */}
                   <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">Modelos Premium</div>
-                  
+
                   <SelectItem value="gemini-2.5-pro">
                     <div className="flex flex-col items-start gap-1">
                       <div className="flex items-center gap-2">
@@ -283,7 +282,7 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
                       <span className="text-xs text-muted-foreground">Pesquisa - Literatura científica</span>
                     </div>
                   </SelectItem>
-                  
+
                   <SelectItem value="gemini-1.5-pro">
                     <div className="flex flex-col items-start gap-1">
                       <div className="flex items-center gap-2">
@@ -294,7 +293,7 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
                       <span className="text-xs text-muted-foreground">Terapia Intensiva - UTI</span>
                     </div>
                   </SelectItem>
-                  
+
                   <SelectItem value="claude-sonnet">
                     <div className="flex flex-col items-start gap-1">
                       <div className="flex items-center gap-2">
@@ -305,7 +304,7 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
                       <span className="text-xs text-muted-foreground">Análise de Imagens - Radiografias</span>
                     </div>
                   </SelectItem>
-                  
+
                   <SelectItem value="gpt-4o">
                     <div className="flex flex-col items-start gap-1">
                       <div className="flex items-center gap-2">
@@ -476,23 +475,23 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>⚠️ Modelo Premium Selecionado</AlertDialogTitle>
             <AlertDialogDescription>
-              Você selecionou um modelo que consome créditos pagos. 
+              Você selecionou um modelo que consome créditos pagos.
               Este modelo será cobrado por uso real, independente de ser usado como primário ou fallback.
               <br /><br />
               <strong>Modelo selecionado:</strong> {
                 pendingModel === 'claude-sonnet' ? 'Claude Sonnet (Anthropic) - Análise de Imagens' :
-                pendingModel === 'gpt-4o' ? 'GPT-4o (OpenAI) - Planejamento Cirúrgico' :
-                pendingModel === 'gemini-2.5-pro' ? 'Gemini 2.5 Pro (Google) - Pesquisa Veterinária' :
-                pendingModel === 'gemini-1.5-pro' ? 'Gemini 1.5 Pro (Google) - Terapia Intensiva' :
-                'Modelo Premium'
+                  pendingModel === 'gpt-4o' ? 'GPT-4o (OpenAI) - Planejamento Cirúrgico' :
+                    pendingModel === 'gemini-2.5-pro' ? 'Gemini 2.5 Pro (Google) - Pesquisa Veterinária' :
+                      pendingModel === 'gemini-1.5-pro' ? 'Gemini 1.5 Pro (Google) - Terapia Intensiva' :
+                        'Modelo Premium'
               }
               <br />
               <strong>Custo aproximado:</strong> {
                 pendingModel === 'claude-sonnet' ? '$0.003/1k input + $0.015/1k output' :
-                pendingModel === 'gpt-4o' ? '$0.0025/1k input + $0.01/1k output' :
-                pendingModel === 'gemini-2.5-pro' ? '$0.00125/1k input + $0.005/1k output' :
-                pendingModel === 'gemini-1.5-pro' ? '$0.00125/1k input + $0.005/1k output' :
-                'Custo premium'
+                  pendingModel === 'gpt-4o' ? '$0.0025/1k input + $0.01/1k output' :
+                    pendingModel === 'gemini-2.5-pro' ? '$0.00125/1k input + $0.005/1k output' :
+                      pendingModel === 'gemini-1.5-pro' ? '$0.00125/1k input + $0.005/1k output' :
+                        'Custo premium'
               }
               <br /><br />
               Deseja continuar mesmo assim?

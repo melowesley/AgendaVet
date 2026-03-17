@@ -12,7 +12,7 @@ export default function OwnerDetailPage({ params }: OwnerDetailPageProps) {
   const { id } = use(params)
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'Owners', href: '/owners' }, { label: 'Details' }]}>
+    <AppLayout breadcrumbs={[{ label: 'Tutores', href: '/owners' }, { label: 'Detalhes' }]}>
       <OwnerDetailContent ownerId={id} />
     </AppLayout>
   )
