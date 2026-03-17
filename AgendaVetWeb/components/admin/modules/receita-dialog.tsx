@@ -218,36 +218,30 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
                 <div className="flex-1 overflow-hidden">
                     {receiptType === null && !editingId ? (
                         <div className="p-8 md:p-12 space-y-12 overflow-y-auto h-full max-w-[1200px] mx-auto">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                 <button
                                     onClick={() => setReceiptType('simples')}
-                                    className={`group flex flex-col items-center gap-6 p-12 rounded-3xl border-2 border-border/40 ${themeColor.borderHover} transition-all duration-300 text-center ${themeColor.bgGhostHover} hover:shadow-2xl hover:-translate-y-1`}
+                                    className={`group flex flex-col items-center gap-4 p-6 rounded-2xl border-2 border-border/40 ${themeColor.borderHover} transition-all duration-200 text-center ${themeColor.bgGhostHover} hover:shadow-lg hover:-translate-y-0.5`}
                                 >
-                                    <div className={`w-24 h-24 rounded-3xl ${themeColor.bgGhost} flex items-center justify-center transition-all group-hover:scale-110`}>
-                                        <ScrollText className={`w-12 h-12 ${themeColor.text}`} />
+                                    <div className={`size-14 rounded-xl ${themeColor.bgGhost} flex items-center justify-center transition-all group-hover:scale-105`}>
+                                        <ScrollText className={`size-7 ${themeColor.text}`} />
                                     </div>
-                                    <div className="space-y-2">
-                                        <p className="font-black text-2xl tracking-tight">Receituário Simples</p>
-                                        <p className="text-sm text-muted-foreground font-medium">Prescrição comum de medicamentos e orientações gerais</p>
-                                    </div>
-                                    <div className={`mt-4 w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:${themeColor.text} transition-all`}>
-                                        <ChevronRight className="w-6 h-6" />
+                                    <div className="space-y-1">
+                                        <p className="font-semibold text-base tracking-tight">Receituário Simples</p>
+                                        <p className="text-sm text-muted-foreground">Prescrição comum de medicamentos e orientações gerais</p>
                                     </div>
                                 </button>
 
                                 <button
                                     onClick={() => setReceiptType('controlado')}
-                                    className={`group flex flex-col items-center gap-6 p-12 rounded-3xl border-2 border-border/40 ${themeColor.borderHover} transition-all duration-300 text-center ${themeColor.bgGhostHover} hover:shadow-2xl hover:-translate-y-1`}
+                                    className={`group flex flex-col items-center gap-4 p-6 rounded-2xl border-2 border-border/40 ${themeColor.borderHover} transition-all duration-200 text-center ${themeColor.bgGhostHover} hover:shadow-lg hover:-translate-y-0.5`}
                                 >
-                                    <div className={`w-24 h-24 rounded-3xl ${themeColor.bgGhost} flex items-center justify-center transition-all group-hover:scale-110`}>
-                                        <ShieldAlert className={`w-12 h-12 ${themeColor.text}`} />
+                                    <div className={`size-14 rounded-xl ${themeColor.bgGhost} flex items-center justify-center transition-all group-hover:scale-105`}>
+                                        <ShieldAlert className={`size-7 ${themeColor.text}`} />
                                     </div>
-                                    <div className="space-y-2">
-                                        <p className="font-black text-2xl tracking-tight">Receituário Controlado</p>
-                                        <p className="text-sm text-muted-foreground font-medium">Medicamentos de controle especial (Lista A, B ou C)</p>
-                                    </div>
-                                    <div className={`mt-4 w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:${themeColor.text} transition-all`}>
-                                        <ChevronRight className="w-6 h-6" />
+                                    <div className="space-y-1">
+                                        <p className="font-semibold text-base tracking-tight">Receituário Controlado</p>
+                                        <p className="text-sm text-muted-foreground">Medicamentos de controle especial (Lista A, B ou C)</p>
                                     </div>
                                 </button>
                             </div>
@@ -349,14 +343,14 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
                                             />
                                         </div>
                                     </div>
-                                    <div className="flex gap-4 pt-10">
-                                        <Button onClick={handleSave} disabled={loading} className={`flex-1 h-14 text-lg font-black ${themeColor.bg} ${themeColor.bgHover} text-white shadow-xl shadow-emerald-100 rounded-xl`}>
-                                            <Save className="size-5 mr-2" />
+                                    <div className="flex gap-3 pt-6">
+                                        <Button onClick={handleSave} disabled={loading} className={`flex-1 h-10 font-semibold ${themeColor.bg} ${themeColor.bgHover} text-white shadow-sm rounded-lg`}>
+                                            <Save className="size-4 mr-2" />
                                             {loading ? 'Salvando...' : 'Salvar e Registrar'}
                                         </Button>
 
-                                        <Button variant="outline" className="h-14 px-6 border-2 font-bold hover:bg-slate-50 rounded-xl" title="Visualizar/Imprimir" onClick={() => handlePrint()}>
-                                            <Printer className="size-5" />
+                                        <Button variant="outline" className="h-10 px-4 rounded-lg" title="Imprimir" onClick={() => handlePrint()}>
+                                            <Printer className="size-4" />
                                         </Button>
                                     </div>
                                 </div>

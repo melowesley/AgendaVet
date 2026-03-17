@@ -288,14 +288,14 @@ export function ExameDialog({ open, onOpenChange, onBack, petId, petName }: Exam
                                     />
                                 </div>
 
-                                <div className="flex gap-4 pt-4">
-                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-16 text-lg font-black bg-violet-600 hover:bg-violet-700 text-white shadow-xl shadow-violet-100 rounded-2xl`}>
-                                        <Save className="size-6 mr-2" />
+                                <div className="flex gap-3 pt-4">
+                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-10 font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-sm rounded-lg`}>
+                                        <Save className="size-4 mr-2" />
                                         {loading ? 'Salvando...' : 'Salvar Registro'}
                                     </Button>
 
-                                    <Button variant="outline" className="h-16 px-6 border-2 font-bold hover:bg-slate-50 rounded-2xl" title="Visualizar/Imprimir" onClick={() => handlePrint()}>
-                                        <Printer className="size-6" />
+                                    <Button variant="outline" className="h-10 px-4 rounded-lg" title="Imprimir" onClick={() => handlePrint()}>
+                                        <Printer className="size-4" />
                                     </Button>
                                 </div>
                             </div>
