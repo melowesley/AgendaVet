@@ -276,7 +276,7 @@ export function OwnerDetailContent({ ownerId }: OwnerDetailContentProps) {
       <PetFormDialog
         open={addPetDialogOpen}
         onOpenChange={setAddPetDialogOpen}
-        pet={{ ownerId } as any}
+        defaultOwnerId={ownerId}
       />
     </div>
   )
