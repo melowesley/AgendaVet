@@ -250,7 +250,7 @@ export async function addPet(pet: Omit<Pet, 'id' | 'createdAt'>) {
     type: pet.species,
     breed: pet.breed,
     age: pet.dateOfBirth,
-    weight: pet.weight.toString(),
+    weight: pet.weight != null ? pet.weight.toString() : '0',
     user_id: currentUserId || null, // ID of the logged-in vet
     profile_id: pet.profileId,     // ID of the tutor profile
     notes: pet.notes + (pet.gender ? ` | Gênero: ${pet.gender}` : ''),
@@ -344,7 +344,7 @@ export async function addTutorAndPet(
     type: petData.species,
     breed: petData.breed,
     age: petData.dateOfBirth,
-    weight: petData.weight.toString(),
+    weight: petData.weight != null ? petData.weight.toString() : '0',
     user_id: currentUserId || null, // Logged in Vet ID
     profile_id: tutor.id,         // Newly created Tutor Profile ID
     notes: petData.notes + (petData.gender ? ` | Gênero: ${petData.gender}` : ''),
@@ -372,6 +372,8 @@ export async function updateOwner(id: string, updates: Partial<Owner>) {
   }
   if (updates.phone) supabaseUpdates.phone = updates.phone
   if (updates.address) supabaseUpdates.address = updates.address
+  if (updates.email !== undefined) supabaseUpdates.email = updates.email
+  if (updates.whatsapp !== undefined) supabaseUpdates.whatsapp = updates.whatsapp
 
   const { data, error } = await supabase.from('profiles').update(supabaseUpdates).eq('id', id).select().single()
   if (error) {

@@ -84,7 +84,7 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
           breed: pet.breed,
           gender: pet.gender || 'Macho',
           dateOfBirth: pet.dateOfBirth,
-          weight: pet.weight.toString(),
+          weight: pet.weight != null ? pet.weight.toString() : '',
           notes: pet.notes,
         })
       } else {
