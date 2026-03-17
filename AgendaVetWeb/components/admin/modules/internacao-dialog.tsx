@@ -311,7 +311,6 @@ export function InternacaoDialog({ open, onOpenChange, onBack, petId, petName }:
                                         <div className="flex items-end">
                                             <Button
                                                 variant="outline"
-                                                size="sm"
                                                 className={`w-full h-10 text-[10px] font-black uppercase tracking-widest ${themeColor.border}/30 ${themeColor.text} rounded-xl hover:bg-white`}
                                                 onClick={() => setServices([...services, { id: Math.random().toString(), name: 'Extra / Medicamento', value: 0 }])}
                                             >
@@ -344,7 +343,6 @@ export function InternacaoDialog({ open, onOpenChange, onBack, petId, petName }:
                                             />
                                             <Button
                                                 variant="ghost"
-                                                size="sm"
                                                 className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10 rounded-lg"
                                                 onClick={() => setServices(services.filter((_, i) => i !== idx))}
                                             >
@@ -375,19 +373,19 @@ export function InternacaoDialog({ open, onOpenChange, onBack, petId, petName }:
                     </div>
 
                     {/* Preview Section - A4 Page */}
-                    <div className="hidden md:flex flex-1 bg-slate-50 p-8 lg:p-12 overflow-y-auto justify-center items-start items-center h-full">
+                    <div className="hidden md:flex flex-1 bg-slate-200/50 p-6 lg:p-12 overflow-y-auto justify-center items-start">
                         <div
                             ref={printRef}
-                            className={`w-full max-w-[595px] aspect-[1/1.414] bg-white shadow-[0_15px_40px_-15px_rgba(0,0,0,0.15)] rounded-md border p-8 flex flex-col text-slate-900 ${themeColor.borderLight} border-t-[12px] ${themeColor.border} m-auto`}
+                            className={`w-full max-w-[650px] min-h-[920px] bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-sm border p-12 flex flex-col text-slate-900 ${themeColor.borderLight} border-t-8 ${themeColor.border}`}
                         >
                             <div className={`border-b-2 pb-4 mb-6 flex justify-between items-end ${themeColor.border}`}>
                                 <div>
-                                    <h2 className={`text-xl font-black uppercase tracking-tight ${themeColor.text}`}>Ficha de Internação</h2>
-                                    <p className="text-[9px] opacity-70 mt-1 uppercase font-bold text-slate-500">Monitoramento Hospitalar Contínuo</p>
+                                    <h2 className={`text-xl font-black uppercase tracking-widest ${themeColor.text}`}>Ficha de Internação</h2>
+                                    <p className="text-[10px] opacity-60 mt-1 uppercase font-bold text-slate-500">Monitoramento Hospitalar Contínuo</p>
                                 </div>
                                 <div className={`text-right ${themeColor.text}`}>
                                     <Bed className="size-8 ml-auto mb-1 opacity-20" />
-                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Medical Unit</p>
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">AgendaVet</p>
                                 </div>
                             </div>
 
@@ -418,7 +416,7 @@ export function InternacaoDialog({ open, onOpenChange, onBack, petId, petName }:
                                 <section className={`p-4 rounded-sm bg-white border border-slate-300 relative overflow-hidden shadow-sm`}>
                                     <div className={`absolute top-0 left-0 w-1 h-full ${themeColor.bg}`}></div>
                                     <h3 className={`text-[10px] font-black uppercase tracking-widest mb-2 ${themeColor.text}`}>Motivo da Internação</h3>
-                                    <p className="text-lg font-black text-slate-900 uppercase tracking-tighter underline decoration-2 decoration-slate-100 underline-offset-4">
+                                    <p className={`text-lg font-black text-slate-900 uppercase tracking-tighter border-b-2 pb-1 ${themeColor.borderLight}`}>
                                         {motivo || "Em avaliação hospitalar..."}
                                     </p>
                                 </section>
@@ -476,9 +474,9 @@ export function InternacaoDialog({ open, onOpenChange, onBack, petId, petName }:
                                     REGISTRO HOSPITALAR • AGEN DAVET SYSTEM • {format(new Date(), 'dd/MM/yyyy HH:mm')}
                                 </div>
                                 <div className="text-center w-56">
-                                    <div className={`h-[2px] w-full ${themeColor.bg} opacity-20 mb-2`}></div>
-                                    <p className="text-[12px] font-black uppercase text-slate-900 tracking-tighter">{veterinarian || 'Dr. Cleyton Chaves'}</p>
-                                    <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5">Hospital Staff / CRMV-XX</p>
+                                    <div className="h-[2px] w-full bg-slate-300 mb-3"></div>
+                                    <p className="text-[12px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Médico Veterinário'}</p>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
                                 </div>
                             </div>
                         </div>

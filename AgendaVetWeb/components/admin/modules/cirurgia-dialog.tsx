@@ -455,12 +455,12 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
                         >
                             <div className={`border-b-2 pb-6 mb-8 flex justify-between items-end ${themeColor.border}`}>
                                 <div>
-                                    <h2 className={`text-2xl font-black uppercase tracking-tight ${themeColor.text}`}>Relatório Cirúrgico</h2>
-                                    <p className="text-[10px] opacity-70 mt-1 uppercase font-bold text-slate-500">Ficha Técnica de Procedimento Invasivo</p>
+                                    <h2 className={`text-xl font-black uppercase tracking-widest ${themeColor.text}`}>Relatório Cirúrgico</h2>
+                                    <p className="text-[10px] opacity-60 mt-1 uppercase font-bold text-slate-500">Ficha Técnica de Procedimento Invasivo</p>
                                 </div>
                                 <div className={`text-right ${themeColor.text}`}>
-                                    <Scissors className="size-10 ml-auto mb-1 opacity-20" />
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">AgendaVet Surgical Hub</p>
+                                    <Scissors className="size-8 ml-auto mb-1 opacity-20" />
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">AgendaVet</p>
                                 </div>
                             </div>
 
@@ -490,7 +490,7 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
                                 <section className={`p-6 rounded-sm bg-white border border-slate-300 relative overflow-hidden shadow-sm`}>
                                     <div className={`absolute top-0 left-0 w-1.5 h-full ${themeColor.bg}`}></div>
                                     <h3 className={`text-[11px] font-black uppercase tracking-widest mb-2 ${themeColor.text}`}>Procedimento Principal</h3>
-                                    <p className="text-2xl font-black text-slate-900 uppercase tracking-tighter underline decoration-4 decoration-slate-100 underline-offset-8">
+                                    <p className={`text-2xl font-black text-slate-900 uppercase tracking-tighter border-b-4 pb-2 ${themeColor.borderLight}`}>
                                         {procedimento || "Em preenchimento..."}
                                     </p>
                                 </section>
@@ -554,9 +554,9 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
                                     VALIDAÇÃO DIGITAL • REGISTRO DE CENTRO CIRÚRGICO • {format(new Date(), 'dd/MM/yyyy HH:mm')}
                                 </div>
                                 <div className="text-center w-64">
-                                    <div className={`h-[2px] w-full ${themeColor.bg} opacity-20 mb-3`}></div>
-                                    <p className="text-[14px] font-black uppercase text-slate-900 tracking-tighter">{veterinarian || 'Dr. Cleyton Chaves'}</p>
-                                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Surgical Specialist / CRMV-XX</p>
+                                    <div className="h-[2px] w-full bg-slate-300 mb-3"></div>
+                                    <p className="text-[12px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Médico Veterinário'}</p>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
                                 </div>
                             </div>
                         </div>
