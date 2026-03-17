@@ -330,14 +330,14 @@ export function ConsultaDialog({ open, onOpenChange, onBack, petId, petName }: C
                                 </div>
                             </div>
 
-                            <div className="flex gap-4 pt-10">
-                                <Button onClick={handleSave} disabled={loading} className={`flex-1 h-14 text-lg font-black ${themeColor.bg} ${themeColor.bgHover} text-white shadow-xl shadow-blue-100 rounded-xl`}>
-                                    <Save className="size-5 mr-2" />
+                            <div className="flex gap-3 pt-6">
+                                <Button onClick={handleSave} disabled={loading} className={`flex-1 h-10 font-semibold ${themeColor.bg} ${themeColor.bgHover} text-white shadow-sm rounded-lg`}>
+                                    <Save className="size-4 mr-2" />
                                     {loading ? 'Salvando...' : 'Salvar Registro'}
                                 </Button>
 
-                                <Button variant="outline" className="h-14 px-6 border-2 font-bold hover:bg-slate-50 rounded-xl" title="Visualizar/Imprimir" onClick={() => handlePrint()}>
-                                    <Printer className="size-5" />
+                                <Button variant="outline" className="h-10 px-4 rounded-lg" title="Imprimir" onClick={() => handlePrint()}>
+                                    <Printer className="size-4" />
                                 </Button>
                             </div>
                         </div>

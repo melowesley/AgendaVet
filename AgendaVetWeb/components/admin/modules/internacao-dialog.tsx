@@ -361,13 +361,13 @@ export function InternacaoDialog({ open, onOpenChange, onBack, petId, petName }:
                                     </div>
                                 </div>
 
-                                <div className="flex gap-4 pt-4">
-                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-16 text-lg font-black ${themeColor.bg} ${themeColor.bgHover} text-white shadow-xl rounded-2xl transition-all hover:scale-[1.02] active:scale-95`}>
-                                        <Save className="size-6 mr-2" />
+                                <div className="flex gap-3 pt-4">
+                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-10 font-semibold ${themeColor.bg} ${themeColor.bgHover} text-white shadow-sm rounded-lg`}>
+                                        <Save className="size-4 mr-2" />
                                         {loading ? 'Salvando...' : 'Salvar Registro'}
                                     </Button>
-                                    <Button variant="outline" className="h-16 px-6 border-2 font-bold hover:bg-slate-50 rounded-2xl" onClick={() => handlePrint()}>
-                                        <Printer className="size-6" />
+                                    <Button variant="outline" className="h-10 px-4 rounded-lg" onClick={() => handlePrint()}>
+                                        <Printer className="size-4" />
                                     </Button>
                                 </div>
                             </div>
