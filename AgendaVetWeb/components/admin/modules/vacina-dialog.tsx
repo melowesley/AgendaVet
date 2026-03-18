@@ -65,7 +65,7 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
     const [applicationDate, setApplicationDate] = useState(format(new Date(), 'yyyy-MM-dd'))
     const [nextDoseDate, setNextDoseDate] = useState('')
     const [batchNumber, setBatchNumber] = useState('')
-    const [veterinarian, setVeterinarian] = useState('Dr. Cleyton Chaves')
+    const [veterinarian, setVeterinarian] = useState('')
     const [notes, setNotes] = useState('')
     const [editingId, setEditingId] = useState<string | null>(null)
 
@@ -111,7 +111,7 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
                 application_date: applicationDate,
                 next_dose_date: nextDoseDate || null,
                 batch_number: batchNumber || null,
-                veterinarian: veterinarian || 'Dr. Cleyton Chaves',
+                veterinarian: veterinarian || '',
                 notes: JSON.stringify({
                     observation: notes,
                     billing: {
@@ -396,6 +396,7 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
                     <div className="hidden md:flex flex-1 bg-slate-200/50 p-6 lg:p-12 overflow-y-auto justify-center items-start">
                         <div
                             ref={printRef}
+<<<<<<< HEAD
                             className={`w-full max-w-[650px] min-h-[700px] bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-sm border p-12 flex flex-col text-slate-900`}
                         >
                             {/* AgendaVet Header A4 */}
@@ -412,6 +413,18 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
                                     AgendaVet
                                   </div>
                                   <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">Gestão Veterinária Inteligente</p>
+=======
+                            className={`w-full max-w-[650px] min-h-[920px] bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-sm border p-12 flex flex-col text-slate-900 ${themeColor.borderLight} border-t-8 ${themeColor.border}`}
+                        >
+                            <div className={`border-b-2 pb-4 mb-6 flex justify-between items-end ${themeColor.border}`}>
+                                <div>
+                                    <h2 className={`text-xl font-black uppercase tracking-widest ${themeColor.text}`}>Comprovante de Vacinação</h2>
+                                    <p className="text-[10px] opacity-60 mt-1 uppercase text-slate-500">Folha Médica de Atendimento</p>
+                                </div>
+                                <div className={`text-right ${themeColor.text}`}>
+                                    <PawPrint className="size-8 ml-auto mb-1 opacity-20" />
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">AgendaVet</p>
+>>>>>>> f7ad3363f5708e76ac575285b4ab3c4ea9c4105c
                                 </div>
                               </div>
                               <div className="text-right">
@@ -440,22 +453,22 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
                             </div>
 
                             <div className="flex-1 space-y-8">
-                                <div className={`border border-slate-300 p-6 rounded-sm bg-white relative`}>
-                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-600"></div>
+                                <div className="border border-slate-300 p-6 rounded-sm bg-white relative overflow-hidden">
+                                    <div className={`absolute top-0 left-0 w-1.5 h-full ${themeColor.bg}`}></div>
                                     <div className="flex items-center gap-5 mb-6 border-b border-slate-100 pb-5">
-                                        <div className={`p-4 rounded-xl bg-emerald-600 text-white shadow-lg`}>
+                                        <div className={`p-4 rounded-xl ${themeColor.bg} text-white shadow-lg`}>
                                             <Syringe className="size-8" />
                                         </div>
                                         <div>
                                             <h3 className="font-black text-2xl text-slate-900 tracking-tighter">{vaccineName || 'Aguardando nome...'}</h3>
-                                            <p className="text-xs text-emerald-600 font-black uppercase tracking-widest mt-0.5">Aplicada em {format(new Date(applicationDate), 'dd/MM/yyyy')}</p>
+                                            <p className={`text-xs font-black uppercase tracking-widest mt-0.5 ${themeColor.text}`}>Aplicada em {format(new Date(applicationDate), 'dd/MM/yyyy')}</p>
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-8">
                                         <div className="bg-slate-50 p-3 border border-slate-200 rounded-sm text-center">
                                             <p className="font-black text-slate-400 uppercase text-[9px] tracking-[0.2em] mb-2">Próxima Dose</p>
-                                            <p className="text-base font-black text-emerald-600 tracking-tight">{nextDoseDate ? format(new Date(nextDoseDate), 'dd/MM/yyyy') : 'Não agendada'}</p>
+                                            <p className={`text-base font-black tracking-tight ${themeColor.text}`}>{nextDoseDate ? format(new Date(nextDoseDate), 'dd/MM/yyyy') : 'Não agendada'}</p>
                                         </div>
                                         <div className="bg-slate-50 p-3 border border-slate-200 rounded-sm text-center">
                                             <p className="font-black text-slate-400 uppercase text-[9px] tracking-[0.2em] mb-2">Vigilância Sanitária</p>
@@ -483,11 +496,11 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
                                             )}
                                             {services.map(s => (
                                                 <div key={s.id} className="flex justify-between text-[12px] border-b border-slate-100 pb-2">
-                                                    <span className="font-bold text-slate-500 uppercase tracking-widest text-[10px]">{s.name}</span>
+                                                    <span className="font-bold text-slate-500 uppercase tracking-widests text-[10px]">{s.name}</span>
                                                     <span className="font-black text-slate-900">R$ {s.value.toFixed(2)}</span>
                                                 </div>
                                             ))}
-                                            <div className="flex justify-between pt-4 mt-2 font-black text-xl text-emerald-600 tracking-tighter">
+                                            <div className={`flex justify-between pt-4 mt-2 font-black text-xl tracking-tighter ${themeColor.text}`}>
                                                 <span>VALOR TOTAL</span>
                                                 <span>R$ {(parseFloat(baseValue) + services.reduce((acc, s) => acc + s.value, 0)).toFixed(2)}</span>
                                             </div>
@@ -502,10 +515,17 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
                                   <p className="font-semibold" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>AgendaVet © 2026</p>
                                   <p className="opacity-70 mt-0.5">Gestão Veterinária Profissional. As informações são de responsabilidade do médico veterinário.</p>
                                 </div>
+<<<<<<< HEAD
                                 <div className="text-center w-56">
                                   <div className="h-[2px] w-full mb-3 rounded" style={{background: 'linear-gradient(to right, #13C8CC, #002653)'}}></div>
                                   <p className="text-[13px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Dr. Responsável'}</p>
                                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
+=======
+                                <div className="text-center w-64">
+                                    <div className="h-[2px] w-full bg-slate-300 mb-3"></div>
+                                    <p className="text-[12px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Médico Veterinário'}</p>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
+>>>>>>> f7ad3363f5708e76ac575285b4ab3c4ea9c4105c
                                 </div>
                               </div>
                             </div>

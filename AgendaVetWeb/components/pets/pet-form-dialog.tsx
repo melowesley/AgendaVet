@@ -29,6 +29,7 @@ interface PetFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   pet?: Pet | null
+  defaultOwnerId?: string
 }
 
 const speciesOptions: { value: Pet['species']; label: string }[] = [
@@ -40,7 +41,7 @@ const speciesOptions: { value: Pet['species']; label: string }[] = [
   { value: 'other', label: 'Outro' },
 ]
 
-export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
+export function PetFormDialog({ open, onOpenChange, pet, defaultOwnerId }: PetFormDialogProps) {
   const { owners } = useOwners()
   const isEditing = !!pet
 
@@ -84,13 +85,13 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
           breed: pet.breed,
           gender: pet.gender || 'Macho',
           dateOfBirth: pet.dateOfBirth,
-          weight: pet.weight.toString(),
+          weight: pet.weight != null ? pet.weight.toString() : '',
           notes: pet.notes,
         })
       } else {
-        setUseExistingTutor(owners.length > 0)
+        setUseExistingTutor(owners.length > 0 || !!defaultOwnerId)
         setFormData({
-          tutorId: owners[0]?.id || '',
+          tutorId: defaultOwnerId || owners[0]?.id || '',
           tutorFirstName: '',
           tutorLastName: '',
           tutorGender: 'Masculino',
@@ -109,7 +110,7 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, pet?.id])
+  }, [open, pet?.id, owners.length, defaultOwnerId])
 
   const [isSaving, setIsSaving] = useState(false)
 

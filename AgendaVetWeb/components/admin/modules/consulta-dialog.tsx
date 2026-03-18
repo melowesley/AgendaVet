@@ -282,8 +282,7 @@ export function ConsultaDialog({ open, onOpenChange, onBack, petId, petName }: C
                                     <div className="flex items-end">
                                         <Button
                                             variant="outline"
-                                            size="sm"
-                                            className={`w-full h-8 text-[10px] ${themeColor.border}/30 ${themeColor.text}`}
+                                            className={`w-full h-10 text-[10px] ${themeColor.border}/30 ${themeColor.text}`}
                                             onClick={() => setServices([...services, { id: Math.random().toString(), name: 'Procedimento Extra', value: 0 }])}
                                         >
                                             <Plus className="size-3 mr-1" /> Add Serviço
@@ -301,7 +300,7 @@ export function ConsultaDialog({ open, onOpenChange, onBack, petId, petName }: C
                                                 setServices(newServices)
                                             }}
                                             placeholder="Nome do serviço"
-                                            className="h-7 text-[10px] flex-1"
+                                            className="h-8 text-[10px] flex-1"
                                         />
                                         <Input
                                             type="number"
@@ -311,12 +310,12 @@ export function ConsultaDialog({ open, onOpenChange, onBack, petId, petName }: C
                                                 newServices[idx].value = parseFloat(e.target.value) || 0
                                                 setServices(newServices)
                                             }}
-                                            className="h-7 text-[10px] w-16"
+                                            className="h-8 text-[10px] w-16"
                                         />
                                         <Button
                                             variant="ghost"
-                                            size="sm"
-                                            className="h-7 w-7 p-0 text-destructive"
+                                            size="icon-sm"
+                                            className="h-8 w-8 p-0 text-destructive"
                                             onClick={() => setServices(services.filter((_, i) => i !== idx))}
                                         >
                                             <Trash2 className="size-3" />

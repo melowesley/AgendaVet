@@ -28,6 +28,8 @@ import { ObitoDialog } from '../admin/modules/obito-dialog'
 import { BanhoTosaDialog } from '../admin/modules/banho-tosa-dialog'
 import type { MedicalRecord } from '@/lib/types'
 import { ArchiveDialog } from '@/components/admin/modules/archive-dialog'
+import { RegistroLivreDialog } from '../admin/modules/registro-livre-dialog'
+import { FinanceiroDialog } from '../admin/modules/financeiro-dialog'
 
 interface PetDetailContentProps {
   petId: string
@@ -80,6 +82,9 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
   const [internacaoDialogOpen, setInternacaoDialogOpen] = useState(false)
   const [obitoDialogOpen, setObitoDialogOpen] = useState(false)
   const [banhoTosaDialogOpen, setBanhoTosaDialogOpen] = useState(false)
+  const [registroLivreOpen, setRegistroLivreOpen] = useState(false)
+  const [registroLivreType, setRegistroLivreType] = useState('observacoes')
+  const [financeiroDialogOpen, setFinanceiroDialogOpen] = useState(false)
   const [recordDialogType, setRecordDialogType] = useState<MedicalRecord['type']>('vaccination')
 
   const openMedicalRecord = (type: MedicalRecord['type']) => {
@@ -110,17 +115,13 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
       setBanhoTosaDialogOpen(true)
     } else if (type === 'fotos' || type === 'video') {
       setGaleriaDialogOpen(true)
+    } else if (type === 'financeiro') {
+      setFinanceiroDialogOpen(true)
+    } else if (['procedimento', 'diagnostico', 'documento', 'observacoes', 'retorno', 'outros'].includes(type)) {
+      setRegistroLivreType(type)
+      setRegistroLivreOpen(true)
     } else {
-      // Map other types to general MedicalRecord types for now
-      const mapping: Record<string, MedicalRecord['type']> = {
-        'procedimento': 'procedure',
-      }
-
-      if (mapping[type]) {
-        openMedicalRecord(mapping[type])
-      } else {
-        openMedicalRecord('note')
-      }
+      openMedicalRecord('note')
     }
   }
 
@@ -596,6 +597,27 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
         petName={pet.name}
         onBack={() => {
           setBanhoTosaDialogOpen(false)
+          setAttendanceDialogOpen(true)
+        }}
+      />
+      <RegistroLivreDialog
+        open={registroLivreOpen}
+        onOpenChange={setRegistroLivreOpen}
+        petId={petId}
+        petName={pet.name}
+        recordType={registroLivreType}
+        onBack={() => {
+          setRegistroLivreOpen(false)
+          setAttendanceDialogOpen(true)
+        }}
+      />
+      <FinanceiroDialog
+        open={financeiroDialogOpen}
+        onOpenChange={setFinanceiroDialogOpen}
+        petId={petId}
+        petName={pet.name}
+        onBack={() => {
+          setFinanceiroDialogOpen(false)
           setAttendanceDialogOpen(true)
         }}
       />

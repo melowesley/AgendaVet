@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { Scissors, Save, ArrowLeft, Printer, DollarSign, Plus, Trash2, Brush, Sparkles, AlertCircle, PawPrint, Clock, History } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { ScrollArea } from '@/components/ui/scroll-area'
 // @ts-ignore
 import { useReactToPrint } from 'react-to-print'
@@ -151,7 +151,7 @@ export function BanhoTosaDialog({ open, onOpenChange, onBack, petId, petName }: 
                             <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5 font-medium">
                                 <span className="flex items-center gap-1"><PawPrint className="size-3.5" /> <span className="font-bold text-slate-700">{petName}</span></span>
                                 <span className="text-slate-300">•</span>
-                                <span className={`flex items-center gap-1 font-bold ${themeColor.text} uppercase tracking-tighter text-[11px] ${themeColor.bgGhost} px-2 py-0.5 rounded border ${themeColor.borderLight}`}>Spa & Grooming</span>
+                                <span className={`flex items-center gap-1 font-bold ${themeColor.text} uppercase tracking-tighter text-[11px] ${themeColor.bgGhost} px-2 py-0.5 rounded border ${themeColor.borderLight}`}>Spa & Estética</span>
                             </div>
                         </div>
                     </div>
@@ -395,7 +395,7 @@ export function BanhoTosaDialog({ open, onOpenChange, onBack, petId, petName }: 
                                             <p className="text-sm font-black text-slate-800 uppercase mb-1">{petName}</p>
                                             <p className="text-slate-600 truncate">{pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : 'Animal'} | {pet?.breed}</p>
                                             <p className={`font-black uppercase text-[10px] mt-2 inline-block px-2 py-0.5 rounded ${themeColor.bgGhost} ${themeColor.text}`}>
-                                                Data: {format(new Date(date), 'dd/MM/yyyy')}
+                                                Data: {format(parseISO(date), 'dd/MM/yyyy')}
                                             </p>
                                         </div>
                                     </div>
