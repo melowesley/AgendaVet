@@ -160,7 +160,7 @@ export function GaleriaDialog({ open, onOpenChange, onBack, petId, petName }: Ga
                                 <ArrowLeft size={18} />
                             </Button>
                         )}
-                        <div className="flex size-10 items-center justify-center rounded-full bg-orange-500/10 text-orange-500">
+                        <div className="flex size-10 items-center justify-center rounded-xl text-white shadow-md" style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
                             <ImageIcon className="size-5" />
                         </div>
                         <div>
@@ -216,7 +216,7 @@ export function GaleriaDialog({ open, onOpenChange, onBack, petId, petName }: Ga
                                     <Input id="media-tags" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Ex: pele, alergia, olho direito" />
                                 </div>
 
-                                <Button onClick={handleSave} disabled={loading} className="w-full bg-orange-600 hover:bg-orange-700 text-white mt-4">
+                                <Button onClick={handleSave} disabled={loading} className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white mt-4">
                                     <Save className="size-4 mr-2" />
                                     {loading ? 'Salvando...' : `Salvar ${mediaType === 'photo' ? 'Foto' : 'Vídeo'}`}
                                 </Button>

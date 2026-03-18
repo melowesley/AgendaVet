@@ -180,7 +180,7 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
                                 <ArrowLeft size={18} />
                             </Button>
                         )}
-                        <div className={`flex size-10 items-center justify-center rounded-full ${themeColor.bgGhost} ${themeColor.text}`}>
+                        <div className={`flex size-10 items-center justify-center rounded-full text-white`} style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
                             <Scale className="size-5" />
                         </div>
                         <div>
@@ -282,7 +282,7 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
                                 </div>
 
                                 <div className="flex gap-3">
-                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-12 ${themeColor.bg} ${themeColor.bgHover} text-white shadow-xl`}>
+                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-12 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white shadow-xl`}>
                                         <Save className="size-5 mr-3" />
                                         {loading ? 'Processando...' : editingId ? 'Atualizar Registro' : 'Confirmar Pesagem'}
                                     </Button>

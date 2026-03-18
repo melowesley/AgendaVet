@@ -186,7 +186,7 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-screen sm:max-w-none !max-w-none h-screen max-h-none rounded-none p-0 flex flex-col overflow-hidden border-none">
+            <DialogContent className="w-[95vw] max-w-[1400px] h-[90vh] max-h-[90vh] rounded-2xl p-0 flex flex-col overflow-hidden border border-border/20 shadow-2xl">
                 <DialogHeader className="p-4 md:p-6 border-b border-border/50 bg-white flex flex-row items-center justify-between shrink-0 z-20 shadow-sm">
                     <div className="flex items-center gap-4">
                         {(receiptType || onBack) && (
@@ -194,7 +194,7 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
                                 <ArrowLeft className="size-5" />
                             </Button>
                         )}
-                        <div className={`flex size-12 items-center justify-center rounded-xl ${themeColor.bgGhost} ${themeColor.text} shadow-inner`}>
+                        <div className="flex size-12 items-center justify-center rounded-xl text-white shadow-inner" style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
                             <Pill className="size-6" />
                         </div>
                         <div>
@@ -344,7 +344,7 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
                                         </div>
                                     </div>
                                     <div className="flex gap-3 pt-6">
-                                        <Button onClick={handleSave} disabled={loading} className={`flex-1 h-10 font-semibold ${themeColor.bg} ${themeColor.bgHover} text-white shadow-sm rounded-lg`}>
+                                        <Button onClick={handleSave} disabled={loading} className="flex-1 h-10 font-semibold text-white shadow-sm rounded-lg bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700">
                                             <Save className="size-4 mr-2" />
                                             {loading ? 'Salvando...' : 'Salvar e Registrar'}
                                         </Button>
@@ -360,20 +360,32 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
                             <div className={`hidden md:flex flex-1 bg-slate-50 p-8 lg:p-12 overflow-y-auto justify-center items-center h-full`}>
                                 <div
                                     ref={printRef}
-                                    className={`w-full max-w-[595px] aspect-[1/1.414] bg-white shadow-[0_15px_40px_-15px_rgba(0,0,0,0.15)] rounded-md border p-8 flex flex-col text-slate-900 ${themeColor.borderLight} border-t-[12px] ${themeColor.border} m-auto`}
+                                    className={`w-full max-w-[595px] aspect-[1/1.414] bg-white shadow-[0_15px_40px_-15px_rgba(0,0,0,0.15)] rounded-md border p-8 flex flex-col text-slate-900 m-auto`}
                                 >                                
                                     {/* SIMPLES LAYOUT */}
                                     {receiptType === 'simples' && (
                                         <>
-                                            <div className={`border-b-2 pb-6 mb-8 flex justify-between items-end ${themeColor.border}`}>
+                                            {/* AgendaVet Header A4 */}
+                                            <div className="flex justify-between items-start pb-6 mb-8 border-b-2" style={{borderImage: 'linear-gradient(to right, #13C8CC, #002653) 1'}}>
+                                              <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
+                                                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                                                    <path d="M14 4C9 4 5 8 5 13c0 3 1.5 5.5 3.8 7L14 24l5.2-4C21.5 18.5 23 16 23 13c0-5-4-9-9-9z" fill="white" opacity="0.9"/>
+                                                    <path d="M14 8v10M9 13h10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                                                  </svg>
+                                                </div>
                                                 <div>
-                                                    <h2 className={`text-2xl font-bold uppercase tracking-widest ${themeColor.text}`}>Receituário Simples</h2>
-                                                    <p className="text-[10px] opacity-70 mt-1 uppercase">Prescrição e Orientação Veterinária</p>
+                                                  <div className="text-2xl font-black tracking-tight" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+                                                    AgendaVet
+                                                  </div>
+                                                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">Gestão Veterinária Inteligente</p>
                                                 </div>
-                                                <div className={`text-right ${themeColor.text}`}>
-                                                    <Stethoscope className="size-10 ml-auto mb-1 opacity-20" />
-                                                    <p className="text-[8px] font-bold text-slate-400">AgendaVet Prescrições</p>
-                                                </div>
+                                              </div>
+                                              <div className="text-right">
+                                                <p className="text-lg font-black text-slate-800 uppercase tracking-tight">Receituário Simples</p>
+                                                <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Prescrição e Orientação Veterinária</p>
+                                                <p className="text-[9px] text-slate-400 mt-2">Emitido em {format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
+                                              </div>
                                             </div>
 
                                             <div className="border border-slate-400 p-5 mb-8 rounded-sm bg-slate-50/30">
@@ -402,12 +414,18 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
                                                 </section>
                                             </div>
 
-                                            <div className="mt-auto pt-10 flex justify-center items-end border-t border-slate-100 italic">
-                                                <div className="text-center w-64">
-                                                    <div className={`h-[1.5px] w-full bg-slate-400 mb-2`}></div>
-                                                    <p className="text-[11px] font-bold uppercase text-slate-800">{veterinarian || 'Dr. Cleyton Chaves'}</p>
-                                                    <p className="text-[9px] text-slate-500 font-medium tracking-tight">Médico Veterinário • CRMV-SP</p>
+                                            <div className="mt-auto pt-8 border-t border-slate-100">
+                                              <div className="flex justify-between items-end">
+                                                <div className="text-[9px] text-slate-400 leading-tight max-w-[220px]">
+                                                  <p className="font-semibold" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>AgendaVet © 2026</p>
+                                                  <p className="opacity-70 mt-0.5">Gestão Veterinária Profissional. As informações são de responsabilidade do médico veterinário.</p>
                                                 </div>
+                                                <div className="text-center w-56">
+                                                  <div className="h-[2px] w-full mb-3 rounded" style={{background: 'linear-gradient(to right, #13C8CC, #002653)'}}></div>
+                                                  <p className="text-[13px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Dr. Responsável'}</p>
+                                                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
+                                                </div>
+                                              </div>
                                             </div>
                                         </>
                                     )}
@@ -415,6 +433,15 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
                                     {/* CONTROLADO LAYOUT */}
                                     {receiptType === 'controlado' && (
                                         <div className={`flex flex-col h-full bg-white`}>
+                                            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-300">
+                                              <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded flex items-center justify-center" style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
+                                                  <svg width="14" height="14" viewBox="0 0 28 28" fill="none"><path d="M14 4C9 4 5 8 5 13c0 3 1.5 5.5 3.8 7L14 24l5.2-4C21.5 18.5 23 16 23 13c0-5-4-9-9-9z" fill="white" opacity="0.9"/></svg>
+                                                </div>
+                                                <span className="text-[10px] font-black" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>AgendaVet</span>
+                                              </div>
+                                              <span className="text-[9px] text-slate-400">{format(new Date(prescriptionDate), 'dd/MM/yyyy')}</span>
+                                            </div>
                                             <div className="flex border border-slate-400 mb-3">
                                                 <div className="w-[55%] p-2 border-r border-slate-400 flex flex-col gap-1">
                                                     <div className="flex items-center gap-2 mb-2">

@@ -157,7 +157,7 @@ export function ExameDialog({ open, onOpenChange, onBack, petId, petName }: Exam
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-screen sm:max-w-none !max-w-none h-screen max-h-none rounded-none p-0 flex flex-col overflow-hidden border-none text-slate-800">
+            <DialogContent className="w-[95vw] max-w-[1400px] h-[90vh] max-h-[90vh] rounded-2xl p-0 flex flex-col overflow-hidden border border-border/20 shadow-2xl text-slate-800">
                 <DialogHeader className="p-4 md:p-6 border-b border-border/50 bg-white flex flex-row items-center justify-between shrink-0 z-20 shadow-sm">
                     <div className="flex items-center gap-4">
                         {onBack && (
@@ -165,8 +165,8 @@ export function ExameDialog({ open, onOpenChange, onBack, petId, petName }: Exam
                                 <ArrowLeft className="size-5" />
                             </Button>
                         )}
-                        <div className={`flex size-12 items-center justify-center rounded-xl bg-violet-500/10 text-violet-500 shadow-inner`}>
-                            <FlaskConical className="size-6" />
+                        <div className={`flex size-12 items-center justify-center rounded-xl shadow-inner`} style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
+                            <FlaskConical className="size-6 text-white" />
                         </div>
                         <div>
                             <DialogTitle className="text-2xl font-black tracking-tight text-slate-800">
@@ -183,7 +183,7 @@ export function ExameDialog({ open, onOpenChange, onBack, petId, petName }: Exam
                         <Button variant="outline" onClick={() => onOpenChange(false)} className="h-10 px-6 font-bold text-slate-500">
                             Fechar
                         </Button>
-                        <Button onClick={handleSave} disabled={loading} className={`h-10 px-6 font-black bg-violet-600 hover:bg-violet-700 text-white shadow-lg`}>
+                        <Button onClick={handleSave} disabled={loading} className={`h-10 px-6 font-black bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white shadow-lg`}>
                             <Save className="size-4 mr-2" />
                             {loading ? 'Salvando...' : 'Salvar Registro'}
                         </Button>
@@ -289,7 +289,7 @@ export function ExameDialog({ open, onOpenChange, onBack, petId, petName }: Exam
                                 </div>
 
                                 <div className="flex gap-3 pt-4">
-                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-10 font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-sm rounded-lg`}>
+                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-10 font-semibold bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white shadow-sm rounded-lg`}>
                                         <Save className="size-4 mr-2" />
                                         {loading ? 'Salvando...' : 'Salvar Registro'}
                                     </Button>
@@ -305,17 +305,30 @@ export function ExameDialog({ open, onOpenChange, onBack, petId, petName }: Exam
                     <div className="hidden md:flex flex-1 bg-slate-200/50 p-6 lg:p-12 overflow-y-auto justify-center items-start">
                         <div
                             ref={printRef}
-                            className={`w-full max-w-[650px] min-h-[920px] bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-sm border p-12 flex flex-col text-slate-900 border-violet-200 border-t-8 border-violet-600`}
+                            className={`w-full max-w-[650px] min-h-[700px] bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-sm border p-12 flex flex-col text-slate-900 border-slate-200 border-t-8`}
+                            style={{borderImage: 'linear-gradient(to right, #13C8CC, #002653) 1', borderTopColor: 'transparent'}}
                         >
-                            <div className={`border-b-2 pb-4 mb-6 flex justify-between items-end border-violet-500`}>
+                            {/* AgendaVet Header A4 */}
+                            <div className="flex justify-between items-start pb-6 mb-8 border-b-2" style={{borderImage: 'linear-gradient(to right, #13C8CC, #002653) 1'}}>
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
+                                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                                    <path d="M14 4C9 4 5 8 5 13c0 3 1.5 5.5 3.8 7L14 24l5.2-4C21.5 18.5 23 16 23 13c0-5-4-9-9-9z" fill="white" opacity="0.9"/>
+                                    <path d="M14 8v10M9 13h10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                                  </svg>
+                                </div>
                                 <div>
-                                    <h2 className={`text-xl font-bold uppercase tracking-widest text-violet-600`}>Relatório de Exame</h2>
-                                    <p className="text-[10px] opacity-70 mt-1 uppercase text-slate-500">Documento Auxiliar de Diagnóstico</p>
+                                  <div className="text-2xl font-black tracking-tight" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+                                    AgendaVet
+                                  </div>
+                                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">Gestão Veterinária Inteligente</p>
                                 </div>
-                                <div className={`text-right text-violet-600`}>
-                                    <FlaskConical className="size-8 ml-auto mb-1 opacity-20" />
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">AgendaVet System v2.0</p>
-                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-lg font-black text-slate-800 uppercase tracking-tight">RELATÓRIO DE EXAME</p>
+                                <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Documento Auxiliar de Diagnóstico</p>
+                                <p className="text-[9px] text-slate-400 mt-2">Emitido em {format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
+                              </div>
                             </div>
 
                             <div className="border border-slate-400 p-6 mb-8 rounded-sm bg-slate-50/50">
@@ -378,15 +391,19 @@ export function ExameDialog({ open, onOpenChange, onBack, petId, petName }: Exam
                                 )}
                             </div>
 
-                            <div className="mt-auto pt-12 flex justify-between items-end">
-                                <div className="text-[9px] opacity-40 italic max-w-[250px] leading-tight font-medium text-slate-500 uppercase">
-                                    Relatório gerado via AgendaVet Digital. As informações acima são de responsabilidade do profissional solicitante.
+                            {/* AgendaVet Footer A4 */}
+                            <div className="mt-auto pt-8 border-t border-slate-100">
+                              <div className="flex justify-between items-end">
+                                <div className="text-[9px] text-slate-400 leading-tight max-w-[220px]">
+                                  <p className="font-semibold" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>AgendaVet © 2026</p>
+                                  <p className="opacity-70 mt-0.5">Gestão Veterinária Profissional. As informações são de responsabilidade do médico veterinário.</p>
                                 </div>
-                                <div className="text-center w-64">
-                                    <div className="h-[2px] w-full bg-slate-300 mb-3"></div>
-                                    <p className="text-[12px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Dr. Cleyton Chaves'}</p>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Médico Veterinário</p>
+                                <div className="text-center w-56">
+                                  <div className="h-[2px] w-full mb-3 rounded" style={{background: 'linear-gradient(to right, #13C8CC, #002653)'}}></div>
+                                  <p className="text-[13px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Dr. Responsável'}</p>
+                                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
                                 </div>
+                              </div>
                             </div>
                         </div>
                     </div>

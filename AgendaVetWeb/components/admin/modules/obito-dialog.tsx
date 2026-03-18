@@ -117,7 +117,7 @@ export function ObitoDialog({ open, onOpenChange, onBack, petId, petName }: Obit
                                 <ArrowLeft size={18} />
                             </Button>
                         )}
-                        <div className={`flex size-10 items-center justify-center rounded-full ${themeColor.bgGhost} text-zinc-600`}>
+                        <div className={`flex size-10 items-center justify-center rounded-full text-white`} style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
                             <Skull className="size-5" />
                         </div>
                         <div>
@@ -261,7 +261,7 @@ export function ObitoDialog({ open, onOpenChange, onBack, petId, petName }: Obit
                             </div>
 
                             <div className="flex gap-3">
-                                <Button onClick={handleSave} disabled={loading} className={`flex-1 ${themeColor.bg} ${themeColor.bgHover} text-white shadow-lg`}>
+                                <Button onClick={handleSave} disabled={loading} className={`flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white shadow-lg`}>
                                     <Save className="size-4 mr-2" />
                                     {loading ? 'Processando...' : 'Finalizar Registro'}
                                 </Button>
@@ -277,11 +277,30 @@ export function ObitoDialog({ open, onOpenChange, onBack, petId, petName }: Obit
                     <div className="hidden md:block flex-1 bg-zinc-100/50 p-4 lg:p-8 overflow-y-auto">
                         <div
                             ref={printRef}
-                            className="w-full max-w-[600px] mx-auto min-h-[842px] bg-white shadow-2xl rounded-sm border-2 border-zinc-300 p-12 flex flex-col text-zinc-900"
+                            className="w-full max-w-[600px] mx-auto min-h-[842px] bg-white shadow-2xl rounded-sm border-2 border-slate-200 p-12 flex flex-col text-zinc-900"
+                            style={{borderImage: 'linear-gradient(to right, #13C8CC, #002653) 1', borderTopWidth: '4px'}}
                         >
-                            <div className="border-b-4 border-zinc-900 pb-8 mb-10 text-center">
-                                <h2 className="text-3xl font-serif font-bold uppercase tracking-[0.2em] text-zinc-900">Declaração de Óbito</h2>
-                                <p className="text-[10px] text-zinc-500 mt-2 tracking-widest uppercase font-bold">Documento Técnico Veterinário Oficial</p>
+                            {/* AgendaVet Header A4 */}
+                            <div className="flex justify-between items-start pb-6 mb-8 border-b-2" style={{borderImage: 'linear-gradient(to right, #13C8CC, #002653) 1'}}>
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
+                                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                                    <path d="M14 4C9 4 5 8 5 13c0 3 1.5 5.5 3.8 7L14 24l5.2-4C21.5 18.5 23 16 23 13c0-5-4-9-9-9z" fill="white" opacity="0.9"/>
+                                    <path d="M14 8v10M9 13h10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                                  </svg>
+                                </div>
+                                <div>
+                                  <div className="text-2xl font-black tracking-tight" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+                                    AgendaVet
+                                  </div>
+                                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">Gestão Veterinária Inteligente</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-lg font-black text-slate-800 uppercase tracking-tight">DECLARAÇÃO DE ÓBITO</p>
+                                <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Registro de Falecimento Animal</p>
+                                <p className="text-[9px] text-slate-400 mt-2">Emitido em {format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
+                              </div>
                             </div>
 
                             <div className="flex-1 space-y-10">
@@ -328,12 +347,19 @@ export function ObitoDialog({ open, onOpenChange, onBack, petId, petName }: Obit
                                 </section>
                             </div>
 
-                            <div className="mt-auto pt-16 flex flex-col items-center">
-                                <div className="w-80 border-t-2 border-zinc-900 pt-3 text-center">
-                                    <p className="text-lg font-serif font-bold text-zinc-900 uppercase">{veterinarian || "Veterinário Responsável"}</p>
-                                    <p className="text-xs text-zinc-500 font-bold tracking-widest">Médico Veterinário • CRMV-SP</p>
-                                    <p className="text-[10px] text-zinc-400 mt-4 leading-tight">Emitido electronicamente em {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
+                            {/* AgendaVet Footer A4 */}
+                            <div className="mt-auto pt-8 border-t border-slate-100">
+                              <div className="flex justify-between items-end">
+                                <div className="text-[9px] text-slate-400 leading-tight max-w-[220px]">
+                                  <p className="font-semibold" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>AgendaVet © 2026</p>
+                                  <p className="opacity-70 mt-0.5">Gestão Veterinária Profissional. As informações são de responsabilidade do médico veterinário.</p>
                                 </div>
+                                <div className="text-center w-56">
+                                  <div className="h-[2px] w-full mb-3 rounded" style={{background: 'linear-gradient(to right, #13C8CC, #002653)'}}></div>
+                                  <p className="text-[13px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Dr. Responsável'}</p>
+                                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
+                                </div>
+                              </div>
                             </div>
                         </div>
                     </div>
