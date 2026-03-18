@@ -25,7 +25,8 @@ import {
     History,
     ClipboardList,
     Scissors,
-    PlusCircle
+    PlusCircle,
+    DollarSign
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -53,6 +54,7 @@ const attendanceTypes = [
     { id: 'observacoes', label: 'Observações', icon: StickyNote, color: 'text-lime-600', bg: 'bg-lime-500/10' },
     { id: 'retorno', label: 'Retorno', icon: Calendar, color: 'text-teal-500', bg: 'bg-teal-500/10' },
     { id: 'outros', label: 'Outros', icon: PlusCircle, color: 'text-gray-500', bg: 'bg-gray-500/10' },
+    { id: 'financeiro', label: 'Financeiro', icon: DollarSign, color: 'text-emerald-700', bg: 'bg-emerald-500/10' },
 ]
 
 export function AttendanceTypeDialog({ open, onOpenChange, onSelect }: AttendanceTypeDialogProps) {

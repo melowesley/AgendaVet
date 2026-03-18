@@ -24,7 +24,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { Scissors, Save, ArrowLeft, History, FileDown, Printer, DollarSign, Plus, Trash2, Activity, HeartPulse, PawPrint, Clock } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useReactToPrint } from 'react-to-print'
 import { usePet, useOwner, useMedicalRecords } from '@/lib/data-store'
@@ -81,7 +81,7 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
     const [posOperatorio, setPosOperatorio] = useState('')
     const [prescricao, setPrescricao] = useState('')
     const [retorno, setRetorno] = useState('')
-    const [veterinarian, setVeterinarian] = useState('Dr. Cleyton Chaves')
+    const [veterinarian, setVeterinarian] = useState('')
 
     // Billing state
     const [baseValue, setBaseValue] = useState('0.00')
@@ -148,7 +148,7 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
                     }
                 }),
                 date: new Date(date).toISOString(),
-                veterinarian: veterinarian || 'Dr. Cleyton Chaves',
+                veterinarian: veterinarian || '',
             }] as any) as any)
 
             if (error) throw error
@@ -184,7 +184,7 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
                             <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5 font-medium">
                                 <span className="flex items-center gap-1"><PawPrint className="size-3.5" /> <span className="font-bold text-slate-700">{petName}</span></span>
                                 <span className="text-slate-300">•</span>
-                                <span className={`flex items-center gap-1 font-bold ${themeColor.text} uppercase tracking-tighter text-[11px] ${themeColor.bgGhost} px-2 py-0.5 rounded border ${themeColor.borderLight}`}>Surgical Unit</span>
+                                <span className={`flex items-center gap-1 font-bold ${themeColor.text} uppercase tracking-tighter text-[11px] ${themeColor.bgGhost} px-2 py-0.5 rounded border ${themeColor.borderLight}`}>Centro Cirúrgico</span>
                             </div>
                         </div>
                     </div>
@@ -479,7 +479,7 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
                                         <div className="space-y-0.5 border-t border-slate-200 pt-3 text-[11px]">
                                             <p className="font-black text-slate-800 text-sm uppercase mb-1">{owner?.fullName || 'S/R'}</p>
                                             <p className={`font-black uppercase text-[10px] mt-2 inline-block px-2 py-0.5 rounded ${themeColor.bgGhost} ${themeColor.text}`}>
-                                                Procedimento em: {format(new Date(date), 'dd/MM/yyyy')}
+                                                Procedimento em: {format(parseISO(date), 'dd/MM/yyyy')}
                                             </p>
                                         </div>
                                     </div>
@@ -554,9 +554,9 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
                                     VALIDAÇÃO DIGITAL • REGISTRO DE CENTRO CIRÚRGICO • {format(new Date(), 'dd/MM/yyyy HH:mm')}
                                 </div>
                                 <div className="text-center w-64">
-                                    <div className="h-[2px] w-full bg-slate-300 mb-3"></div>
-                                    <p className="text-[12px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Médico Veterinário'}</p>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
+                                    <div className={`h-[2px] w-full ${themeColor.bg} opacity-20 mb-3`}></div>
+                                    <p className="text-[14px] font-black uppercase text-slate-900 tracking-tighter">{veterinarian || '____________________'}</p>
+                                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Médico Veterinário / CRMV-XX</p>
                                 </div>
                             </div>
                         </div>

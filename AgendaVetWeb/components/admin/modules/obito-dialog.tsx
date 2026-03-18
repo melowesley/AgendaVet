@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { Skull, Save, ArrowLeft, Printer, DollarSign, Plus, Trash2, Heart, Clock, Calendar, PawPrint } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useReactToPrint } from 'react-to-print'
 
@@ -48,7 +48,7 @@ export function ObitoDialog({ open, onOpenChange, onBack, petId, petName }: Obit
     const [time, setTime] = useState(format(new Date(), 'HH:mm'))
     const [causa, setCausa] = useState('')
     const [observacoes, setObservacoes] = useState('')
-    const [veterinarian, setVeterinarian] = useState('Dr. Cleyton Chaves')
+    const [veterinarian, setVeterinarian] = useState('')
 
     // Billing state
     const [baseValue, setBaseValue] = useState('0.00')
@@ -89,7 +89,7 @@ export function ObitoDialog({ open, onOpenChange, onBack, petId, petName }: Obit
                 title: 'Declaração de Óbito',
                 description: JSON.stringify(description),
                 date: new Date(`${date}T${time}`).toISOString(),
-                veterinarian: veterinarian || 'Dr. Cleyton Chaves',
+                veterinarian: veterinarian || '',
             }] as any) as any)
 
             if (recordError) throw recordError
@@ -347,7 +347,7 @@ export function ObitoDialog({ open, onOpenChange, onBack, petId, petName }: Obit
                                         </div>
                                         <div className="space-y-1.5">
                                             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">DATA E HORÁRIO</p>
-                                            <p className="text-base text-zinc-800 border-b border-zinc-200 pb-1">{format(new Date(date), 'dd/MM/yyyy')} às {time}</p>
+                                            <p className="text-base text-zinc-800 border-b border-zinc-200 pb-1">{format(parseISO(date), 'dd/MM/yyyy')} às {time}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -393,7 +393,7 @@ export function ObitoDialog({ open, onOpenChange, onBack, petId, petName }: Obit
 
                             <div className="mt-auto pt-16 flex flex-col items-center">
                                 <div className="w-80 border-t-2 border-zinc-900 pt-3 text-center">
-                                    <p className="text-lg font-serif font-bold text-zinc-900 uppercase">{veterinarian || "Veterinário Responsável"}</p>
+                                    <p className="text-lg font-serif font-bold text-zinc-900 uppercase">{veterinarian || "____________________"}</p>
                                     <p className="text-xs text-zinc-500 font-bold tracking-widest">Médico Veterinário • CRMV-SP</p>
                                     <p className="text-[10px] text-zinc-400 mt-4 leading-tight">Emitido electronicamente em {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
                                 </div>
