@@ -451,6 +451,7 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
                         </div>
                     </div>
                 </div>
+            </div>
             </DialogContent>
         </Dialog>
     )
