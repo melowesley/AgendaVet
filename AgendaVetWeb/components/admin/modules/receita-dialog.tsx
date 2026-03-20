@@ -356,17 +356,12 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
                                 </div>
                             </div>
 
-                            {/* PREVIEW PANE */}
-                            <div className={`hidden md:flex flex-1 bg-slate-200/50 p-6 lg:p-12 overflow-y-auto justify-center items-start`}>
+                            {/* PREVIEW PANE - Occupying the rest of the space as a second page */}
+                            <div className={`hidden md:flex flex-1 bg-slate-50 p-8 lg:p-12 overflow-y-auto justify-center items-center h-full`}>
                                 <div
                                     ref={printRef}
-<<<<<<< HEAD
                                     className={`w-full max-w-[595px] aspect-[1/1.414] bg-white shadow-[0_15px_40px_-15px_rgba(0,0,0,0.15)] rounded-md border p-8 flex flex-col text-slate-900 m-auto`}
                                 >                                
-=======
-                                    className={`w-full max-w-[650px] min-h-[920px] bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-sm border p-12 flex flex-col text-slate-900 ${themeColor.borderLight} border-t-8 ${themeColor.border}`}
-                                >
->>>>>>> f7ad3363f5708e76ac575285b4ab3c4ea9c4105c
                                     {/* SIMPLES LAYOUT */}
                                     {receiptType === 'simples' && (
                                         <>
@@ -380,19 +375,10 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
                                                   </svg>
                                                 </div>
                                                 <div>
-<<<<<<< HEAD
                                                   <div className="text-2xl font-black tracking-tight" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
                                                     AgendaVet
                                                   </div>
                                                   <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">Gestão Veterinária Inteligente</p>
-=======
-                                                    <h2 className={`text-xl font-black uppercase tracking-widest ${themeColor.text}`}>Receituário Simples</h2>
-                                                    <p className="text-[10px] opacity-60 mt-1 uppercase text-slate-500">Prescrição e Orientação Veterinária</p>
-                                                </div>
-                                                <div className={`text-right ${themeColor.text}`}>
-                                                    <Stethoscope className="size-8 ml-auto mb-1 opacity-20" />
-                                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">AgendaVet</p>
->>>>>>> f7ad3363f5708e76ac575285b4ab3c4ea9c4105c
                                                 </div>
                                               </div>
                                               <div className="text-right">
@@ -402,51 +388,37 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
                                               </div>
                                             </div>
 
-                                            <div className="border border-slate-400 p-6 mb-8 rounded-sm bg-slate-50/50">
+                                            <div className="border border-slate-400 p-5 mb-8 rounded-sm bg-slate-50/30">
                                                 <div className="grid grid-cols-2 gap-8">
                                                     <div className="space-y-1.5">
-                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">PACIENTE</p>
-                                                        <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{petName}</p>
-                                                        <div className="space-y-0.5 border-t border-slate-200 pt-2 text-[10px] text-slate-600 font-medium mt-2">
-                                                            <p><span className="font-bold text-slate-400 uppercase text-[9px]">Espécie:</span> {pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : pet?.species}</p>
-                                                            <p><span className="font-bold text-slate-400 uppercase text-[9px]">Raça:</span> {pet?.breed}</p>
+                                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">PACIENTE</p>
+                                                        <div className="space-y-0.5 border-t border-slate-200 pt-1 text-[10px]">
+                                                            <p><span className="font-bold w-12 inline-block text-slate-700">Animal:</span> {petName}</p>
+                                                            <p className="font-bold text-slate-900 mt-1">Data: {format(new Date(prescriptionDate), 'dd/MM/yyyy')}</p>
                                                         </div>
                                                     </div>
-                                                    <div className="space-y-1.5 border-l border-slate-200 pl-8 text-right">
-                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">TUTOR</p>
-                                                        <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{owner?.fullName || 'S/R'}</p>
-                                                        <p className="text-[10px] mt-2 border-t border-slate-200 pt-2 text-slate-600 font-medium">Data: {format(new Date(prescriptionDate), 'dd/MM/yyyy')}</p>
+                                                    <div className="space-y-1.5 border-l border-slate-200 pl-6 text-right flex flex-col justify-center">
+                                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">IDENTIFICAÇÃO</p>
+                                                        <p className="text-[10px] font-bold text-slate-900">RP: #REC-{Math.floor(Math.random() * 9000) + 1000}</p>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="flex-1 space-y-6">
-                                                <section className="border border-slate-300 p-6 rounded-sm bg-white relative overflow-hidden">
-                                                    <div className={`absolute top-0 left-0 w-1.5 h-full ${themeColor.bg}`}></div>
-                                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Prescrição e Instruções</h3>
+                                            <div className="flex-1 py-4 space-y-6">
+                                                <section className="relative min-h-[300px] border-l-2 border-slate-100 pl-6">
+                                                    <h3 className="text-[10px] font-black text-slate-300 uppercase absolute -left-[2px] -top-6">Prescrição e Instruções</h3>
                                                     <div
-                                                        className="text-[13px] text-slate-800 leading-relaxed prose prose-sm max-w-none prose-p:my-2 break-words whitespace-pre-wrap"
+                                                        className="text-base text-slate-800 leading-relaxed prose prose-sm max-w-none prose-p:my-2 break-words break-all whitespace-pre-wrap"
                                                         dangerouslySetInnerHTML={{ __html: notes ? DOMPurify.sanitize(notes) : "<p class='italic opacity-30'>Aguardando preenchimento da prescrição...</p>" }}
                                                     />
                                                 </section>
                                             </div>
 
-<<<<<<< HEAD
                                             <div className="mt-auto pt-8 border-t border-slate-100">
                                               <div className="flex justify-between items-end">
                                                 <div className="text-[9px] text-slate-400 leading-tight max-w-[220px]">
                                                   <p className="font-semibold" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>AgendaVet © 2026</p>
                                                   <p className="opacity-70 mt-0.5">Gestão Veterinária Profissional. As informações são de responsabilidade do médico veterinário.</p>
-=======
-                                            <div className="mt-auto pt-10 flex justify-between items-end border-t border-slate-100">
-                                                <div className="text-[9px] opacity-40 italic max-w-[220px] leading-tight font-medium text-slate-500 uppercase">
-                                                    Documento autêntico AgendaVet. Validade conforme normas sanitárias vigentes.
-                                                </div>
-                                                <div className="text-center w-56">
-                                                    <div className="h-[2px] w-full bg-slate-300 mb-3"></div>
-                                                    <p className="text-[12px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Médico Veterinário'}</p>
-                                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
->>>>>>> f7ad3363f5708e76ac575285b4ab3c4ea9c4105c
                                                 </div>
                                                 <div className="text-center w-56">
                                                   <div className="h-[2px] w-full mb-3 rounded" style={{background: 'linear-gradient(to right, #13C8CC, #002653)'}}></div>
@@ -515,10 +487,9 @@ export function ReceitaDialog({ open, onOpenChange, onBack, petId, petName }: Re
 
                                             <div className="flex justify-between items-end mb-3 px-2">
                                                 <span className="text-[10px] font-bold">Data: {format(new Date(prescriptionDate), 'dd/MM/yyyy')}</span>
-                                                <div className="text-center w-48">
-                                                    <div className="h-[2px] w-full bg-slate-300 mb-2"></div>
-                                                    <p className="text-[12px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Médico Veterinário'}</p>
-                                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
+                                                <div className="text-center w-48 border-t border-slate-400 pt-1">
+                                                    <p className="text-[10px] font-bold">{veterinarian || '____________________'}</p>
+                                                    <p className="text-[9px] text-slate-500">Médico Veterinário - CRMV: ________</p>
                                                 </div>
                                             </div>
 
