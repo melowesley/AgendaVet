@@ -24,7 +24,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { Scissors, Save, ArrowLeft, History, FileDown, Printer, DollarSign, Plus, Trash2, Activity, HeartPulse, PawPrint, Clock } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
+import { format } from 'date-fns'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useReactToPrint } from 'react-to-print'
 import { usePet, useOwner, useMedicalRecords } from '@/lib/data-store'
@@ -81,7 +81,7 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
     const [posOperatorio, setPosOperatorio] = useState('')
     const [prescricao, setPrescricao] = useState('')
     const [retorno, setRetorno] = useState('')
-    const [veterinarian, setVeterinarian] = useState('')
+    const [veterinarian, setVeterinarian] = useState('Dr. Cleyton Chaves')
 
     // Billing state
     const [baseValue, setBaseValue] = useState('0.00')
@@ -148,7 +148,7 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
                     }
                 }),
                 date: new Date(date).toISOString(),
-                veterinarian: veterinarian || '',
+                veterinarian: veterinarian || 'Dr. Cleyton Chaves',
             }] as any) as any)
 
             if (error) throw error
@@ -184,11 +184,7 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
                             <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5 font-medium">
                                 <span className="flex items-center gap-1"><PawPrint className="size-3.5" /> <span className="font-bold text-slate-700">{petName}</span></span>
                                 <span className="text-slate-300">•</span>
-<<<<<<< HEAD
                                 <span className="flex items-center gap-1 font-bold text-slate-500 uppercase tracking-tighter text-[11px] bg-slate-100 px-2 py-0.5 rounded border border-slate-200">Relatório Cirúrgico</span>
-=======
-                                <span className={`flex items-center gap-1 font-bold ${themeColor.text} uppercase tracking-tighter text-[11px] ${themeColor.bgGhost} px-2 py-0.5 rounded border ${themeColor.borderLight}`}>Centro Cirúrgico</span>
->>>>>>> f7ad3363f5708e76ac575285b4ab3c4ea9c4105c
                             </div>
                         </div>
                     </div>
@@ -467,19 +463,10 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
                                   </svg>
                                 </div>
                                 <div>
-<<<<<<< HEAD
                                   <div className="text-2xl font-black tracking-tight" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
                                     AgendaVet
                                   </div>
                                   <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">Gestão Veterinária Inteligente</p>
-=======
-                                    <h2 className={`text-xl font-black uppercase tracking-widest ${themeColor.text}`}>Relatório Cirúrgico</h2>
-                                    <p className="text-[10px] opacity-60 mt-1 uppercase font-bold text-slate-500">Ficha Técnica de Procedimento Invasivo</p>
-                                </div>
-                                <div className={`text-right ${themeColor.text}`}>
-                                    <Scissors className="size-8 ml-auto mb-1 opacity-20" />
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">AgendaVet</p>
->>>>>>> f7ad3363f5708e76ac575285b4ab3c4ea9c4105c
                                 </div>
                               </div>
                               <div className="text-right">
@@ -504,7 +491,7 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
                                         <div className="space-y-0.5 border-t border-slate-200 pt-3 text-[11px]">
                                             <p className="font-black text-slate-800 text-sm uppercase mb-1">{owner?.fullName || 'S/R'}</p>
                                             <p className={`font-black uppercase text-[10px] mt-2 inline-block px-2 py-0.5 rounded ${themeColor.bgGhost} ${themeColor.text}`}>
-                                                Procedimento em: {format(parseISO(date), 'dd/MM/yyyy')}
+                                                Procedimento em: {format(new Date(date), 'dd/MM/yyyy')}
                                             </p>
                                         </div>
                                     </div>
@@ -515,7 +502,7 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
                                 <section className={`p-6 rounded-sm bg-white border border-slate-300 relative overflow-hidden shadow-sm`}>
                                     <div className={`absolute top-0 left-0 w-1.5 h-full ${themeColor.bg}`}></div>
                                     <h3 className={`text-[11px] font-black uppercase tracking-widest mb-2 ${themeColor.text}`}>Procedimento Principal</h3>
-                                    <p className={`text-2xl font-black text-slate-900 uppercase tracking-tighter border-b-4 pb-2 ${themeColor.borderLight}`}>
+                                    <p className="text-2xl font-black text-slate-900 uppercase tracking-tighter underline decoration-4 decoration-slate-100 underline-offset-8">
                                         {procedimento || "Em preenchimento..."}
                                     </p>
                                 </section>
@@ -580,17 +567,10 @@ export function CirurgiaDialog({ open, onOpenChange, onBack, petId, petName }: C
                                   <p className="font-semibold" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>AgendaVet © 2026</p>
                                   <p className="opacity-70 mt-0.5">Gestão Veterinária Profissional. As informações são de responsabilidade do médico veterinário.</p>
                                 </div>
-<<<<<<< HEAD
                                 <div className="text-center w-56">
                                   <div className="h-[2px] w-full mb-3 rounded" style={{background: 'linear-gradient(to right, #13C8CC, #002653)'}}></div>
                                   <p className="text-[13px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Dr. Responsável'}</p>
                                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
-=======
-                                <div className="text-center w-64">
-                                    <div className={`h-[2px] w-full ${themeColor.bg} opacity-20 mb-3`}></div>
-                                    <p className="text-[14px] font-black uppercase text-slate-900 tracking-tighter">{veterinarian || '____________________'}</p>
-                                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Médico Veterinário / CRMV-XX</p>
->>>>>>> f7ad3363f5708e76ac575285b4ab3c4ea9c4105c
                                 </div>
                               </div>
                             </div>

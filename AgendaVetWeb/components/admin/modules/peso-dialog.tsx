@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { mutate } from 'swr'
 import { supabase } from '@/lib/data-store'
+import { useRef } from 'react'
 import {
     Dialog,
     DialogContent,
@@ -15,12 +16,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { Scale, Save, Trash2, Edit2, TrendingUp, TrendingDown, ArrowLeft, Plus, Printer, PawPrint, Clock, Calendar, User } from 'lucide-react'
+import { Scale, Save, Trash2, Edit2, TrendingUp, TrendingDown, Minus, ArrowLeft, History, Plus, User, Info, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
+import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { usePet, useOwner, useMedicalRecords, addMedicalRecord } from '@/lib/data-store'
-import { useReactToPrint } from 'react-to-print'
+import { usePet, useOwner, addMedicalRecord } from '@/lib/data-store'
 
 interface PesoDialogProps {
     open: boolean
@@ -40,7 +41,6 @@ interface WeightRecord {
 export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoDialogProps) {
     const { pet } = usePet(petId)
     const { owner } = useOwner(pet?.profileId || '')
-    const { records: allRecords } = useMedicalRecords(petId)
 
     const isFemale = pet?.gender === 'Fêmea'
     const themeColor = {
@@ -59,10 +59,7 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
     const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'))
     const [notes, setNotes] = useState('')
     const [editingId, setEditingId] = useState<string | null>(null)
-    const [veterinarian, setVeterinarian] = useState('')
-
-    const printRef = useRef<HTMLDivElement>(null)
-    const handlePrint = useReactToPrint({ contentRef: printRef, documentTitle: `Peso_${petName}_${format(new Date(), 'dd_MM_yyyy')}` })
+    const [veterinarian, setVeterinarian] = useState('Dr. Cleyton Chaves')
 
     useEffect(() => {
         if (open) loadRecords()
@@ -114,12 +111,14 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
                     type: 'procedure',
                     title: 'Pesagem',
                     description: `Peso: ${weight} kg. ${notes ? `Obs: ${notes}` : ''}`,
-                    veterinarian: '',
+                    veterinarian: 'Dr. Cleyton Chaves',
                 })
 
+                // Also insert into pet_weight_records for historical tracking
                 const { error } = await (supabase.from('pet_weight_records' as any).insert([payload] as any) as any)
                 if (error) throw error
 
+                // Update the main pet weight in the pets table as well
                 await (supabase.from('pets').update({ weight: parseFloat(weight) } as any).eq('id', petId) as any)
 
                 toast.success('Peso registrado com sucesso!')
@@ -173,102 +172,38 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-screen sm:max-w-none !max-w-none h-screen max-h-none rounded-none p-0 flex flex-col overflow-hidden border-none text-slate-800">
-                <DialogHeader className="p-4 md:p-6 border-b border-border/50 bg-white flex flex-row items-center justify-between shrink-0 z-20 shadow-sm">
+            <DialogContent className="sm:max-w-6xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-background">
+                <DialogHeader className="p-6 pb-2 border-b border-border/50">
                     <div className="flex items-center gap-4">
                         {onBack && (
-                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-slate-100" onClick={onBack}>
-                                <ArrowLeft className="size-5" />
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={onBack}>
+                                <ArrowLeft size={18} />
                             </Button>
                         )}
-<<<<<<< HEAD
                         <div className={`flex size-10 items-center justify-center rounded-full text-white`} style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
                             <Scale className="size-5" />
-=======
-                        <div className={`flex size-12 items-center justify-center rounded-xl ${themeColor.bgGhost} ${themeColor.text} shadow-inner`}>
-                            <Scale className="size-6" />
->>>>>>> f7ad3363f5708e76ac575285b4ab3c4ea9c4105c
                         </div>
                         <div>
-                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-800">
-                                Peso e Crescimento
-                            </DialogTitle>
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5 font-medium">
-                                <span className="flex items-center gap-1"><PawPrint className="size-3.5" /> <span className="font-bold text-slate-700">{petName}</span></span>
-                                <span className="text-slate-300">•</span>
-                                <span className={`flex items-center gap-1 font-bold ${themeColor.text} uppercase tracking-tighter text-[11px] ${themeColor.bgGhost} px-2 py-0.5 rounded border ${themeColor.borderLight}`}>Body Score</span>
-                            </div>
+                            <DialogTitle className="text-xl">Peso e Crescimento - {petName}</DialogTitle>
+                            <DialogDescription>Acompanhamento de peso e evolução corporal do paciente</DialogDescription>
                         </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <Button variant="outline" onClick={() => onOpenChange(false)} className="h-10 px-6 font-bold text-slate-500">
-                            Fechar
-                        </Button>
-                        <Button onClick={handleSave} disabled={loading} className={`h-10 px-6 font-black ${themeColor.bg} ${themeColor.bgHover} text-white shadow-lg`}>
-                            <Save className="size-4 mr-2" />
-                            {loading ? 'Processando...' : editingId ? 'Atualizar' : 'Confirmar Pesagem'}
-                        </Button>
                     </div>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-hidden flex bg-slate-100/50">
-                    {/* Left Sidebar with Patient History */}
-                    <div className="hidden xl:block w-[380px] bg-slate-50/80 border-r border-border/30 p-8 overflow-y-auto shrink-0 shadow-inner">
-                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 border-l-4 border-emerald-500 pl-4 mb-8">
-                            Histórico de Pesagens
-                        </h3>
-
-                        {records.length === 0 ? (
-                            <div className="text-center py-20 flex flex-col items-center gap-4 opacity-50">
-                                <Scale className="size-10 text-slate-300" />
-                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Sem registros prévios</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {records.map((record, idx) => (
-                                    <div key={record.id} className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-emerald-500 transition-all hover:shadow-md group relative">
-                                        {idx === 0 && (
-                                            <div className={`absolute -top-2 -left-2 px-2 py-0.5 rounded-full ${themeColor.bg} text-white font-black text-[8px] uppercase tracking-tighter shadow-sm ring-2 ring-white`}>
-                                                Atual
-                                            </div>
-                                        )}
-                                        <div className="flex justify-between items-start mb-3">
-                                            <span className="text-[11px] font-black text-white bg-slate-900 px-2 py-0.5 rounded-[3px]">
-                                                {format(new Date(record.date), "dd/MM/yyyy")}
-                                            </span>
-                                            <span className={`text-lg font-black font-mono ${themeColor.text}`}>
-                                                {record.weight} kg
-                                            </span>
-                                        </div>
-                                        {record.notes && (
-                                            <p className="text-[10px] text-muted-foreground italic leading-relaxed mb-2">{record.notes}</p>
-                                        )}
-                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                                            <Button variant="secondary" size="sm" className="h-7 text-[10px] rounded-lg" onClick={() => handleEdit(record)}>
-                                                <Edit2 size={10} className="mr-1" /> Editar
-                                            </Button>
-                                            <Button variant="ghost" size="sm" className="h-7 text-[10px] text-rose-500 hover:bg-rose-50 rounded-lg" onClick={() => handleDelete(record.id)}>
-                                                <Trash2 size={10} className="mr-1" /> Excluir
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
+                <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
                     {/* Form Side */}
-                    <div className="w-full md:w-[450px] p-8 bg-white border-r border-border/30 overflow-y-auto shrink-0 shadow-lg z-10 relative">
+                    <div className="w-full md:w-[45%] p-6 border-r border-border/30 overflow-y-auto">
                         <div className="space-y-8">
-                            <div className="flex justify-between items-center border-l-4 border-slate-900 pl-4">
-                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 leading-none py-1">
-                                    {editingId ? 'Editar Pesagem' : 'Novo Registro de Peso'}
-                                </h3>
-                                {editingId && (
-                                    <Button variant="ghost" size="sm" onClick={resetForm} className="h-7 text-xs font-bold text-slate-500">
-                                        Cancelar
-                                    </Button>
-                                )}
+                            {/* Patient Badge */}
+                            <div className={`p-4 rounded-2xl border-2 border-dashed ${themeColor.border}/30 ${themeColor.bgLight}/50 flex items-center gap-4`}>
+                                <div className={`size-12 rounded-xl ${themeColor.bg} flex items-center justify-center text-white shadow-lg`}>
+                                    <User className="size-6" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-tighter text-muted-foreground">Paciente Registrado</p>
+                                    <p className={`text-lg font-bold ${themeColor.text}`}>{petName}</p>
+                                    <p className="text-[10px] opacity-70">{pet?.species} | {pet?.breed}</p>
+                                </div>
                             </div>
 
                             {/* Stats */}
@@ -300,169 +235,128 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
                             )}
 
                             <div className="space-y-6">
+                                <div className="flex items-center gap-2">
+                                    <div className={`size-1.5 rounded-full ${themeColor.bg}`}></div>
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                                        {editingId ? 'Editar Pesagem' : 'Novo Registro de Peso'}
+                                    </h3>
+                                </div>
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Peso Corporal (kg) *</Label>
+                                        <Label className="text-[10px] font-bold uppercase text-muted-foreground pl-1">Peso Corporal (kg) *</Label>
                                         <div className="relative">
-                                            <Scale className="absolute left-3 top-3.5 size-4 opacity-30" />
+                                            <Scale className="absolute left-3 top-2.5 size-4 opacity-30" />
                                             <Input
                                                 type="number"
                                                 step="0.01"
                                                 value={weight}
                                                 onChange={(e) => setWeight(e.target.value)}
                                                 placeholder="0.00"
-                                                className="pl-9 h-12 text-lg font-mono font-bold border-slate-200 rounded-xl"
+                                                className="pl-9 h-11 text-lg font-mono font-bold focus:ring-red-500"
                                             />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Data da Pesagem *</Label>
+                                        <Label className="text-[10px] font-bold uppercase text-muted-foreground pl-1">Data da Pesagem *</Label>
                                         <div className="relative">
-                                            <Calendar className="absolute left-3 top-3.5 size-4 opacity-30" />
+                                            <Calendar className="absolute left-3 top-2.5 size-4 opacity-30" />
                                             <Input
                                                 type="date"
                                                 value={date}
                                                 onChange={(e) => setDate(e.target.value)}
-                                                className="pl-9 h-12 border-slate-200 rounded-xl font-bold"
+                                                className="pl-9 h-11"
                                             />
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Observações do Estado Corporal</Label>
+                                    <Label className="text-[10px] font-bold uppercase text-muted-foreground pl-1">Observações do Estado Corporal</Label>
                                     <Textarea
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                         placeholder="Ex: Pós-jejum, balança nova, animal agitado..."
-                                        className="min-h-[120px] border-slate-200 rounded-xl font-medium resize-none"
+                                        className="min-h-[100px] bg-muted/10 resize-none hover:bg-muted/20 transition-all"
                                     />
                                 </div>
 
-<<<<<<< HEAD
                                 <div className="flex gap-3">
                                     <Button onClick={handleSave} disabled={loading} className={`flex-1 h-12 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white shadow-xl`}>
                                         <Save className="size-5 mr-3" />
-=======
-                                <div className="flex gap-4 pt-4">
-                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-16 text-lg font-black ${themeColor.bg} ${themeColor.bgHover} text-white shadow-xl rounded-2xl transition-all hover:scale-[1.02] active:scale-95`}>
-                                        <Save className="size-6 mr-2" />
->>>>>>> f7ad3363f5708e76ac575285b4ab3c4ea9c4105c
                                         {loading ? 'Processando...' : editingId ? 'Atualizar Registro' : 'Confirmar Pesagem'}
                                     </Button>
-                                    <Button variant="outline" className="h-16 px-6 border-2 font-bold hover:bg-slate-50 rounded-2xl" onClick={() => handlePrint()}>
-                                        <Printer className="size-6" />
-                                    </Button>
+                                    {editingId && (
+                                        <Button variant="outline" className="h-12 px-6" onClick={resetForm}>Cancelar</Button>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Preview Section - A4 Page */}
-                    <div className="hidden md:flex flex-1 bg-slate-200/50 p-6 lg:p-12 overflow-y-auto justify-center items-start">
-                        <div
-                            ref={printRef}
-                            className={`w-full max-w-[650px] min-h-[920px] bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-sm border p-12 flex flex-col text-slate-900 ${themeColor.borderLight} border-t-8 ${themeColor.border}`}
-                        >
-                            <div className={`border-b-2 pb-4 mb-6 flex justify-between items-end ${themeColor.border}`}>
-                                <div>
-                                    <h2 className={`text-xl font-bold uppercase tracking-widest ${themeColor.text}`}>Ficha de Acompanhamento de Peso</h2>
-                                    <p className="text-[10px] opacity-70 mt-1 uppercase text-slate-500">Relatório de Evolução Corporal</p>
-                                </div>
-                                <div className={`text-right ${themeColor.text}`}>
-                                    <Scale className="size-8 ml-auto mb-1 opacity-20" />
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">AgendaVet System v2.0</p>
-                                </div>
+                    {/* History Side */}
+                    <div className="w-full md:w-[55%] bg-muted/5 flex flex-col overflow-hidden">
+                        <div className="p-6 border-b border-border/30 bg-muted/10 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <History className={`size-5 ${themeColor.text}`} />
+                                <h3 className="font-bold text-sm uppercase tracking-tight">Histórico de Desenvolvimento</h3>
                             </div>
-
-                            <div className="border border-slate-400 p-6 mb-8 rounded-sm bg-slate-50/50">
-                                <div className="grid grid-cols-2 gap-8">
-                                    <div className="space-y-1.5">
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">PACIENTE</p>
-                                        <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{petName}</p>
-                                        <div className="text-[10px] space-y-0.5 mt-2 border-t border-slate-200 pt-2 text-slate-600 font-medium">
-                                            <p><span className="font-bold text-slate-400 uppercase text-[9px]">Espécie:</span> {pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : pet?.species}</p>
-                                            <p><span className="font-bold text-slate-400 uppercase text-[9px]">Raça:</span> {pet?.breed}</p>
+                            <Badge variant="secondary" className="font-mono px-3 py-1 bg-white border-border/50 shadow-sm">{records.length} registros</Badge>
+                        </div>
+                        <ScrollArea className="flex-1">
+                            <div className="p-6 space-y-3">
+                                {records.length === 0 ? (
+                                    <div className="text-center py-20 flex flex-col items-center gap-4">
+                                        <div className="size-16 rounded-full bg-muted/30 flex items-center justify-center">
+                                            <Scale className="size-8 text-muted-foreground/30" />
                                         </div>
+                                        <p className="text-sm text-muted-foreground tracking-tight">Ainda não há registros de peso para este paciente.</p>
                                     </div>
-                                    <div className="space-y-1.5 text-right border-l border-slate-200 pl-8">
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">TUTOR</p>
-                                        <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{owner?.fullName || 'S/R'}</p>
-                                        <p className="text-[10px] mt-2 border-t border-slate-200 pt-2 text-slate-600 font-medium">{owner?.phone || 'Sem contato'}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex-1 space-y-8">
-                                {/* Current Weight Highlight */}
-                                <div className={`border border-slate-300 p-6 rounded-sm bg-white relative`}>
-                                    <div className={`absolute top-0 left-0 w-1.5 h-full ${themeColor.bg}`}></div>
-                                    <div className="flex items-center gap-5 mb-4 border-b border-slate-100 pb-4">
-                                        <div className={`p-4 rounded-xl ${themeColor.bg} text-white shadow-lg`}>
-                                            <Scale className="size-8" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-black text-3xl text-slate-900 tracking-tighter">
-                                                {weight || (records.length > 0 ? records[0].weight : '---')} <span className="text-base font-normal text-slate-400">kg</span>
-                                            </h3>
-                                            <p className={`text-xs ${themeColor.text} font-black uppercase tracking-widest mt-0.5`}>
-                                                Pesagem em {format(new Date(date), 'dd/MM/yyyy')}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {variation && (
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="bg-slate-50 p-3 border border-slate-200 rounded-sm text-center">
-                                                <p className="font-black text-slate-400 uppercase text-[9px] tracking-[0.2em] mb-2">Variação</p>
-                                                <p className={`text-lg font-black tracking-tight ${variation.isPositive ? 'text-emerald-500' : variation.isNeutral ? 'text-slate-500' : 'text-rose-500'}`}>
-                                                    {variation.diff > 0 ? '+' : ''}{variation.diff.toFixed(2)} kg
-                                                </p>
-                                            </div>
-                                            <div className="bg-slate-50 p-3 border border-slate-200 rounded-sm text-center">
-                                                <p className="font-black text-slate-400 uppercase text-[9px] tracking-[0.2em] mb-2">Total de Registros</p>
-                                                <p className="text-lg font-black text-slate-800 tracking-tight">{records.length}</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Observation */}
-                                <div className="border border-slate-300 p-6 rounded-sm min-h-[120px] bg-slate-50/20">
-                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-200 pb-2 mb-4">Observações do Estado Corporal</h4>
-                                    <div className="text-[12px] leading-relaxed text-slate-700 font-medium whitespace-pre-wrap">
-                                        {notes || "Nenhuma observação registrada para esta pesagem."}
-                                    </div>
-                                </div>
-
-                                {/* Weight History Table */}
-                                {records.length > 0 && (
-                                    <div className="border border-slate-300 rounded-sm overflow-hidden">
-                                        <div className={`px-4 py-2 text-[10px] font-black uppercase text-white tracking-[0.25em] ${themeColor.bg}`}>Histórico de Evolução</div>
-                                        <div className="divide-y divide-slate-100">
-                                            {records.slice(0, 8).map((rec, idx) => (
-                                                <div key={rec.id} className="flex justify-between items-center px-6 py-3 text-[11px]">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className={`font-mono font-black ${idx === 0 ? themeColor.text : 'text-slate-600'}`}>{rec.weight} kg</span>
-                                                        {idx === 0 && <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 font-black uppercase">Atual</Badge>}
-                                                    </div>
-                                                    <span className="text-slate-400 font-bold">{format(new Date(rec.date), 'dd/MM/yyyy')}</span>
+                                ) : (
+                                    records.map((record, idx) => (
+                                        <div key={record.id} className="group relative flex items-center justify-between p-4 rounded-2xl border border-border/50 bg-white hover:border-border hover:shadow-lg transition-all transform hover:-translate-y-0.5">
+                                            <div className="flex items-center gap-5">
+                                                <div className={`flex size-12 items-center justify-center rounded-xl ${idx === 0 ? themeColor.bg : 'bg-muted'} text-white font-mono font-black text-lg shadow-sm group-hover:scale-105 transition-transform`}>
+                                                    {record.weight}
                                                 </div>
-                                            ))}
+                                                <div className="space-y-0.5">
+                                                    <p className="text-[10px] font-bold text-muted-foreground uppercase">{format(new Date(record.date), "dd 'de' MMMM, yyyy")}</p>
+                                                    <p className="text-sm font-bold text-slate-700 tracking-tight">Registro de Desenvolvimento</p>
+                                                    {record.notes && (
+                                                        <div className="flex items-start gap-1.5 mt-2">
+                                                            <Info className="size-3 text-muted-foreground shrink-0 mt-0.5" />
+                                                            <p className="text-[10px] text-muted-foreground italic leading-relaxed">{record.notes}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                                                <Button variant="secondary" size="icon" className="size-9 rounded-full bg-muted shadow-sm hover:bg-white border border-border/50" onClick={() => handleEdit(record)}>
+                                                    <Edit2 size={14} className="text-slate-600" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="size-9 rounded-full text-rose-500 hover:bg-rose-50" onClick={() => handleDelete(record.id)}>
+                                                    <Trash2 size={14} />
+                                                </Button>
+                                            </div>
+                                            {idx === 0 && (
+                                                <div className={`absolute -top-2 -left-2 px-2 py-0.5 rounded-full ${themeColor.bg} text-white font-black text-[8px] uppercase tracking-tighter shadow-sm ring-2 ring-white`}>
+                                                    Atual
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
+                                    ))
                                 )}
                             </div>
+                        </ScrollArea>
 
                         {/* Footer context */}
                         <div className="p-4 border-t border-border/30 bg-muted/20">
                             <p className="text-[9px] text-center text-muted-foreground uppercase font-medium tracking-widest italic">
-                                Monitoramento de peso e crescimento · Plataforma AgendaVet
+                                Monitoramento realizado por Dr. Cleyton Chaves através da plataforma AgendaVet
                             </p>
                         </div>
                     </div>
                 </div>
-            </div>
             </DialogContent>
         </Dialog>
     )
