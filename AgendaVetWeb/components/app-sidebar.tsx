@@ -13,6 +13,7 @@ import {
   Stethoscope,
   BarChart3,
   ShoppingBag,
+  Bot,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -36,6 +37,7 @@ const navItems = [
   { title: 'Analytics', href: '/analytics', icon: BarChart3 },
   { title: 'Produtos & Serviços', href: '/products-services', icon: ShoppingBag },
   { title: 'Assistente IA', href: '/assistant', icon: MessageSquare },
+  { title: 'AI Control Tower', href: '/ai-control', icon: Bot },
   { title: 'Área do Tutor (App)', href: 'https://agendavet-tutor.vercel.app', icon: Users, external: true },
   { title: 'Área do Vet (App)', href: 'https://agendavet-vet.vercel.app', icon: Stethoscope, external: true },
 ]
