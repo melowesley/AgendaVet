@@ -14,6 +14,7 @@ import {
   BarChart3,
   ShoppingBag,
   Bot,
+  Shield,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -44,6 +45,7 @@ const navItems = [
 
 const bottomNavItems = [
   { title: 'Configurações', href: '/settings', icon: Settings },
+  { title: 'Admin', href: '/admin', icon: Shield },
 ]
 
 export function AppSidebar() {
