@@ -28,10 +28,12 @@ export function sanitizeUserInput(input: string): string {
 export function validateMessages(messages: any[]): boolean {
   if (!Array.isArray(messages) || messages.length === 0) return false;
 
-  return messages.every(
-    (m) =>
-      m &&
-      typeof m.content === 'string' &&
-      ['user', 'assistant', 'system', 'tool'].includes(m.role)
-  );
+  return messages.every((m) => {
+    if (!m || !['user', 'assistant', 'system', 'tool'].includes(m.role)) return false;
+    // AI SDK v6: messages have parts array
+    if (Array.isArray(m.parts)) return true;
+    // Legacy format: messages have content string
+    if (typeof m.content === 'string') return true;
+    return false;
+  });
 }

@@ -49,10 +49,19 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Invalid messages' }, { status: 400 })
     }
 
-    const messages = rawMessages.map((m: any) => ({
-      ...m,
-      content: m.role === 'user' ? sanitizeUserInput(m.content) : m.content,
-    }))
+    // AI SDK v6 uses parts[], legacy uses content string — sanitize either format
+    const messages = rawMessages.map((m: any) => {
+      if (m.role !== 'user') return m
+      if (Array.isArray(m.parts)) {
+        return {
+          ...m,
+          parts: m.parts.map((p: any) =>
+            p.type === 'text' ? { ...p, text: sanitizeUserInput(p.text ?? '') } : p
+          ),
+        }
+      }
+      return { ...m, content: sanitizeUserInput(m.content ?? '') }
+    })
 
     const [hasQuota, withinRate] = await Promise.all([
       costController.checkQuota(clinicId),

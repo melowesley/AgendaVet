@@ -16,6 +16,7 @@ import { MessageSquare, Send, Bot, User, Stethoscope, FileText, Syringe, Pill, A
 import { cn } from '@/lib/utils'
 import ReactMarkdown from 'react-markdown'
 import { ConversationSidebar } from './conversation-sidebar'
+import { VetAIFeedbackWidget } from '@/components/vetai/FeedbackWidget'
 import { AI_MODELS } from '@agendavet/shared/constants'
 
 const CLINICAL_SUGGESTIONS = [
@@ -48,7 +49,9 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showCostWarning, setShowCostWarning] = useState(false)
   const [pendingModel, setPendingModel] = useState<string | null>(null)
+  const [interactionIds, setInteractionIds] = useState<Record<string, string>>({})
   const scrollRef = useRef<HTMLDivElement>(null)
+  const lastUserMessageRef = useRef<string>('')
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({
@@ -59,6 +62,31 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
         model: selectedModel === 'auto' ? undefined : selectedModel,
       },
     }),
+    onFinish: async ({ message }) => {
+      const responseText = getMessageText(message as any)
+      if (!responseText || !lastUserMessageRef.current) return
+
+      try {
+        const res = await fetch('/api/vetai/interactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            queryText: lastUserMessageRef.current,
+            queryType: 'duvida_geral',
+            patientContext: selectedPetId ? { petId: selectedPetId } : {},
+            suggestions: [{ text: responseText }],
+            modelVersion: selectedModel === 'auto' ? 'auto' : selectedModel,
+            sessionId: conversationId,
+          }),
+        })
+        if (res.ok) {
+          const { id } = await res.json()
+          setInteractionIds((prev) => ({ ...prev, [message.id]: id }))
+        }
+      } catch {
+        // fail silently — logging is best-effort
+      }
+    },
   })
 
   const isLoading = status === 'streaming' || status === 'submitted'
@@ -114,12 +142,14 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
   const startNewConversation = useCallback(() => {
     setConversationId(null)
     setMessages([])
+    setInteractionIds({})
     setSidebarOpen(false)
   }, [setMessages])
 
   useEffect(() => {
     setConversationId(null)
     setMessages([])
+    setInteractionIds({})
   }, [selectedPetId, setMessages])
 
   const selectedPet = pets.find(p => p.id === selectedPetId)
@@ -128,6 +158,7 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!input.trim() || isLoading) return
+    lastUserMessageRef.current = input
     sendMessage({ text: input })
     setInput('')
   }
@@ -136,6 +167,7 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       if (!input.trim() || isLoading) return
+      lastUserMessageRef.current = input
       sendMessage({ text: input })
       setInput('')
     }
@@ -180,7 +212,7 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
 
               <div className="flex items-center gap-2 text-primary">
                 <Stethoscope className="size-5" />
-                <span className="font-semibold hidden sm:inline">Clinical Copilot</span>
+                <span className="font-semibold hidden sm:inline">Vet AI</span>
               </div>
               <Badge variant="outline" className="text-xs hidden sm:inline-flex">
                 AI
@@ -419,9 +451,14 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
                       {message.role === 'user' ? (
                         <p className="text-sm whitespace-pre-wrap break-words">{getMessageText(message)}</p>
                       ) : (
-                        <div className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-headings:my-2 prose-pre:my-2 prose-code:bg-background/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-pre:bg-background/50 prose-pre:text-xs">
-                          <ReactMarkdown>{getMessageText(message)}</ReactMarkdown>
-                        </div>
+                        <>
+                          <div className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-headings:my-2 prose-pre:my-2 prose-code:bg-background/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-pre:bg-background/50 prose-pre:text-xs">
+                            <ReactMarkdown>{getMessageText(message)}</ReactMarkdown>
+                          </div>
+                          {interactionIds[message.id] && (
+                            <VetAIFeedbackWidget interactionId={interactionIds[message.id]} />
+                          )}
+                        </>
                       )}
                     </div>
                     {message.role === 'user' && (

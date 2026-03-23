@@ -148,7 +148,8 @@ export default function GuiaPage() {
                     <table className="w-full text-sm text-left" {...props} />
                   </div>
                 ),
-                li: ({node, checked, ...props}) => {
+                li: ({node, ...props}) => {
+                  const checked = (props as any).checked
                   if (checked !== undefined) {
                     return (
                       <li className="flex items-center gap-3 list-none -ml-6 mb-2">
