@@ -1,8 +1,16 @@
-import { google } from '@ai-sdk/google'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { openai, createOpenAI } from '@ai-sdk/openai'
 import { anthropic } from '@ai-sdk/anthropic'
 import type { ModelConfig, ProviderName } from './types'
 import { AI_MODELS } from '@agendavet/shared/constants'
+
+// Google provider — suporta GOOGLE_GENERATIVE_AI_API_KEY ou GOOGLE_API_KEY
+const googleProvider = createGoogleGenerativeAI({
+  apiKey:
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    '',
+})
 
 // DeepSeek provider (OpenAI-compatible) — baseURL must include /v1
 const deepseekProvider = createOpenAI({
@@ -73,7 +81,7 @@ const MODEL_EQUIVALENTS: Record<string, string[]> = {
 function createProviderInstance(config: ModelConfig) {
   switch (config.provider) {
     case 'google':
-      return google(config.modelId)
+      return googleProvider(config.modelId)
     case 'openai':
       return openai(config.modelId)
     case 'anthropic':
