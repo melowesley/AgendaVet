@@ -8,9 +8,7 @@ import {
   Users,
   Calendar,
   FileText,
-  MessageSquare,
   Settings,
-  Stethoscope,
   BarChart3,
   ShoppingBag,
   Bot,
@@ -37,10 +35,7 @@ const navItems = [
   { title: 'Prontuários', href: '/medical-records', icon: FileText },
   { title: 'Analytics', href: '/analytics', icon: BarChart3 },
   { title: 'Produtos & Serviços', href: '/products-services', icon: ShoppingBag },
-  { title: 'Assistente IA', href: '/assistant', icon: MessageSquare },
-  { title: 'AI Control Tower', href: '/ai-control', icon: Bot },
-  { title: 'Área do Tutor (App)', href: 'https://agendavet-tutor.vercel.app', icon: Users, external: true },
-  { title: 'Área do Vet (App)', href: 'https://agendavet-vet.vercel.app', icon: Stethoscope, external: true },
+  { title: 'Vet AI', href: '/vet-copilot', icon: Bot },
 ]
 
 const bottomNavItems = [

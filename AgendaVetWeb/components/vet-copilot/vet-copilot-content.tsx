@@ -212,7 +212,7 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
 
               <div className="flex items-center gap-2 text-primary">
                 <Stethoscope className="size-5" />
-                <span className="font-semibold hidden sm:inline">Clinical Copilot</span>
+                <span className="font-semibold hidden sm:inline">Vet AI</span>
               </div>
               <Badge variant="outline" className="text-xs hidden sm:inline-flex">
                 AI
