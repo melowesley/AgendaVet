@@ -127,16 +127,15 @@ export function SettingsContent() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Ambiente</span>
-            <Badge variant="secondary">Desenvolvimento</Badge>
+            <Badge variant="secondary">{process.env.NODE_ENV === 'production' ? 'Produção' : 'Desenvolvimento'}</Badge>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Armazenamento de Dados</span>
-            <span className="font-medium">Em Memória (Demo)</span>
+            <span className="font-medium">Supabase (PostgreSQL)</span>
           </div>
           <Separator />
           <p className="text-sm text-muted-foreground">
-            AgendaVet é uma solução completa de gestão para clínicas veterinárias. Conecte uma integração com banco de dados
-            para habilitar o armazenamento persistente de dados.
+            AgendaVet é uma solução completa de gestão para clínicas veterinárias com banco de dados Supabase integrado.
           </p>
         </CardContent>
       </Card>

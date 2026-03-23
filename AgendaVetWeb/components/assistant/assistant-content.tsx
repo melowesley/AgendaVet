@@ -33,6 +33,20 @@ function getMessageText(message: { parts?: Array<{ type: string; text?: string }
     .join('')
 }
 
+// Admin command responses rendered inline
+function AdminCommandResult({ text }: { text: string }) {
+  return (
+    <div className="flex gap-2 justify-start">
+      <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-purple-500/10 border border-purple-500/20 mt-0.5">
+        <span className="text-xs">🛡️</span>
+      </div>
+      <div className="max-w-[85%] rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-sm bg-purple-500/10 border border-purple-500/20 font-mono whitespace-pre-wrap text-purple-200">
+        {text}
+      </div>
+    </div>
+  )
+}
+
 export function AssistantContent() {
   const { settings } = useAgentSettings()
   const { pets } = usePets()
@@ -44,6 +58,16 @@ export function AssistantContent() {
   const [selectedPetId, setSelectedPetId] = useState<string>('none')
   const [brainModel, setBrainModel] = useState<'gemini' | 'deepseek'>('gemini')
   const scrollRef = useRef<HTMLDivElement>(null)
+  const [isAdminUser, setIsAdminUser] = useState(false)
+  const [adminResults, setAdminResults] = useState<Array<{ id: string; text: string }>>([])
+
+  // Verifica se é admin ao montar
+  useEffect(() => {
+    fetch('/api/admin/check')
+      .then((r) => r.json())
+      .then((d) => setIsAdminUser(d.isAdmin ?? false))
+      .catch(() => {})
+  }, [])
 
   // Carrega a preferência do modelo do localStorage ao montar
   useEffect(() => {
@@ -103,18 +127,145 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
     setMessages([]) // Limpa o chat ao trocar de modo
   }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // Processa comandos admin (só executados se isAdminUser=true)
+  const processAdminCommand = async (cmd: string): Promise<boolean> => {
+    if (!isAdminUser || !cmd.startsWith('/')) return false
+
+    const parts = cmd.trim().split(/\s+/)
+    const command = parts[0].toLowerCase()
+    const resultId = Date.now().toString()
+
+    const pushResult = (text: string) =>
+      setAdminResults((prev) => [...prev, { id: resultId, text }])
+
+    if (command === '/clients') {
+      pushResult('⏳ Buscando clínicas...')
+      const res = await fetch('/api/admin/clients')
+      const data = await res.json()
+      const lines = (data.clients || []).map(
+        (c: { name: string; slug: string; plan: string; membersCount: number; tokensToday: number }) =>
+          `📍 ${c.name} (${c.slug}) — ${c.plan} — ${c.membersCount} membros — ${c.tokensToday} tokens hoje`
+      )
+      setAdminResults((prev) =>
+        prev.map((r) =>
+          r.id === resultId
+            ? { id: resultId, text: lines.length ? lines.join('\n') : 'Nenhuma clínica encontrada.' }
+            : r
+        )
+      )
+      return true
+    }
+
+    if (command === '/prompt') {
+      // /prompt <clinic_id> <texto do prompt>
+      const clinicId = parts[1]
+      const promptText = parts.slice(2).join(' ')
+      if (!clinicId || !promptText) {
+        pushResult('❌ Uso: /prompt <clinic_id> <novo prompt>')
+        return true
+      }
+      pushResult('⏳ Salvando prompt...')
+      const res = await fetch('/api/admin/clinic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId, prompt: promptText }),
+      })
+      const data = await res.json()
+      setAdminResults((prev) =>
+        prev.map((r) =>
+          r.id === resultId
+            ? {
+                id: resultId,
+                text: data.success
+                  ? `✅ Prompt salvo para clínica ${clinicId}`
+                  : `❌ Erro: ${data.error}`,
+              }
+            : r
+        )
+      )
+      return true
+    }
+
+    if (command === '/reset') {
+      const clinicId = parts[1]
+      if (!clinicId) {
+        pushResult('❌ Uso: /reset <clinic_id>')
+        return true
+      }
+      pushResult('⏳ Resetando prompt...')
+      const res = await fetch('/api/admin/clinic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId, prompt: null }),
+      })
+      const data = await res.json()
+      setAdminResults((prev) =>
+        prev.map((r) =>
+          r.id === resultId
+            ? {
+                id: resultId,
+                text: data.success
+                  ? `✅ Prompt resetado para padrão — clínica ${clinicId}`
+                  : `❌ Erro: ${data.error}`,
+              }
+            : r
+        )
+      )
+      return true
+    }
+
+    if (command === '/inspect') {
+      const clinicId = parts[1]
+      if (!clinicId) {
+        pushResult('❌ Uso: /inspect <clinic_id>')
+        return true
+      }
+      const res = await fetch(`/api/admin/clinic?id=${clinicId}`)
+      const data = await res.json()
+      if (data.error) {
+        pushResult(`❌ ${data.error}`)
+      } else {
+        pushResult(
+          `🔍 Clínica: ${data.name}\nID: ${data.clinicId}\nPrompt customizado:\n${data.customPrompt || '(padrão do sistema)'}`
+        )
+      }
+      return true
+    }
+
+    if (command === '/help') {
+      pushResult(
+        '🛡️ Comandos admin disponíveis:\n' +
+        '/clients — lista todas as clínicas\n' +
+        '/prompt <clinic_id> <texto> — define prompt para uma clínica\n' +
+        '/reset <clinic_id> — reseta prompt para o padrão\n' +
+        '/inspect <clinic_id> — inspeciona config de uma clínica'
+      )
+      return true
+    }
+
+    return false
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!input.trim() || isLoading) return
-    sendMessage({ text: input })
+    const cmd = input.trim()
+    const handled = await processAdminCommand(cmd)
+    if (!handled) {
+      sendMessage({ text: cmd })
+    }
     setInput('')
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       if (!input.trim() || isLoading) return
-      sendMessage({ text: input })
+      const cmd = input.trim()
+      const handled = await processAdminCommand(cmd)
+      if (!handled) {
+        sendMessage({ text: cmd })
+      }
       setInput('')
     }
   }
@@ -237,6 +388,9 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
               </div>
             ) : (
               <div className="space-y-3 md:space-y-4">
+                {adminResults.map((r) => (
+                  <AdminCommandResult key={r.id} text={r.text} />
+                ))}
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -312,7 +466,13 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={clinicalMode ? "Pergunte sobre o paciente..." : "Ask about your clinic..."}
+              placeholder={
+              isAdminUser
+                ? "Mensagem ou /help para comandos admin..."
+                : clinicalMode
+                ? "Pergunte sobre o paciente..."
+                : "Ask about your clinic..."
+            }
               className="min-h-[44px] max-h-24 md:max-h-32 resize-none text-sm md:text-base"
               rows={1}
               disabled={isLoading}

@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { Scissors, Save, ArrowLeft, Printer, DollarSign, Plus, Trash2, Brush, Sparkles, AlertCircle, PawPrint, Clock, History } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { ScrollArea } from '@/components/ui/scroll-area'
 // @ts-ignore
 import { useReactToPrint } from 'react-to-print'
@@ -133,7 +133,7 @@ export function BanhoTosaDialog({ open, onOpenChange, onBack, petId, petName }: 
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-screen sm:max-w-none !max-w-none h-screen max-h-none rounded-none p-0 flex flex-col overflow-hidden border-none text-slate-800">
+            <DialogContent className="w-[95vw] max-w-[1400px] h-[90vh] max-h-[90vh] rounded-2xl p-0 flex flex-col overflow-hidden border border-border/20 shadow-2xl text-slate-800">
                 <DialogHeader className="p-4 md:p-6 border-b border-border/50 bg-white flex flex-row items-center justify-between shrink-0 z-20 shadow-sm">
                     <div className="flex items-center gap-4">
                         {onBack && (
@@ -141,7 +141,7 @@ export function BanhoTosaDialog({ open, onOpenChange, onBack, petId, petName }: 
                                 <ArrowLeft className="size-5" />
                             </Button>
                         )}
-                        <div className={`flex size-12 items-center justify-center rounded-xl ${themeColor.bgGhost} ${themeColor.text} shadow-inner`}>
+                        <div className={`flex size-12 items-center justify-center rounded-xl text-white shadow-inner`} style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
                             <Brush className="size-6" />
                         </div>
                         <div>
@@ -151,7 +151,7 @@ export function BanhoTosaDialog({ open, onOpenChange, onBack, petId, petName }: 
                             <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5 font-medium">
                                 <span className="flex items-center gap-1"><PawPrint className="size-3.5" /> <span className="font-bold text-slate-700">{petName}</span></span>
                                 <span className="text-slate-300">•</span>
-                                <span className={`flex items-center gap-1 font-bold ${themeColor.text} uppercase tracking-tighter text-[11px] ${themeColor.bgGhost} px-2 py-0.5 rounded border ${themeColor.borderLight}`}>Spa & Grooming</span>
+                                <span className={`flex items-center gap-1 font-bold ${themeColor.text} uppercase tracking-tighter text-[11px] ${themeColor.bgGhost} px-2 py-0.5 rounded border ${themeColor.borderLight}`}>Spa & Estética</span>
                             </div>
                         </div>
                     </div>
@@ -159,7 +159,7 @@ export function BanhoTosaDialog({ open, onOpenChange, onBack, petId, petName }: 
                         <Button variant="outline" onClick={() => onOpenChange(false)} className="h-10 px-6 font-bold text-slate-500">
                             Fechar
                         </Button>
-                        <Button onClick={handleSave} disabled={loading} className={`h-10 px-6 font-black ${themeColor.bg} ${themeColor.bgHover} text-white shadow-lg`}>
+                        <Button onClick={handleSave} disabled={loading} className={`h-10 px-6 font-black bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white shadow-lg`}>
                             <Save className="size-4 mr-2" />
                             {loading ? 'Salvando...' : 'Finalizar Estética'}
                         </Button>
@@ -344,13 +344,13 @@ export function BanhoTosaDialog({ open, onOpenChange, onBack, petId, petName }: 
                                     </div>
                                 </div>
 
-                                <div className="flex gap-4 pt-4">
-                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-16 text-lg font-black ${themeColor.bg} ${themeColor.bgHover} text-white shadow-xl rounded-2xl transition-all hover:scale-[1.02] active:scale-95`}>
-                                        <Save className="size-6 mr-2" />
+                                <div className="flex gap-3 pt-4">
+                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-10 font-semibold bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white shadow-sm rounded-lg transition-colors`}>
+                                        <Save className="size-4 mr-2" />
                                         {loading ? 'Salvando...' : 'Finalizar Estética'}
                                     </Button>
-                                    <Button variant="outline" className="h-16 px-6 border-2 font-bold hover:bg-slate-50 rounded-2xl" onClick={() => handlePrint()}>
-                                        <Printer className="size-6" />
+                                    <Button variant="outline" className="h-10 px-4 rounded-lg" title="Imprimir" onClick={() => handlePrint()}>
+                                        <Printer className="size-4" />
                                     </Button>
                                 </div>
                             </div>
@@ -361,17 +361,30 @@ export function BanhoTosaDialog({ open, onOpenChange, onBack, petId, petName }: 
                     <div className="hidden md:flex flex-1 bg-slate-200/50 p-6 lg:p-12 overflow-y-auto justify-center items-start">
                         <div
                             ref={printRef}
-                            className={`w-full max-w-[650px] min-h-[920px] bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-sm border p-12 flex flex-col text-slate-900 ${themeColor.borderLight} border-t-8 ${themeColor.border}`}
+                            className={`w-full max-w-[650px] min-h-[700px] bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-sm border border-slate-200 p-12 flex flex-col text-slate-900`}
+                            style={{borderImage: 'linear-gradient(to right, #13C8CC, #002653) 1', borderTopWidth: '8px'}}
                         >
-                            <div className={`border-b-2 pb-6 mb-8 flex justify-between items-end ${themeColor.border}`}>
+                            {/* AgendaVet Header A4 */}
+                            <div className="flex justify-between items-start pb-6 mb-8 border-b-2" style={{borderImage: 'linear-gradient(to right, #13C8CC, #002653) 1'}}>
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
+                                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                                    <path d="M14 4C9 4 5 8 5 13c0 3 1.5 5.5 3.8 7L14 24l5.2-4C21.5 18.5 23 16 23 13c0-5-4-9-9-9z" fill="white" opacity="0.9"/>
+                                    <path d="M14 8v10M9 13h10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                                  </svg>
+                                </div>
                                 <div>
-                                    <h2 className={`text-2xl font-black uppercase tracking-tight ${themeColor.text}`}>Relatório de Estética</h2>
-                                    <p className="text-[10px] opacity-70 mt-1 uppercase font-bold text-slate-500">Cuidados e Higienização Profissional</p>
+                                  <div className="text-2xl font-black tracking-tight" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+                                    AgendaVet
+                                  </div>
+                                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">Gestão Veterinária Inteligente</p>
                                 </div>
-                                <div className={`text-right ${themeColor.text}`}>
-                                    <Sparkles className="size-10 ml-auto mb-1 opacity-20" />
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">AgendaVet Grooming</p>
-                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-lg font-black text-slate-800 uppercase tracking-tight">FICHA DE BANHO E TOSA</p>
+                                <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Registro de Higienização e Estética</p>
+                                <p className="text-[9px] text-slate-400 mt-2">Emitido em {format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
+                              </div>
                             </div>
 
                             <div className="border border-slate-300 p-6 mb-8 rounded-sm bg-slate-50/50 shadow-inner">
@@ -382,7 +395,7 @@ export function BanhoTosaDialog({ open, onOpenChange, onBack, petId, petName }: 
                                             <p className="text-sm font-black text-slate-800 uppercase mb-1">{petName}</p>
                                             <p className="text-slate-600 truncate">{pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : 'Animal'} | {pet?.breed}</p>
                                             <p className={`font-black uppercase text-[10px] mt-2 inline-block px-2 py-0.5 rounded ${themeColor.bgGhost} ${themeColor.text}`}>
-                                                Data: {format(new Date(date), 'dd/MM/yyyy')}
+                                                Data: {format(parseISO(date), 'dd/MM/yyyy')}
                                             </p>
                                         </div>
                                     </div>
@@ -446,15 +459,19 @@ export function BanhoTosaDialog({ open, onOpenChange, onBack, petId, petName }: 
                                 </div>
                             </div>
 
-                            <div className="mt-auto pt-12 flex justify-between items-end border-t border-slate-100 italic">
-                                <div className="text-[9px] opacity-40 leading-tight max-w-[200px] font-bold text-slate-500 uppercase">
-                                    REGISTRO DIGITAL DE SERVIÇO DE ESTÉTICA • {format(new Date(), 'dd/MM/yyyy HH:mm')}
+                            {/* AgendaVet Footer A4 */}
+                            <div className="mt-auto pt-8 border-t border-slate-100">
+                              <div className="flex justify-between items-end">
+                                <div className="text-[9px] text-slate-400 leading-tight max-w-[220px]">
+                                  <p className="font-semibold" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>AgendaVet © 2026</p>
+                                  <p className="opacity-70 mt-0.5">Gestão Veterinária Profissional. As informações são de responsabilidade do médico veterinário.</p>
                                 </div>
-                                <div className="text-center w-64">
-                                    <div className={`h-[2px] w-full ${themeColor.bg} opacity-20 mb-3`}></div>
-                                    <p className="text-[14px] font-black uppercase text-slate-900 tracking-tighter">{profissional}</p>
-                                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Grooming Specialist</p>
+                                <div className="text-center w-56">
+                                  <div className="h-[2px] w-full mb-3 rounded" style={{background: 'linear-gradient(to right, #13C8CC, #002653)'}}></div>
+                                  <p className="text-[13px] font-black uppercase text-slate-900 tracking-tight">{profissional || 'Dr. Responsável'}</p>
+                                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Grooming Specialist • CRMV</p>
                                 </div>
+                              </div>
                             </div>
                         </div>
                     </div>

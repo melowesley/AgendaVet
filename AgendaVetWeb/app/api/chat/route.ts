@@ -9,8 +9,8 @@
  */
 
 import { streamText, convertToModelMessages, UIMessage } from 'ai'
-import { google } from '@ai-sdk/google'
 import { createOpenAI } from '@ai-sdk/openai'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { z } from 'zod'
 import {
   getPetInfo,
@@ -23,15 +23,15 @@ import {
 } from '@/lib/vet-copilot/tools'
 import { VET_COPILOT_SYSTEM_PROMPT, generatePetContext } from '@/lib/vet-copilot/system-prompt'
 import { createClient } from '@supabase/supabase-js'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 
-// Provedores de modelos
+// Provedores de modelos — baseURL must include /v1 for DeepSeek
 const deepseekProvider = createOpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY || process.env.EXPO_PUBLIC_DEEPSEEK_API_KEY,
-  baseURL: 'https://api.deepseek.com',
+  baseURL: 'https://api.deepseek.com/v1',
 })
 
-// Configuração explícita do Google para aceitar prefixos Expo
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
+// Google provider with support for Expo env prefixes
 const googleProvider = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY || process.env.EXPO_PUBLIC_GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY
 })
@@ -41,8 +41,49 @@ const googleProvider = createGoogleGenerativeAI({
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
+/** Busca o custom_prompt da clínica do usuário atual (se existir). */
+async function getClinicCustomPrompt(userId: string): Promise<string | null> {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const { data: member } = await supabase
+      .from('clinic_members')
+      .select('clinic_id')
+      .eq('user_id', userId)
+      .single()
+
+    if (!member?.clinic_id) return null
+
+    const { data: clinic } = await supabase
+      .from('clinics')
+      .select('settings')
+      .eq('id', member.clinic_id)
+      .single()
+
+    return (clinic?.settings as Record<string, unknown>)?.custom_prompt as string | null ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function POST(req: Request) {
   const startTime = Date.now()
+
+  // Basic auth check — ensure user is authenticated
+  let currentUserId: string | null = null
+  try {
+    const supabaseAuth = await createServerSupabaseClient()
+    const { data: { user } } = await supabaseAuth.auth.getUser()
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    currentUserId = user.id
+  } catch {
+    // If auth check fails (e.g. missing cookies in non-browser context), continue
+    // This allows mobile/external callers to still use the endpoint
+  }
 
   try {
     const body = await req.json()
@@ -68,6 +109,12 @@ export async function POST(req: Request) {
         { error: 'Messages array is required' },
         { status: 400 }
       )
+    }
+
+    // Injeta custom_prompt da clínica, se existir
+    let clinicCustomPrompt: string | null = null
+    if (currentUserId) {
+      clinicCustomPrompt = await getClinicCustomPrompt(currentUserId)
     }
 
     // 1. Orquestrador: Classificação de Intenção
@@ -160,7 +207,7 @@ export async function POST(req: Request) {
           }
         }
 
-        const clinicalSystemPrompt = `${VET_COPILOT_SYSTEM_PROMPT}\n\nVocê é o Subagente Clínico Especializado na AgendaVet. Foco em precisão técnica e ferramentas.\n\n${petContext}`;
+        const clinicalSystemPrompt = `${VET_COPILOT_SYSTEM_PROMPT}\n\nVocê é o Subagente Clínico Especializado na AgendaVet. Foco em precisão técnica e ferramentas.\n\n${petContext}${clinicCustomPrompt ? `\n\n## Instruções específicas desta clínica:\n${clinicCustomPrompt}` : ''}`;
 
         return streamText({
           model: modelInstance,
@@ -216,9 +263,13 @@ export async function POST(req: Request) {
       }
 
       // Modo Admin (Fallback or Direct)
+      const adminBase = (systemPrompt || 'You are a helpful veterinary assistant for AgendaVet.').replace(/VetCRM/g, 'AgendaVet')
+      const adminSystemPrompt = clinicCustomPrompt
+        ? `${adminBase}\n\n## Instruções específicas desta clínica:\n${clinicCustomPrompt}`
+        : adminBase
       return streamText({
         model: modelInstance,
-        system: (systemPrompt || 'You are a helpful veterinary assistant for AgendaVet.').replace(/VetCRM/g, 'AgendaVet'),
+        system: adminSystemPrompt,
         messages: modelMessages,
         temperature: temperature ?? 0.7,
         onFinish: () => console.log(`[Admin Mode] Done in ${Date.now() - startTime}ms`),

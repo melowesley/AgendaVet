@@ -1,8 +1,14 @@
 import { google } from '@ai-sdk/google'
-import { openai } from '@ai-sdk/openai'
+import { openai, createOpenAI } from '@ai-sdk/openai'
 import { anthropic } from '@ai-sdk/anthropic'
 import type { ModelConfig, ProviderName } from './types'
 import { AI_MODELS } from '@agendavet/shared/constants'
+
+// DeepSeek provider (OpenAI-compatible) — baseURL must include /v1
+const deepseekProvider = createOpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY ?? '',
+  baseURL: 'https://api.deepseek.com/v1',
+})
 
 export const MODEL_CATALOG: Record<string, ModelConfig> = {
   'gemini-2.0-flash': {
@@ -45,14 +51,23 @@ export const MODEL_CATALOG: Record<string, ModelConfig> = {
     maxTokens: 200000,
     tier: 'premium',
   },
+  'deepseek-chat': {
+    provider: 'deepseek',
+    modelId: 'deepseek-chat',
+    inputCostPer1k: 0.00014,
+    outputCostPer1k: 0.00028,
+    maxTokens: 65536,
+    tier: 'standard',
+  },
 }
 
 const MODEL_EQUIVALENTS: Record<string, string[]> = {
-  'gemini-1.5-pro': ['gpt-4o', 'claude-sonnet'],
-  'gemini-2.0-flash': ['gpt-4o-mini'],
+  'gemini-1.5-pro': ['gpt-4o', 'claude-sonnet', 'deepseek-chat'],
+  'gemini-2.0-flash': ['gpt-4o-mini', 'deepseek-chat'],
   'gpt-4o': ['gemini-1.5-pro', 'claude-sonnet'],
-  'gpt-4o-mini': ['gemini-2.0-flash'],
+  'gpt-4o-mini': ['gemini-2.0-flash', 'deepseek-chat'],
   'claude-sonnet': ['gemini-1.5-pro', 'gpt-4o'],
+  'deepseek-chat': ['gemini-2.0-flash', 'gpt-4o-mini'],
 }
 
 function createProviderInstance(config: ModelConfig) {
@@ -63,6 +78,8 @@ function createProviderInstance(config: ModelConfig) {
       return openai(config.modelId)
     case 'anthropic':
       return anthropic(config.modelId)
+    case 'deepseek':
+      return deepseekProvider(config.modelId)
     default:
       throw new Error(`Provider ${config.provider} not supported`)
   }

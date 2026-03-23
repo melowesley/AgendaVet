@@ -23,12 +23,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { User, PawPrint, Phone, Mail, MapPin, Hash, Users } from 'lucide-react'
+import { User, PawPrint, Phone, Mail, MapPin, Hash, Users, PlusCircle } from 'lucide-react'
 
 interface PetFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   pet?: Pet | null
+  defaultOwnerId?: string
 }
 
 const speciesOptions: { value: Pet['species']; label: string }[] = [
@@ -40,7 +41,7 @@ const speciesOptions: { value: Pet['species']; label: string }[] = [
   { value: 'other', label: 'Outro' },
 ]
 
-export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
+export function PetFormDialog({ open, onOpenChange, pet, defaultOwnerId }: PetFormDialogProps) {
   const { owners } = useOwners()
   const isEditing = !!pet
 
@@ -84,13 +85,13 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
           breed: pet.breed,
           gender: pet.gender || 'Macho',
           dateOfBirth: pet.dateOfBirth,
-          weight: pet.weight.toString(),
+          weight: pet.weight != null ? pet.weight.toString() : '',
           notes: pet.notes,
         })
       } else {
-        setUseExistingTutor(owners.length > 0)
+        setUseExistingTutor(owners.length > 0 || !!defaultOwnerId)
         setFormData({
-          tutorId: owners[0]?.id || '',
+          tutorId: defaultOwnerId || owners[0]?.id || '',
           tutorFirstName: '',
           tutorLastName: '',
           tutorGender: 'Masculino',
@@ -108,7 +109,8 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
         })
       }
     }
-  }, [open, pet?.id, owners.length])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, pet?.id, owners.length, defaultOwnerId])
 
   const [isSaving, setIsSaving] = useState(false)
 
@@ -118,6 +120,18 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
     // Validação de campos obrigatórios
     if (!formData.name || !formData.species || !formData.breed || !formData.dateOfBirth || !formData.weight) {
       toast.error('Preencha todos os campos obrigatórios do paciente (*)')
+      return
+    }
+
+    const weightNum = parseFloat(formData.weight)
+    if (isNaN(weightNum) || weightNum <= 0) {
+      toast.error('O peso deve ser um valor positivo')
+      return
+    }
+
+    const birthDate = new Date(formData.dateOfBirth)
+    if (birthDate > new Date()) {
+      toast.error('A data de nascimento não pode ser uma data futura')
       return
     }
 
@@ -485,4 +499,3 @@ export function PetFormDialog({ open, onOpenChange, pet }: PetFormDialogProps) {
   )
 }
 
-import { PlusCircle } from 'lucide-react'

@@ -12,8 +12,8 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { google } from '@ai-sdk/google';
 
 const deepseek = createOpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY,
-  baseURL: 'https://api.deepseek.com',
+  apiKey: process.env.DEEPSEEK_API_KEY ?? '',
+  baseURL: 'https://api.deepseek.com/v1',
 });
 
 const gemini = google('gemini-1.5-pro');
