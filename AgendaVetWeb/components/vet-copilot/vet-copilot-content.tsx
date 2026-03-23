@@ -62,7 +62,7 @@ export function VetCopilotContent({ initialPetId }: VetCopilotContentProps) {
         model: selectedModel === 'auto' ? undefined : selectedModel,
       },
     }),
-    onFinish: async (message) => {
+    onFinish: async ({ message }) => {
       const responseText = getMessageText(message as any)
       if (!responseText || !lastUserMessageRef.current) return
 
