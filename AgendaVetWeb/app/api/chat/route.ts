@@ -37,17 +37,19 @@ const googleProvider = createGoogleGenerativeAI({
 })
 
 
-// Inicializa cliente Supabase para server-side
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+// Supabase env vars are read at runtime, not at import time
+function getSupabaseEnv() {
+  return {
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  }
+}
 
 /** Busca o custom_prompt da clínica do usuário atual (se existir). */
 async function getClinicCustomPrompt(userId: string): Promise<string | null> {
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    const { url, serviceKey } = getSupabaseEnv()
+    const supabase = createClient(url, serviceKey)
     const { data: member } = await supabase
       .from('clinic_members')
       .select('clinic_id')
@@ -178,7 +180,8 @@ export async function POST(req: Request) {
         let petContext = '';
         if (petId) {
           try {
-            const supabase = createClient(supabaseUrl, supabaseServiceKey);
+            const { url: sbUrl, serviceKey: sbKey } = getSupabaseEnv();
+            const supabase = createClient(sbUrl, sbKey);
             const { data: pet } = await supabase
               .from('pets')
               .select('*, profiles:user_id (full_name, phone, email)')
