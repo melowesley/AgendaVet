@@ -2,19 +2,20 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import {
   LayoutDashboard,
   PawPrint,
   Users,
   Calendar,
   FileText,
-  MessageSquare,
   Settings,
   Stethoscope,
   BarChart3,
   DollarSign,
   Package,
   LogOut,
+  ShieldCheck,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -39,8 +40,7 @@ const navItems = [
   { title: 'Analytics', href: '/analytics', icon: BarChart3 },
   { title: 'Financeiro', href: '/financeiro', icon: DollarSign },
   { title: 'Produtos & Serviços', href: '/products-services', icon: Package },
-  { title: 'Assistente IA', href: '/assistant', icon: MessageSquare },
-  { title: 'Vet Copilot', href: '/vet-copilot', icon: Stethoscope },
+  { title: 'Vet AI', href: '/vet-copilot', icon: Stethoscope },
 ]
 
 const bottomNavItems = [
@@ -50,6 +50,17 @@ const bottomNavItems = [
 export function AppSidebar() {
   const pathname = usePathname()
   const { setOpenMobile } = useSidebar()
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const role = session?.user?.app_metadata?.role
+      setIsAdmin(role === 'admin')
+    }
+    checkAdminRole()
+  }, [])
 
   const handleNavClick = () => {
     setOpenMobile(false)
@@ -76,7 +87,6 @@ export function AppSidebar() {
             <span className="text-lg font-bold bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">AgendaVet</span>
             <span className="text-xs font-medium text-sidebar-foreground/60">Gestão Veterinária</span>
           </div>
-
         </Link>
       </SidebarHeader>
 
@@ -92,13 +102,11 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
-                      className={`h-10 transition-all duration-200 ${isActive ? 'bg-gradient-to-r from-emerald-500/15 to-transparent border-l-2 border-emerald-500 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/20' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'}`}
+                      className={`h-10 transition-all duration-200 text-sm ${isActive ? 'bg-gradient-to-r from-emerald-500/15 to-transparent border-l-2 border-emerald-500 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/20' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'}`}
                     >
                       <Link
                         href={item.href}
                         onClick={handleNavClick}
-                        target={item.external ? "_blank" : undefined}
-                        rel={item.external ? "noopener noreferrer" : undefined}
                       >
                         <item.icon className={`size-4 ${isActive ? 'text-emerald-500' : ''}`} />
                         <span className={isActive ? 'font-medium' : ''}>{item.title}</span>
@@ -107,6 +115,22 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 )
               })}
+
+              {/* Botão Administrador — visível apenas para role === 'admin' */}
+              {isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/admin')}
+                    className={`h-10 transition-all duration-200 text-sm ${pathname.startsWith('/admin') ? 'bg-gradient-to-r from-emerald-500/15 to-transparent border-l-2 border-emerald-500 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/20' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'}`}
+                  >
+                    <Link href="/admin" onClick={handleNavClick}>
+                      <ShieldCheck className={`size-4 ${pathname.startsWith('/admin') ? 'text-emerald-500' : ''}`} />
+                      <span className={pathname.startsWith('/admin') ? 'font-medium' : ''}>Administrador</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -124,7 +148,7 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
-                      className={`h-10 transition-all duration-200 ${isActive ? 'bg-gradient-to-r from-emerald-500/15 to-transparent border-l-2 border-emerald-500 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/20' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'}`}
+                      className={`h-10 transition-all duration-200 text-sm ${isActive ? 'bg-gradient-to-r from-emerald-500/15 to-transparent border-l-2 border-emerald-500 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/20' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'}`}
                     >
                       <Link href={item.href} onClick={handleNavClick}>
                         <item.icon className="size-4" />
@@ -137,7 +161,7 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={handleLogout}
-                  className="h-10 transition-all duration-200 text-sidebar-foreground/70 hover:text-red-500 hover:bg-red-500/10 cursor-pointer"
+                  className="h-10 transition-all duration-200 text-sm text-sidebar-foreground/70 hover:text-red-500 hover:bg-red-500/10 cursor-pointer"
                 >
                   <LogOut className="size-4" />
                   <span>Sair</span>

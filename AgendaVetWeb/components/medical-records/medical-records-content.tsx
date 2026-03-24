@@ -48,6 +48,7 @@ import { ExameDialog } from "../admin/modules/exame-dialog"
 import { RetornoDialog } from "../admin/modules/retorno-dialog"
 import { GaleriaDialog } from "../admin/modules/galeria-dialog"
 import { DocumentoJuridicoDialog } from "../admin/modules/documento-juridico-dialog"
+import { MedicalRecordDetailDialog } from "./medical-record-detail-dialog"
 import { toast } from 'sonner'
 import Link from 'next/link'
 import {
@@ -209,6 +210,8 @@ export function MedicalRecordsContent() {
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [tutorDialogOpen, setTutorDialogOpen] = useState(false)
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false)
+  const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null)
 
   // Specialized Dialogs State
   const [attendanceTypeDialogOpen, setAttendanceTypeDialogOpen] = useState(false)
@@ -480,11 +483,28 @@ export function MedicalRecordsContent() {
 
                           {/* Botões de Ação na Timeline */}
                           <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border/50">
-                            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground hover:text-emerald-600">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 text-xs text-muted-foreground hover:text-emerald-600"
+                              onClick={() => {
+                                setSelectedRecord(record)
+                                setDetailDialogOpen(true)
+                              }}
+                            >
                               <FileText className="size-3.5 mr-1" />
                               Ver Detalhes
                             </Button>
-                            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground hover:text-emerald-600">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 text-xs text-muted-foreground hover:text-emerald-600"
+                              onClick={() => {
+                                setSelectedRecord(record)
+                                setDetailDialogOpen(true)
+                                setTimeout(() => window.print(), 300)
+                              }}
+                            >
                               Imprimir PDF
                             </Button>
                           </div>
@@ -623,6 +643,14 @@ export function MedicalRecordsContent() {
         onOpenChange={(open) => !open && setActiveDialog(null)}
         petId={selectedPetId}
         petName={selectedPet?.name || ''}
+      />
+
+      <MedicalRecordDetailDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        record={selectedRecord}
+        pet={selectedPet}
+        owner={selectedTutor}
       />
     </div>
   )
