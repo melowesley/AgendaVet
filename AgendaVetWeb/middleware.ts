@@ -1,91 +1,103 @@
+// middleware.ts
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const PUBLIC_PATHS = ['/', '/login', '/aprovar', '/api/approve', '/api/resend-approval']
+
+function isPublic(pathname: string): boolean {
+  return PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
+    || pathname.startsWith('/_next')
+    || pathname.includes('.')
+  // NOTE: do NOT add '/api/' generically — only explicit paths above are public
+}
+
 export async function middleware(request: NextRequest) {
-    let response = NextResponse.next({
-        request: {
-            headers: request.headers,
+  let response = NextResponse.next({ request: { headers: request.headers } })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name) => request.cookies.get(name)?.value,
+        set: (name, value, options: CookieOptions) => {
+          request.cookies.set({ name, value, ...options })
+          response = NextResponse.next({ request: { headers: request.headers } })
+          response.cookies.set({ name, value, ...options })
         },
-    })
-
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return request.cookies.get(name)?.value
-                },
-                set(name: string, value: string, options: CookieOptions) {
-                    request.cookies.set({
-                        name,
-                        value,
-                        ...options,
-                    })
-                    response = NextResponse.next({
-                        request: {
-                            headers: request.headers,
-                        },
-                    })
-                    response.cookies.set({
-                        name,
-                        value,
-                        ...options,
-                    })
-                },
-                remove(name: string, options: CookieOptions) {
-                    request.cookies.set({
-                        name,
-                        value: '',
-                        ...options,
-                    })
-                    response = NextResponse.next({
-                        request: {
-                            headers: request.headers,
-                        },
-                    })
-                    response.cookies.set({
-                        name,
-                        value: '',
-                        ...options,
-                    })
-                },
-            },
-        }
-    )
-
-    const { data: { user } } = await supabase.auth.getUser()
-
-    // Protect internal routes: everything except /login, /api, /_next, /*.png
-    // Check if it's the login page
-    const isLoginPage = request.nextUrl.pathname.startsWith('/login')
-
-    // Exclude static assets/api
-    const isStaticOrApi = request.nextUrl.pathname.startsWith('/api') ||
-        request.nextUrl.pathname.startsWith('/_next') ||
-        request.nextUrl.pathname.includes('.')
-
-    if (!isStaticOrApi) {
-        if (!user && !isLoginPage) {
-            // no user, not on login page -> redirect to login
-            const url = request.nextUrl.clone()
-            url.pathname = '/login'
-            return NextResponse.redirect(url)
-        }
-
-        if (user && isLoginPage) {
-            // user is logged in but on login page -> redirect to dashboard
-            const url = request.nextUrl.clone()
-            url.pathname = '/'
-            return NextResponse.redirect(url)
-        }
+        remove: (name, options: CookieOptions) => {
+          request.cookies.set({ name, value: '', ...options })
+          response = NextResponse.next({ request: { headers: request.headers } })
+          response.cookies.set({ name, value: '', ...options })
+        },
+      },
     }
+  )
 
+  const { data: { user } } = await supabase.auth.getUser()
+  const pathname = request.nextUrl.pathname
+
+  if (isPublic(pathname)) {
+    // Redireciona usuário autenticado da landing page para o dashboard correto
+    if (pathname === '/' && user) {
+      const meta = user.app_metadata as { role?: string; status?: string }
+      const role = meta?.role
+      const status = meta?.status
+
+      // Usuários com role e status definidos (sistema novo)
+      if ((role === 'vet' && status === 'active') || role === 'admin') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/vet/dashboard'
+        return NextResponse.redirect(url)
+      }
+      if (role === 'tutor') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/tutor/dashboard'
+        return NextResponse.redirect(url)
+      }
+
+      // Usuários sem role (sistema legado) — redireciona para dashboard padrão
+      if (user && !role) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/vet/dashboard'
+        return NextResponse.redirect(url)
+      }
+    }
     return response
+  }
+
+  if (!user) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  const meta = user.app_metadata as { role?: string; status?: string }
+  const role = meta?.role
+  const status = meta?.status
+
+  const redirect = (path: string) => {
+    const url = request.nextUrl.clone()
+    url.pathname = path
+    return NextResponse.redirect(url)
+  }
+
+  // Secretário pendente ou rejeitado
+  if (role === 'vet' && status === 'pending') return redirect('/login/vet?status=pending')
+  if (role === 'vet' && status === 'rejected') return redirect('/login/vet?status=rejected')
+
+  // Proteção cruzada de áreas (só para usuários com role definido)
+  if (role) {
+    if (pathname.startsWith('/tutor') && role === 'vet') return redirect('/vet/dashboard')
+    if (pathname.startsWith('/vet') && role === 'tutor') return redirect('/tutor/dashboard')
+
+    // Admin tem acesso total
+    if (role === 'admin') return response
+  }
+
+  return response
 }
 
 export const config = {
-    matcher: [
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-    ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
