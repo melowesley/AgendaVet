@@ -11,7 +11,7 @@ function isPublic(pathname: string): boolean {
   // NOTE: do NOT add '/api/' generically — only explicit paths above are public
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } })
 
   const supabase = createServerClient(
