@@ -1,3 +1,2 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* NativeWind CSS - processado pelo Metro bundler via nativewind/preset */
+/* As diretivas @tailwind sao tratadas pelo babel-plugin do NativeWind, nao pelo PostCSS padrao */
