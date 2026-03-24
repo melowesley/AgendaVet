@@ -1,0 +1,2272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgendaVet — Guia Completo | Leitura (Dark Mode)</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+    
+    * { margin:0; padding:0; box-sizing:border-box; }
+    
+    @page { 
+      size: A4; 
+      margin: 15mm; 
+    }
+    
+    
+    
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      line-height: 1.7;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 50px;
+    }
+    
+    /* Cover Page */
+    .cover {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+    }
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 40%, #00d4aa08, transparent 50%),
+                  radial-gradient(circle at 70% 60%, #7c3aed08, transparent 50%);
+    }
+    .cover .logo {
+      font-size: 72px;
+      margin-bottom: 20px;
+      filter: drop-shadow(0 0 30px #00d4aa40);
+    }
+    .cover h1 {
+      font-size: 42px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #00d4aa, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+      letter-spacing: -1px;
+    }
+    .cover .subtitle {
+      font-size: 18px;
+      color: #8b949e;
+      font-weight: 300;
+      margin-bottom: 40px;
+    }
+    .cover .meta {
+      font-size: 12px;
+      color: #8b949e;
+      border-top: 1px solid #30363d;
+      padding-top: 20px;
+      margin-top: 40px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      background: linear-gradient(135deg, #00d4aa20, #7c3aed20);
+      border: 1px solid #00d4aa40;
+      color: #00d4aa;
+      margin-bottom: 30px;
+    }
+    
+    /* Section divider */
+    .section-divider {
+      page-break-before: always;
+      padding: 60px 0 30px;
+      border-bottom: 2px solid transparent;
+      border-image: linear-gradient(90deg, #00d4aa, #7c3aed, transparent) 1;
+      margin-bottom: 30px;
+    }
+    .section-divider h2 {
+      font-size: 28px;
+    }
+    
+    /* Typography */
+    h1 { font-size: 32px; font-weight: 800; margin: 40px 0 16px; color: #fff; }
+    h2 { 
+      font-size: 24px; font-weight: 700; margin: 36px 0 16px; 
+      padding-bottom: 8px;
+      border-bottom: 2px solid transparent;
+      border-image: linear-gradient(90deg, #00d4aa, #7c3aed, transparent) 1;
+      color: #fff;
+    }
+    h3 { 
+      font-size: 18px; font-weight: 600; margin: 28px 0 12px; 
+      color: #00d4aa;
+    }
+    p { margin: 8px 0; color: #e6edf3; }
+    a { color: #00d4aa; text-decoration: none; border-bottom: 1px dashed #00d4aa60; }
+    strong { color: #fff; font-weight: 600; }
+    hr { 
+      border: none; height: 1px; margin: 32px 0;
+      background: linear-gradient(90deg, transparent, #30363d, transparent);
+    }
+    
+    /* Lists */
+    li { 
+      margin: 4px 0; padding-left: 20px; list-style: none; position: relative;
+    }
+    li::before {
+      content: '›';
+      position: absolute; left: 4px; color: #00d4aa; font-weight: 700;
+    }
+    .num { color: #00d4aa; font-weight: 700; margin-right: 4px; }
+    li .num + * { margin-left: 0; }
+    li:has(.num)::before { display: none; }
+    
+    /* Code */
+    .code-block {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 14px 0;
+      overflow-x: auto;
+      font-size: 12.5px;
+      line-height: 1.6;
+      position: relative;
+    }
+    .code-block::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #00d4aa, #7c3aed);
+      border-radius: 10px 10px 0 0;
+    }
+    .code-block code {
+      font-family: 'JetBrains Mono', monospace;
+      color: #79c0ff;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    code.inline {
+      font-family: 'JetBrains Mono', monospace;
+      background: #1c2333;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 12.5px;
+      color: #ff7b72;
+    }
+    
+    /* Tables */
+    .table-wrap { overflow-x: auto; margin: 16px 0; border-radius: 10px; border: 1px solid #30363d; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead { background: linear-gradient(135deg, #00d4aa22, #7c3aed22); }
+    th { 
+      padding: 10px 14px; text-align: left; font-weight: 600; 
+      color: #00d4aa; border-bottom: 2px solid #00d4aa30;
+      font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    td { padding: 9px 14px; border-bottom: 1px solid #30363d20; }
+    tr:nth-child(even) { background: #1a2332; }
+    tr:hover { background: #00d4aa08; }
+    
+    /* Blockquote */
+    blockquote {
+      border-left: 3px solid #00d4aa;
+      background: #00d4aa08;
+      padding: 14px 20px;
+      margin: 16px 0;
+      border-radius: 0 10px 10px 0;
+      font-style: italic;
+      color: #8b949e;
+    }
+    
+    /* Checkboxes */
+    .check { 
+      padding: 4px 0 4px 8px; font-size: 13.5px;
+    }
+    .check.done { color: #00d4aa; }
+    
+    /* Part separator */
+    .part-separator {
+      page-break-before: always;
+      text-align: center;
+      padding: 80px 0;
+    }
+    .part-separator h1 {
+      font-size: 36px;
+      background: linear-gradient(135deg, #00d4aa, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .part-separator .line {
+      width: 80px;
+      height: 3px;
+      background: linear-gradient(90deg, #00d4aa, #7c3aed);
+      margin: 20px auto;
+      border-radius: 2px;
+    }
+    
+    /* TOC */
+    .toc {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 24px 30px;
+      margin: 20px 0 30px;
+    }
+    .toc li { font-size: 13.5px; padding: 3px 0 3px 20px; }
+    .toc li::before { content: '→'; color: #7c3aed; }
+    
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 40px 0 20px;
+      color: #8b949e;
+      font-size: 11px;
+      border-top: 1px solid #30363d;
+      margin-top: 40px;
+    }
+    .footer .gradient-text {
+      background: linear-gradient(135deg, #00d4aa, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- COVER PAGE -->
+    <div class="cover">
+      <div class="logo">🐾</div>
+      <div class="badge">Documentação Técnica Oficial</div>
+      <h1>AgendaVet</h1>
+      <p class="subtitle">Guia Completo do Fundador + Engenharia de IA</p>
+      <p class="subtitle" style="font-size:14px; margin-top:-20px;">Sistema de Gestão para Clínicas Veterinárias</p>
+      <div class="meta">
+        <p>Versão Unificada — Março 2026</p>
+        <p>Versão: Digital (Dark Mode)</p>
+        <p style="margin-top:8px;">Gerado automaticamente • AgendaVet Platform</p>
+      </div>
+    </div>
+
+    <!-- PART 1 -->
+    <div class="part-separator">
+      <p style="color:#8b949e;font-size:13px;letter-spacing:3px;text-transform:uppercase;">Parte I</p>
+      <h1>Guia do Fundador</h1>
+      <div class="line"></div>
+      <p style="color:#8b949e;font-size:14px;">Visão geral, arquitetura e operações do AgendaVet</p>
+    </div>
+
+    <h1>AgendaVet — Guia Completo do Fundador</h1>
+<h3>Tudo que você precisa saber sobre o projeto que está construindo</h3>
+
+<hr>
+
+<blockquote><strong>Para quem é este guia?</strong></blockquote>
+<blockquote>Para você, Wesley — o fundador do AgendaVet. Você não precisa saber programar</blockquote>
+<blockquote>para entender o que foi construído, como funciona, e como trabalhar de forma</blockquote>
+<blockquote>organizada para levar o produto até o lançamento. Este guia é baseado</blockquote>
+<blockquote>100% no seu projeto real, com exemplos das pastas e arquivos reais do AgendaVet.</blockquote>
+
+<hr>
+
+<h2>Índice</h2>
+
+<li><span class="num">1.</span> <a href="#1-o-que-é-o-agendavet">O que é o AgendaVet — visão geral</a></li>
+<li><span class="num">2.</span> <a href="#2-as-3-aplicações">As 3 aplicações e para quem servem</a></li>
+<li><span class="num">3.</span> <a href="#3-o-banco-de-dados">O banco de dados — onde tudo é guardado</a></li>
+<li><span class="num">4.</span> <a href="#4-a-inteligência-artificial">A inteligência artificial no projeto</a></li>
+<li><span class="num">5.</span> <a href="#5-git-sem-complicação">Git — o que é, por que existe, como usar</a></li>
+<li><span class="num">6.</span> <a href="#6-branches-sem-medo">Branches — o conceito que mais confunde</a></li>
+<li><span class="num">7.</span> <a href="#7-do-código-ao-ar">Passo a passo: do código ao ar (deploy)</a></li>
+<li><span class="num">8.</span> <a href="#8-trabalhando-com-claude">Como trabalhar com Claude de forma organizada</a></li>
+<li><span class="num">9.</span> <a href="#9-o-que-já-está-pronto">Mapa completo do que já foi construído</a></li>
+<li><span class="num">10.</span> <a href="#10-glossário">Glossário — termos técnicos em português simples</a></li>
+
+<hr>
+
+<h2>1. O que é o AgendaVet</h2>
+
+<p>O AgendaVet é um <strong>sistema de gestão para clínicas veterinárias</strong>. Pense nele</p>
+<p>como um sistema que resolve três problemas ao mesmo tempo:</p>
+
+<div class="table-wrap"><table><thead><tr><th>Problema</th><th>Solução no AgendaVet</th></tr></thead><tbody><tr><td>Veterinário precisa registrar consultas, vacinas, cirurgias</td><td>App do Veterinário (AgendaVetVet)</td></tr><tr><td>Dono do pet quer ver o histórico e agendar consultas</td><td>App do Tutor (AgendaVetTutor)</td></tr><tr><td>Clínica precisa gerenciar agenda, financeiro e equipe</td><td>Painel Web (AgendaVetWeb)</td></tr></tbody></table></div>
+<p>Tudo isso conectado a <strong>um único banco de dados</strong> na nuvem (Supabase), então</p>
+<p>uma informação registrada no app do veterinário aparece automaticamente no</p>
+<p>painel web e no app do tutor.</p>
+
+<h3>A tecnologia em linguagem simples</h3>
+
+<li><strong>Next.js</strong> — o motor do painel web (como o motor de um carro)</li>
+<li><strong>Expo / React Native</strong> — o motor dos apps mobile (iOS e Android)</li>
+<li><strong>Supabase</strong> — o banco de dados na nuvem (onde tudo fica guardado)</li>
+<li><strong>Vercel</strong> — o serviço que coloca o painel web no ar automaticamente</li>
+<li><strong>TypeScript</strong> — a linguagem usada para escrever o código</li>
+
+<hr>
+
+<h2>2. As 3 Aplicações</h2>
+
+<h3>2.1 AgendaVetWeb — O Painel da Clínica</h3>
+
+<p><strong>Pasta:</strong> <code class="inline">AgendaVetWeb/</code></p>
+
+<p>Este é o "escritório digital" da clínica. Funciona no navegador (Chrome, Safari,</p>
+<p>etc.) e é onde o recepcionista e o gestor da clínica trabalham.</p>
+
+<p><strong>O que já tem pronto:</strong></p>
+
+<pre class="code-block"><code>Tela de Login         → AgendaVetWeb/app/(auth)/login/page.tsx
+<p>Dashboard Principal   → AgendaVetWeb/app/page.tsx</p>
+<p>Lista de Pets         → AgendaVetWeb/app/pets/page.tsx</p>
+<p>Perfil do Pet         → AgendaVetWeb/app/pets/[id]/page.tsx</p>
+<p>Prontuário do Pet     → AgendaVetWeb/app/pets/[id]/prontuario/page.tsx</p>
+<p>Agendamentos          → AgendaVetWeb/app/appointments/page.tsx</p>
+<p>Calendário            → AgendaVetWeb/app/calendar/page.tsx</p>
+<p>Tutores (Donos)       → AgendaVetWeb/app/owners/page.tsx</p>
+<p>Prontuários           → AgendaVetWeb/app/medical-records/page.tsx</p>
+<p>Produtos e Serviços   → AgendaVetWeb/app/products-services/page.tsx</p>
+<p>Analytics             → AgendaVetWeb/app/analytics/page.tsx</p>
+<p>Copiloto IA           → AgendaVetWeb/app/vet-copilot/page.tsx</p>
+<p>Configurações         → AgendaVetWeb/app/settings/page.tsx</code></pre></p>
+
+<p><strong>Os módulos de atendimento (os formulários de registro clínico):</strong></p>
+
+<pre class="code-block"><code>Consulta              → components/admin/modules/consulta-dialog.tsx
+<p>Vacina                → components/admin/modules/vacina-dialog.tsx</p>
+<p>Exame                 → components/admin/modules/exame-dialog.tsx</p>
+<p>Receita               → components/admin/modules/receita-dialog.tsx</p>
+<p>Peso                  → components/admin/modules/peso-dialog.tsx</p>
+<p>Cirurgia              → components/admin/modules/cirurgia-dialog.tsx</p>
+<p>Internação            → components/admin/modules/internacao-dialog.tsx</p>
+<p>Banho e Tosa          → components/admin/modules/banho-tosa-dialog.tsx</p>
+<p>Óbito                 → components/admin/modules/obito-dialog.tsx</p>
+<p>Galeria de Fotos      → components/admin/modules/galeria-dialog.tsx</code></pre></p>
+
+<hr>
+
+<h3>2.2 AgendaVetVet — O App do Veterinário</h3>
+
+<p><strong>Pasta:</strong> <code class="inline">AgendaVetVet/</code></p>
+
+<p>Este é o app que o veterinário usa no celular durante as consultas. Ele consegue</p>
+<p>registrar tudo na tela do celular, na frente do paciente.</p>
+
+<p><strong>Telas prontas:</strong></p>
+
+<pre class="code-block"><code>Login                 → AgendaVetVet/app/login.tsx
+<p>Dashboard             → AgendaVetVet/app/(tabs)/index.tsx</p>
+<p>Lista de Pacientes    → AgendaVetVet/app/(tabs)/pacientes.tsx</p>
+<p>Prontuário            → AgendaVetVet/app/(tabs)/prontuario.tsx</p>
+<p>Solicitações          → AgendaVetVet/app/(tabs)/solicitacoes.tsx</code></pre></p>
+
+<p><strong>Módulos clínicos (telas de registro):</strong></p>
+
+<pre class="code-block"><code>Consulta              → AgendaVetVet/app/pet/consulta.tsx
+<p>Vacina                → AgendaVetVet/app/pet/vacina.tsx</p>
+<p>Exame                 → AgendaVetVet/app/pet/exame.tsx</p>
+<p>Receita               → AgendaVetVet/app/pet/receita.tsx</p>
+<p>Peso                  → AgendaVetVet/app/pet/peso.tsx</p>
+<p>Cirurgia              → AgendaVetVet/app/pet/cirurgia.tsx</p>
+<p>Internação            → AgendaVetVet/app/pet/internacao.tsx</p>
+<p>Diagnóstico           → AgendaVetVet/app/pet/diagnostico.tsx</p>
+<p>Banho e Tosa          → AgendaVetVet/app/pet/banho_tosa.tsx</p>
+<p>Óbito                 → AgendaVetVet/app/pet/obito.tsx</p>
+<p>Pagamento             → AgendaVetVet/app/pet/pagamento.tsx</p>
+<p>Copiloto IA           → AgendaVetVet/app/pet/vet-copilot.tsx</code></pre></p>
+
+<hr>
+
+<h3>2.3 AgendaVetTutor — O App do Dono do Pet</h3>
+
+<p><strong>Pasta:</strong> <code class="inline">AgendaVetTutor/</code></p>
+
+<p>Este é o app do cliente da clínica — o dono do animal. Ele pode ver o histórico</p>
+<p>do pet, agendar consultas e receber documentos.</p>
+
+<p><strong>Telas prontas:</strong></p>
+
+<pre class="code-block"><code>Login                 → AgendaVetTutor/app/login.tsx
+<p>Home                  → AgendaVetTutor/app/(tabs)/index.tsx</p>
+<p>Agendamentos          → AgendaVetTutor/app/(tabs)/agendamentos.tsx</p>
+<p>Perfil                → AgendaVetTutor/app/(tabs)/perfil.tsx</p>
+<p>Financeiro            → AgendaVetTutor/app/(tabs)/financeiro.tsx</p>
+<p>Detalhes do Pet       → AgendaVetTutor/app/pet-details/[id].tsx</p>
+<p>Assinar Documento     → AgendaVetTutor/app/pet-details/assinar-documento.tsx</code></pre></p>
+
+<hr>
+
+<h3>2.4 Os Pacotes Compartilhados</h3>
+
+<p>Além dos 3 apps, existe uma "caixa de ferramentas compartilhada":</p>
+
+<pre class="code-block"><code>shared/          → Tipos e funções usadas pelos 3 apps ao mesmo tempo
+<p>packages/theme/  → As cores e estilos visuais compartilhados</code></pre></p>
+
+<p>Isso evita que o mesmo código seja escrito 3 vezes. Se muda em <code class="inline">shared/</code>,</p>
+<p>muda automaticamente nos 3 apps.</p>
+
+<hr>
+
+<h2>3. O Banco de Dados</h2>
+
+<h3>O que é o Supabase</h3>
+
+<p>O Supabase é o "cofre" do AgendaVet. Fica na nuvem (na internet) e guarda</p>
+<p>todos os dados: pets, tutores, consultas, vacinas, tudo.</p>
+
+<p>Funciona com <strong>tabelas</strong>, como planilhas do Excel, onde cada linha é um registro</p>
+<p>e cada coluna é uma informação.</p>
+
+<h3>As 21 tabelas do AgendaVet</h3>
+
+<div class="table-wrap"><table><thead><tr><th>Tabela</th><th>O que guarda</th></tr></thead><tbody><tr><td><code class="inline">profiles</code></td><td>Usuários do sistema (tutores e admins)</td></tr><tr><td><code class="inline">user_roles</code></td><td>Quem é admin, quem é tutor</td></tr><tr><td><code class="inline">pets</code></td><td>Dados dos animais</td></tr><tr><td><code class="inline">services</code></td><td>Catálogo de serviços da clínica</td></tr><tr><td><code class="inline">appointment_requests</code></td><td>Agendamentos e atendimentos</td></tr><tr><td><code class="inline">anamnesis</code></td><td>Fichas de consulta clínica</td></tr><tr><td><code class="inline">pet_admin_history</code></td><td>Histórico de todas as ações</td></tr><tr><td><code class="inline">pet_weight_records</code></td><td>Histórico de peso dos pets</td></tr><tr><td><code class="inline">pet_pathologies</code></td><td>Doenças e condições</td></tr><tr><td><code class="inline">pet_documents</code></td><td>Documentos anexados</td></tr><tr><td><code class="inline">pet_exams</code></td><td>Resultados de exames</td></tr><tr><td><code class="inline">pet_photos</code></td><td>Fotos dos pets</td></tr><tr><td><code class="inline">pet_vaccines</code></td><td>Registro de vacinas</td></tr><tr><td><code class="inline">pet_prescriptions</code></td><td>Receitas médicas</td></tr><tr><td><code class="inline">pet_observations</code></td><td>Observações clínicas</td></tr><tr><td><code class="inline">pet_videos</code></td><td>Vídeos gravados</td></tr><tr><td><code class="inline">pet_hospitalizations</code></td><td>Internações</td></tr><tr><td><code class="inline">mortes</code></td><td>Registros de óbito</td></tr><tr><td><code class="inline">audit_logs</code></td><td>Trilha de auditoria</td></tr><tr><td><code class="inline">pet_services</code></td><td>Serviços prestados</td></tr></tbody></table></div>
+<h3>Segurança: o RLS</h3>
+
+<p>Cada tabela tem um sistema de segurança chamado <strong>RLS (Row Level Security)</strong>.</p>
+<p>Em termos simples:</p>
+
+<li><strong>Admin</strong> (funcionário da clínica) → vê e altera tudo</li>
+<li><strong>Tutor</strong> (dono do pet) → vê apenas os dados dos seus próprios pets</li>
+
+<p>Isso garante que um tutor nunca consiga ver os dados do pet de outra pessoa.</p>
+
+<hr>
+
+<h2>4. A Inteligência Artificial</h2>
+
+<p>O AgendaVet tem um sistema de IA chamado <strong>Vet Copilot</strong> — um assistente</p>
+<p>clínico inteligente integrado ao app do veterinário e ao painel web.</p>
+
+<h3>Os modelos de IA usados</h3>
+
+<div class="table-wrap"><table><thead><tr><th>Modelo</th><th>Empresa</th><th>Para que serve no AgendaVet</th></tr></thead><tbody><tr><td>DeepSeek R1</td><td>DeepSeek</td><td>Raciocínio clínico, diagnóstico diferencial</td></tr><tr><td>Gemini 2.0/2.5 Flash</td><td>Google</td><td>Respostas rápidas, triagem de emergência</td></tr><tr><td>Claude Sonnet</td><td>Anthropic</td><td>Análise de imagens (radiografias, fotos)</td></tr><tr><td>GPT-4o</td><td>OpenAI</td><td>Planejamento cirúrgico</td></tr></tbody></table></div>
+<h3>O que o Copiloto faz</h3>
+
+<li>Sugere diagnósticos diferenciais com base nos sintomas</li>
+<li>Analisa imagens médicas</li>
+<li>Auxilia no planejamento de cirurgias</li>
+<li>Lembra do histórico da conversa</li>
+<li>Controla o custo de tokens automaticamente</li>
+<li>Tem permissões por tipo de usuário</li>
+
+<p>Os arquivos do Copiloto ficam em:</p>
+<pre class="code-block"><code>AgendaVetWeb/lib/vet-copilot/
+<p>  ai-gateway.ts         → Decide qual IA usar em cada situação</p>
+<p>  system-prompt.ts      → As instruções que guiam o comportamento da IA</p>
+<p>  rag.ts                → Busca em documentos para enriquecer respostas</p>
+<p>  cost-controller.ts    → Controla o gasto com APIs de IA</p>
+<p>  memory-manager.ts     → Guarda o histórico da conversa</p>
+<p>  tools.ts              → O que a IA pode "fazer" (ler, buscar, calcular)</code></pre></p>
+
+<hr>
+
+<h2>5. Git Sem Complicação</h2>
+
+<h3>O que é o Git</h3>
+
+<p>Git é um sistema de <strong>controle de versões</strong>. Pense nele como um histórico de</p>
+<p>salvamentos de um documento, mas muito mais poderoso.</p>
+
+<p>Toda vez que uma mudança é salva no Git, isso cria uma <strong>foto</strong> do projeto</p>
+<p>naquele momento. Você pode voltar a qualquer foto anterior se algo der errado.</p>
+
+<h3>O histórico real do AgendaVet</h3>
+
+<p>Cada linha abaixo é um "salvamento" (chamado de <strong>commit</strong>) do seu projeto:</p>
+
+<pre class="code-block"><code>0d70235  fix: reduz tamanho dos botões de salvar nos dialogs
+<p>9b60d04  fix: redimensiona botões gigantes nos módulos de atendimento</p>
+<p>c5e7149  fix(calendar): encurta painel flutuante</p>
+<p>4e6b0be  feat(calendar): transforma faixa de detalhes em painel flutuante</p>
+<p>918a622  fix: corrige botão 'Adicionar Tutor' que não salvava no banco</p>
+<p>eebb1b7  feat(products-services): split Serviços/Produtos com tabs</p>
+<p>...</code></pre></p>
+
+<p>Cada linha tem:</p>
+<li>Um <strong>código</strong> (ex: <code class="inline">0d70235</code>) — o "número de série" do salvamento</li>
+<li>Uma <strong>mensagem</strong> — o que foi mudado</li>
+
+<h3>Os 3 comandos mais importantes</h3>
+
+<pre class="code-block lang-bash"><code>git status       # Mostra o que foi modificado mas ainda não foi salvo
+<p>git add .        # Prepara tudo para ser salvo</p>
+<p>git commit -m "mensagem"   # Salva com uma descrição</p>
+<p>git push         # Envia para o GitHub (a nuvem)</code></pre></p>
+
+<p>Você não precisa rodar esses comandos — o Claude faz isso. Mas entender o que</p>
+<p>cada um faz ajuda a compreender o fluxo.</p>
+
+<hr>
+
+<h2>6. Branches Sem Medo</h2>
+
+<h3>O que é uma branch</h3>
+
+<p>Imagine que o seu projeto é uma árvore. O tronco principal é a <code class="inline">master</code> (ou</p>
+<p><code class="inline">main</code>). Uma <strong>branch</strong> é um galho — uma cópia separada do tronco onde você</p>
+<p>pode trabalhar sem afetar o tronco.</p>
+
+<pre class="code-block"><code>master ──────────────────────────────── (produção, o que está no ar)
+<p>          │</p>
+<p>          └── claude/check-agendavetweb-folder-JBpJI  (onde o Claude trabalha agora)</code></pre></p>
+
+<h3>Por que usar branches</h3>
+
+<li>Para o Claude trabalhar em mudanças sem quebrar o que já está funcionando</li>
+<li>Para revisar e aprovar mudanças antes de colocar no ar</li>
+<li>Para múltiplas melhorias acontecerem em paralelo</li>
+
+<h3>As branches do seu projeto agora</h3>
+
+<pre class="code-block"><code>master                                  → Branch principal (produção)
+<p>origin/main                             → Cópia na nuvem (GitHub)</p>
+<p>claude/check-agendavetweb-folder-JBpJI  → Branch atual do Claude</code></pre></p>
+
+<h3>Como as mudanças chegam ao master: o Pull Request</h3>
+
+<p>Quando o Claude termina uma tarefa numa branch, o caminho para o código chegar</p>
+<p>ao projeto oficial é:</p>
+
+<pre class="code-block"><code>1. Claude faz as mudanças na branch   claude/check-agendavetweb-folder-JBpJI
+<li><span class="num">2.</span> Claude faz push para o GitHub</li>
+<li><span class="num">3.</span> Você abre um Pull Request no GitHub</li>
+<li><span class="num">4.</span> Você revisa e clica em "Merge"</li>
+<li><span class="num">5.</span> As mudanças entram no master</li>
+<li><span class="num">6.</span> O Vercel detecta automaticamente e publica no ar</code></pre></li>
+
+<h3>Passo a passo para fazer o merge no GitHub</h3>
+
+<pre class="code-block"><code>1. Acesse: github.com/melowesley/AgendaVet
+
+<li><span class="num">2.</span> Clique em "Pull requests" no menu superior</li>
+
+<li><span class="num">3.</span> Clique em "New pull request"</li>
+
+<li><span class="num">4.</span> Configure assim:</li>
+<p>   base: master</p>
+<p>   compare: claude/check-agendavetweb-folder-JBpJI</p>
+
+<li><span class="num">5.</span> Clique em "Create pull request"</li>
+
+<li><span class="num">6.</span> Revise as mudanças listadas</li>
+
+<li><span class="num">7.</span> Clique em "Merge pull request"</li>
+
+<li><span class="num">8.</span> Clique em "Confirm merge"</li>
+
+<p>Pronto. As mudanças estão no master.</code></pre></p>
+
+<h3>O problema dos dois Claudes</h3>
+
+<p>Você mencionou que às vezes tem dois chats com Claude editando partes</p>
+<p>diferentes do projeto ao mesmo tempo.</p>
+
+<p><strong>Se estiverem em branches diferentes:</strong> sem problema algum.</p>
+
+<p><strong>Se estiverem na mesma branch:</strong> quando o segundo tentar fazer push,</p>
+<p>vai receber um erro. A solução é:</p>
+
+<pre class="code-block lang-bash"><code>git pull origin [nome-da-branch]
+<h1>Isso "puxa" as mudanças do outro Claude</h1>
+<h1>Depois o push vai funcionar</code></pre></h1>
+
+<p>A recomendação é: <strong>cada sessão de Claude = uma branch diferente</strong>.</p>
+<p>O padrão <code class="inline">claude/nome-da-tarefa-XXXXX</code> já garante isso automaticamente.</p>
+
+<hr>
+
+<h2>7. Do Código ao Ar</h2>
+
+<h3>Como o AgendaVetWeb vai para a internet</h3>
+
+<p>O fluxo completo é:</p>
+
+<pre class="code-block"><code>Você pede mudança ao Claude
+<p>       ↓</p>
+<p>Claude edita os arquivos na sua máquina</p>
+<p>       ↓</p>
+<p>Claude faz commit + push para o GitHub</p>
+<p>       ↓</p>
+<p>Você abre Pull Request e faz merge no master</p>
+<p>       ↓</p>
+<p>Vercel detecta o merge no master automaticamente</p>
+<p>       ↓</p>
+<p>Vercel faz o build e publica no ar (em ~2 minutos)</p>
+<p>       ↓</p>
+<p>O painel web está atualizado</code></pre></p>
+
+<h3>Como os apps mobile vão para as lojas</h3>
+
+<p>Os apps mobile (Vet e Tutor) têm um processo diferente:</p>
+
+<pre class="code-block"><code>Código finalizado no master
+<p>       ↓</p>
+<p>EAS Build (Expo Application Services)</p>
+<p>       ↓</p>
+<p>Gera o arquivo .apk (Android) ou .ipa (iOS)</p>
+<p>       ↓</p>
+<p>Envio para Google Play / App Store</p>
+<p>       ↓</p>
+<p>Aprovação da loja (pode levar horas ou dias)</p>
+<p>       ↓</p>
+<p>Disponível para download</code></pre></p>
+
+<p>Para publicar uma atualização de conteúdo nos apps sem passar pela loja,</p>
+<p>o Expo tem o <strong>EAS Update</strong> — que atualiza instantaneamente.</p>
+
+<hr>
+
+<h2>8. Trabalhando com Claude</h2>
+
+<h3>O problema que você descreveu</h3>
+
+<p>Você disse que se perde com as branches, quebra fluxos e desestrutura o projeto.</p>
+<p>Isso acontece por um motivo simples: <strong>você não tem um processo definido</strong>.</p>
+
+<p>Com um processo claro, tudo fica mais fácil.</p>
+
+<h3>O processo recomendado: uma tarefa por vez</h3>
+
+<pre class="code-block"><code>REGRA 1: Uma conversa = Uma tarefa
+<p>  Não misture "arrumar o botão" com "criar nova tela" na mesma conversa.</p>
+<p>  Finalize uma antes de começar a outra.</p>
+
+<p>REGRA 2: Sempre faça merge antes de pedir uma nova tarefa grande</p>
+<p>  Depois que o Claude termina e faz o push, vá ao GitHub,</p>
+<p>  abra o PR e faça o merge. Só então peça a próxima tarefa.</p>
+
+<p>REGRA 3: Descreva o resultado que quer, não como fazer</p>
+<p>  ❌ "Preciso que você altere o className do Button para h-10"</p>
+<p>  ✓  "Os botões de salvar estão muito grandes em todos os módulos"</p>
+
+<p>REGRA 4: Um Claude por branch</p>
+<p>  Se você abrir dois chats simultaneamente, certifique-se de que</p>
+<p>  estão editando pastas completamente diferentes.</code></pre></p>
+
+<h3>Como pedir tarefas de forma eficiente</h3>
+
+<p><strong>Modelo de pedido ideal:</strong></p>
+
+<pre class="code-block"><code>Contexto: [onde está o problema]
+<p>Problema: [o que está errado ou faltando]</p>
+<p>Resultado esperado: [como deve ficar depois]</p>
+
+<p>Exemplo real:</p>
+<p>"Contexto: No módulo de Consulta do painel web</p>
+<p> Problema: O botão 'Salvar Registro' está muito grande (h-14)</p>
+<p> Resultado: Deve ter o mesmo tamanho dos botões normais do sistema (h-10)"</code></pre></p>
+
+<h3>Como verificar o que o Claude fez</h3>
+
+<p>Antes de fazer o merge de um Pull Request, você pode ver exatamente o que mudou:</p>
+
+<pre class="code-block"><code>No GitHub → aba "Files changed" do Pull Request
+<p>Linhas em vermelho = o que foi removido</p>
+<p>Linhas em verde    = o que foi adicionado</code></pre></p>
+
+<hr>
+
+<h2>9. O que Já Está Pronto</h2>
+
+<h3>Resumo executivo</h3>
+
+<p>O AgendaVet está em estágio avançado de desenvolvimento. A estrutura completa</p>
+<p>foi construída e a maioria das funcionalidades principais está implementada.</p>
+
+<h3>Funcionalidades prontas</h3>
+
+<p><strong>Painel Web (AgendaVetWeb):</strong></p>
+<div class="check done">✅ Autenticação (login/logout)</div>
+<div class="check done">✅ Dashboard com visão geral</div>
+<div class="check done">✅ Gestão de pets (criar, editar, ver histórico)</div>
+<div class="check done">✅ Gestão de tutores (donos dos pets)</div>
+<div class="check done">✅ Calendário de agendamentos</div>
+<div class="check done">✅ 12 módulos clínicos (consulta, vacina, exame, receita, peso, cirurgia, internação, banho, óbito, galeria, exame, arquivo)</div>
+<div class="check done">✅ Prontuário unificado (timeline de todos os registros)</div>
+<div class="check done">✅ Analytics (taxas de ocupação, receita, picos de horário)</div>
+<div class="check done">✅ Produtos e Serviços com abas separadas</div>
+<div class="check done">✅ Copiloto de IA com múltiplos modelos</div>
+<div class="check done">✅ Sistema de impressão/PDF dos registros</div>
+
+<p><strong>App do Veterinário (AgendaVetVet):</strong></p>
+<div class="check done">✅ Autenticação</div>
+<div class="check done">✅ Lista de pacientes com filtros</div>
+<div class="check done">✅ Todos os módulos clínicos em mobile</div>
+<div class="check done">✅ Geração de PDF no celular</div>
+<div class="check done">✅ Copiloto de IA</div>
+<div class="check done">✅ Calendário</div>
+<div class="check done">✅ Analytics mobile</div>
+<div class="check done">✅ Deep linking (navegação entre telas via link)</div>
+
+<p><strong>App do Tutor (AgendaVetTutor):</strong></p>
+<div class="check done">✅ Autenticação</div>
+<div class="check done">✅ Home com resumo dos pets</div>
+<div class="check done">✅ Visualização do histórico do pet</div>
+<div class="check done">✅ Agendamentos</div>
+<div class="check done">✅ Financeiro</div>
+<div class="check done">✅ Assinatura digital de documentos</div>
+<div class="check done">✅ Visualização de documentos</div>
+
+<p><strong>Banco de Dados:</strong></p>
+<div class="check done">✅ 21 tabelas com schema completo</div>
+<div class="check done">✅ Segurança RLS configurada</div>
+<div class="check done">✅ 12 migrações versionadas</div>
+<div class="check done">✅ Políticas de acesso por perfil</div>
+
+<p><strong>Inteligência Artificial:</strong></p>
+<div class="check done">✅ 4 modelos de IA integrados</div>
+<div class="check done">✅ Sistema RAG (busca em documentos)</div>
+<div class="check done">✅ Memória de conversa</div>
+<div class="check done">✅ Controle de custo automático</div>
+<div class="check done">✅ Prompts especializados (diagnóstico, sintomas, tratamento)</div>
+
+<h3>O que pode faltar para o lançamento</h3>
+
+<p>Isso você precisa avaliar com base no seu produto. Perguntas para se guiar:</p>
+
+<li><span class="num">1.</span> <strong>UX/UI:</strong> O visual está satisfatório em todas as telas?</li>
+<li><span class="num">2.</span> <strong>Testes reais:</strong> Você já usou com um veterinário real em uma clínica real?</li>
+<li><span class="num">3.</span> <strong>Onboarding:</strong> Como uma nova clínica cria sua conta e configura o sistema?</li>
+<li><span class="num">4.</span> <strong>Suporte:</strong> Existe algum canal para clientes reportarem problemas?</li>
+<li><span class="num">5.</span> <strong>Deploy dos apps:</strong> Os apps estão nas lojas (Google Play / App Store)?</li>
+<li><span class="num">6.</span> <strong>Domínio:</strong> O painel web tem um domínio próprio (ex: app.agendavet.com.br)?</li>
+
+<hr>
+
+<h2>10. Glossário</h2>
+
+<div class="table-wrap"><table><thead><tr><th>Termo</th><th>Significado simples</th></tr></thead><tbody><tr><td><strong>Branch</strong></td><td>Um galho do projeto — cópia isolada para trabalhar sem afetar o principal</td></tr><tr><td><strong>Commit</strong></td><td>Um "salvamento" com descrição do que foi mudado</td></tr><tr><td><strong>Push</strong></td><td>Enviar os commits da máquina local para o GitHub (a nuvem)</td></tr><tr><td><strong>Pull Request (PR)</strong></td><td>Um pedido para incorporar mudanças de uma branch para outra</td></tr><tr><td><strong>Merge</strong></td><td>A fusão — quando as mudanças de uma branch entram na outra</td></tr><tr><td><strong>Master / Main</strong></td><td>O tronco principal do projeto (o que vai para produção)</td></tr><tr><td><strong>Deploy</strong></td><td>O processo de colocar o código no ar (na internet)</td></tr><tr><td><strong>Build</strong></td><td>O processo de "compilar" o código para poder publicá-lo</td></tr><tr><td><strong>Vercel</strong></td><td>Serviço que hospeda o painel web e faz deploy automático</td></tr><tr><td><strong>Supabase</strong></td><td>O banco de dados na nuvem do AgendaVet</td></tr><tr><td><strong>RLS</strong></td><td>Row Level Security — segurança que define quem vê o quê no banco</td></tr><tr><td><strong>API</strong></td><td>Uma "janela" que permite que dois sistemas se comuniquem</td></tr><tr><td><strong>TypeScript</strong></td><td>A linguagem de programação usada no AgendaVet</td></tr><tr><td><strong>Next.js</strong></td><td>O framework do painel web</td></tr><tr><td><strong>Expo</strong></td><td>O framework dos apps mobile</td></tr><tr><td><strong>Monorepo</strong></td><td>Um único repositório Git que contém múltiplos projetos</td></tr><tr><td><strong>Hook</strong></td><td>Código que executa automaticamente quando algo acontece</td></tr><tr><td><strong>Middleware</strong></td><td>Código que roda "no meio" — entre a requisição e a resposta</td></tr><tr><td><strong>Component</strong></td><td>Um bloco reutilizável de interface (botão, formulário, card)</td></tr><tr><td><strong>Token</strong></td><td>Unidade de custo das APIs de IA (aproximadamente 1 palavra = 1 token)</td></tr><tr><td><strong>RAG</strong></td><td>Técnica de IA que busca em documentos para enriquecer respostas</td></tr><tr><td><strong>Lint</strong></td><td>Ferramenta que verifica erros de código automaticamente</td></tr><tr><td><strong>Zustand</strong></td><td>Biblioteca de gerenciamento de estado do painel web</td></tr><tr><td><strong>Tailwind CSS</strong></td><td>Sistema de estilização visual usado nos 3 apps</td></tr><tr><td><strong>EAS</strong></td><td>Expo Application Services — serviço para publicar apps nas lojas</td></tr></tbody></table></div>
+<hr>
+
+<h2>Apêndice: Estrutura de Pastas Completa</h2>
+
+<pre class="code-block"><code>/AgendaVet/
+<p>│</p>
+<p>├── AgendaVetWeb/                    # Painel Web (Next.js)</p>
+<p>│   ├── app/                         # Páginas e rotas</p>
+<p>│   │   ├── (auth)/login/            # Tela de login</p>
+<p>│   │   ├── pets/                    # Gestão de pets</p>
+<p>│   │   ├── appointments/            # Agendamentos</p>
+<p>│   │   ├── calendar/                # Calendário</p>
+<p>│   │   ├── owners/                  # Tutores</p>
+<p>│   │   ├── analytics/               # Relatórios</p>
+<p>│   │   ├── products-services/       # Serviços e produtos</p>
+<p>│   │   ├── vet-copilot/             # IA Copiloto</p>
+<p>│   │   ├── settings/                # Configurações</p>
+<p>│   │   └── api/                     # Endpoints de API</p>
+<p>│   ├── components/                  # Componentes visuais</p>
+<p>│   │   ├── admin/modules/           # Módulos clínicos (12 formulários)</p>
+<p>│   │   ├── ui/                      # Componentes de interface base</p>
+<p>│   │   └── ...</p>
+<p>│   ├── lib/                         # Funções e lógica</p>
+<p>│   │   ├── supabase/                # Conexão com banco de dados</p>
+<p>│   │   ├── vet-copilot/             # Motor da IA</p>
+<p>│   │   └── ...</p>
+<p>│   └── vercel.json                  # Config de deploy</p>
+<p>│</p>
+<p>├── AgendaVetVet/                    # App Veterinário (Expo)</p>
+<p>│   ├── app/                         # Telas</p>
+<p>│   │   ├── (tabs)/                  # Tabs principais</p>
+<p>│   │   ├── pet/                     # Módulos clínicos mobile</p>
+<p>│   │   └── menu/                    # Telas do menu</p>
+<p>│   ├── lib/                         # Lógica e serviços</p>
+<p>│   │   ├── vet-copilot/             # IA no mobile</p>
+<p>│   │   ├── pdf/                     # Geração de PDF</p>
+<p>│   │   └── ...</p>
+<p>│   └── app.json                     # Config do app</p>
+<p>│</p>
+<p>├── AgendaVetTutor/                  # App do Dono do Pet (Expo)</p>
+<p>│   ├── app/                         # Telas</p>
+<p>│   │   ├── (tabs)/                  # Tabs principais</p>
+<p>│   │   └── pet-details/             # Detalhes e documentos</p>
+<p>│   └── app.json                     # Config do app</p>
+<p>│</p>
+<p>├── shared/                          # Código compartilhado</p>
+<p>│   └── exports/</p>
+<p>│       ├── types.ts                 # Tipos de dados</p>
+<p>│       ├── constants.ts             # Constantes do sistema</p>
+<p>│       └── utils.ts                 # Funções utilitárias</p>
+<p>│</p>
+<p>├── packages/theme/                  # Tema visual compartilhado</p>
+<p>│</p>
+<p>└── supabase/                        # Banco de dados</p>
+<p>    ├── migrations/                  # 12 versões do schema</p>
+<p>    └── functions/                   # Funções serverless</code></pre></p>
+
+<hr>
+
+<h2>Como converter este arquivo em PDF</h2>
+
+<p>Este guia está no formato Markdown (<code class="inline">.md</code>). Para transformar em PDF:</p>
+
+<p><strong>Opção 1 — VSCode (recomendado):</strong></p>
+<li><span class="num">1.</span> Abra o arquivo <code class="inline">GUIA-AGENDAVET.md</code> no VSCode</li>
+<li><span class="num">2.</span> Pressione <code class="inline">Ctrl+Shift+P</code> (ou <code class="inline">Cmd+Shift+P</code> no Mac)</li>
+<li><span class="num">3.</span> Digite "Markdown: Open Preview"</li>
+<li><span class="num">4.</span> Na aba de preview, clique com botão direito → "Print" → "Save as PDF"</li>
+
+<p><strong>Opção 2 — Navegador:</strong></p>
+<li><span class="num">1.</span> Acesse: https://markdownlivepreview.com</li>
+<li><span class="num">2.</span> Cole o conteúdo deste arquivo</li>
+<li><span class="num">3.</span> Use <code class="inline">Ctrl+P</code> → "Salvar como PDF"</li>
+
+<p><strong>Opção 3 — GitHub:</strong></p>
+<p>O GitHub renderiza arquivos <code class="inline">.md</code> automaticamente com formatação.</p>
+<p>Acesse: github.com/melowesley/AgendaVet/blob/master/GUIA-AGENDAVET.md</p>
+
+<hr>
+
+<p><em>Guia gerado em 17 de março de 2026 com base no estado atual do projeto AgendaVet.</em></p>
+<p><em>Atualizado por Claude Code — Anthropic.</em></p>
+
+
+    <!-- PART 2 -->
+    <div class="part-separator">
+      <p style="color:#8b949e;font-size:13px;letter-spacing:3px;text-transform:uppercase;">Parte II</p>
+      <h1>Engenharia de IA</h1>
+      <div class="line"></div>
+      <p style="color:#8b949e;font-size:14px;">Do fundamento ao sistema autônomo — VetCopilot</p>
+    </div>
+
+    <h1>Guia de Engenharia de IA — AgendaVet</h1>
+<h3>Do Fundamento ao Sistema Autônomo</h3>
+
+<blockquote><strong>Para quem é este guia?</strong></blockquote>
+<blockquote>Este documento assume que você já sabe programar (JavaScript/TypeScript) mas quer entender profundamente como a IA funciona por dentro, como ela está integrada no AgendaVet hoje, e como evoluir o sistema de forma inteligente. Não é para iniciante absoluto em programação, mas explica os conceitos de IA do zero.</blockquote>
+
+<hr>
+
+<h2>Índice</h2>
+
+<li><span class="num">1.</span> <a href="#1-como-um-modelo-de-linguagem-funciona-de-verdade">Como um Modelo de Linguagem Funciona de Verdade</a></li>
+<li><span class="num">2.</span> <a href="#2-o-que-acontece-quando-você-manda-uma-mensagem">O que Acontece Quando Você Manda uma Mensagem</a></li>
+<li><span class="num">3.</span> <a href="#3-tokens--a-unidade-de-trabalho-da-ia">Tokens — A Unidade de Trabalho da IA</a></li>
+<li><span class="num">4.</span> <a href="#4-context-window--a-memória-de-curto-prazo">Context Window — A Memória de Curto Prazo</a></li>
+<li><span class="num">5.</span> <a href="#5-system-prompt--como-programar-o-comportamento-da-ia">System Prompt — Como Programar o Comportamento da IA</a></li>
+<li><span class="num">6.</span> <a href="#6-tool-calling-function-calling--como-a-ia-acessa-dados-reais">Tool Calling (Function Calling) — Como a IA Acessa Dados Reais</a></li>
+<li><span class="num">7.</span> <a href="#7-streaming--por-que-a-ia-digita-em-tempo-real">Streaming — Por que a IA "Digita" em Tempo Real</a></li>
+<li><span class="num">8.</span> <a href="#8-rag--retrieval-augmented-generation">RAG — Retrieval Augmented Generation</a></li>
+<li><span class="num">9.</span> <a href="#9-embeddings--como-a-ia-entende-semântica">Embeddings — Como a IA Entende Semântica</a></li>
+<li><span class="num">10.</span> <a href="#10-a-arquitetura-do-vetcopilot-no-agendavet">A Arquitetura do VetCopilot no AgendaVet</a></li>
+<li><span class="num">11.</span> <a href="#11-como-escrever-prompts-poderosos">Como Escrever Prompts Poderosos</a></li>
+<li><span class="num">12.</span> <a href="#12-gerenciamento-de-custos-e-tokens">Gerenciamento de Custos e Tokens</a></li>
+<li><span class="num">13.</span> <a href="#13-o-que-pode-ser-implementado--mapa-completo">O que Pode Ser Implementado — Mapa Completo</a></li>
+<li><span class="num">14.</span> <a href="#14-próximos-passos-concretos-com-código">Próximos Passos Concretos com Código</a></li>
+<li><span class="num">15.</span> <a href="#15-riscos-limitações-e-ética">Riscos, Limitações e Ética</a></li>
+<li><span class="num">16.</span> <a href="#16-glossário-técnico">Glossário Técnico</a></li>
+
+<hr>
+
+<h2>1. Como um Modelo de Linguagem Funciona de Verdade</h2>
+
+<h3>1.1 A Ideia Central</h3>
+
+<p>Um LLM (Large Language Model) como Claude ou GPT <strong>não pensa</strong>. Ele <strong>prediz a próxima palavra</strong> (tecnicamente, o próximo token) com base em tudo que veio antes. É uma função matemática gigantesca que aprendeu padrões de bilhões de textos.</p>
+
+<pre class="code-block"><code>Entrada: "O gato está com febre e"
+<p>IA pensa: qual palavra vem depois mais provavelmente?</p>
+<p>Saída:   "vômito"  (probabilidade: 12%)</p>
+<p>         "letargia" (probabilidade: 9%)</p>
+<p>         "diarreia" (probabilidade: 8%)</p>
+<p>         ...</p>
+<p>IA escolhe "vômito" → agora prediz a próxima → e assim por diante</code></pre></p>
+
+<h3>1.2 A Arquitetura Transformer</h3>
+
+<p>O mecanismo que torna isso possível se chama <strong>Transformer</strong>, criado em 2017. O segredo dele é a <strong>Atenção (Attention)</strong>.</p>
+
+<pre class="code-block"><code>Frase: "O paciente Bolinha (Golden Retriever, 5 anos) chegou com tosse seca"
+
+<p>O mecanismo de atenção faz:</p>
+<p>  "tosse" → presta atenção em "seca" (modifica o diagnóstico)</p>
+<p>  "tosse" → presta atenção em "Retriever" (raça importa para algumas doenças)</p>
+<p>  "tosse" → presta atenção em "5 anos" (idade importa para prognóstico)</p>
+
+<p>Resultado: o modelo entende que "tosse seca em Golden Retriever de 5 anos"</p>
+<p>           é diferente de "tosse produtiva em filhote de 2 meses"</code></pre></p>
+
+<p><strong>Por que isso importa para você:</strong> Quanto mais contexto relevante você der ao modelo no prompt, mais precisa é a atenção que ele aplica. Um prompt genérico produz resposta genérica.</p>
+
+<h3>1.3 Treinamento vs Inferência</h3>
+
+<div class="table-wrap"><table><thead><tr><th>Fase</th><th>O que é</th><th>Quando acontece</th><th>Você controla?</th></tr></thead><tbody><tr><td><strong>Pré-treinamento</strong></td><td>O modelo aprende com trilhões de tokens da internet</td><td>Uma vez, pela Anthropic/OpenAI</td><td>Não</td></tr><tr><td><strong>Fine-tuning</strong></td><td>Ajuste para uma tarefa específica</td><td>Após pré-treino</td><td>Sim, mas caro</td></tr><tr><td><strong>RLHF</strong></td><td>Humanos ensinam o que é "boa" resposta</td><td>Durante treinamento</td><td>Não</td></tr><tr><td><strong>Inferência</strong></td><td>O modelo responde sua pergunta</td><td>Toda vez que você chama a API</td><td>Sim — é aqui que você trabalha</td></tr></tbody></table></div>
+<p><strong>Conclusão prática:</strong> Como desenvolvedor, você trabalha exclusivamente na fase de <strong>inferência</strong> — a cada chamada de API. Seu poder está em: o que você coloca no prompt, quais ferramentas você dá ao modelo, e como você processa a saída.</p>
+
+<hr>
+
+<h2>2. O que Acontece Quando Você Manda uma Mensagem</h2>
+
+<p>Veja o fluxo completo de uma pergunta no VetCopilot do AgendaVet:</p>
+
+<pre class="code-block"><code>Veterinário digita: "Quais vacinas o Bolinha está atrasado?"
+<p>         │</p>
+<p>         ▼</p>
+<p>[FRONTEND - React]</p>
+<p>  → Captura a mensagem</p>
+<p>  → Adiciona ao histórico de chat (array de mensagens)</p>
+<p>  → Faz POST para /api/vet-copilot</p>
+<p>         │</p>
+<p>         ▼</p>
+<p>[API ROUTE - Next.js]</p>
+<p>  → Verifica autenticação (JWT do Supabase)</p>
+<p>  → Carrega contexto do pet (nome, idade, espécie, histórico)</p>
+<p>  → Monta o array de mensagens completo:</p>
+<p>      [</p>
+<p>        { role: "system", content: "Você é o VetCopilot..." },</p>
+<p>        { role: "user",   content: "Pet: Bolinha, 5 anos..." },  ← contexto</p>
+<p>        { role: "user",   content: "Quais vacinas estão atrasadas?" }</p>
+<p>      ]</p>
+<p>  → Chama a API da Claude (via OpenRouter)</p>
+<p>         │</p>
+<p>         ▼</p>
+<p>[MODELO DE IA - Claude Sonnet]</p>
+<p>  → Recebe todos os tokens de uma vez</p>
+<p>  → Decide: preciso de uma tool? → Sim! → get_vaccination_status</p>
+<p>  → Retorna: { tool_call: "get_vaccination_status", args: { petId: "abc123" } }</p>
+<p>         │</p>
+<p>         ▼</p>
+<p>[API ROUTE - Next.js] (recebe o tool call)</p>
+<p>  → Executa a função no Supabase:</p>
+<p>      SELECT * FROM pet_vaccines WHERE pet_id = 'abc123'</p>
+<p>  → Recebe: [{ vaccine: "V10", due_date: "2025-01-01", status: "overdue" }]</p>
+<p>  → Devolve resultado para o modelo</p>
+<p>         │</p>
+<p>         ▼</p>
+<p>[MODELO DE IA - Claude Sonnet] (continua)</p>
+<p>  → Agora tem os dados reais</p>
+<p>  → Gera a resposta final em streaming</p>
+<p>         │</p>
+<p>         ▼</p>
+<p>[FRONTEND - React]</p>
+<p>  → Recebe os tokens um a um via SSE (Server-Sent Events)</p>
+<p>  → Exibe em tempo real enquanto chegam</p>
+<p>  → Renderiza a resposta completa</code></pre></p>
+
+<p><strong>Ponto-chave:</strong> A IA não tem acesso direto ao banco de dados. Ela <strong>solicita</strong> dados através de tools, e você (o servidor) <strong>executa</strong> e <strong>devolve</strong> os resultados. O modelo orquestra, mas você controla os dados.</p>
+
+<hr>
+
+<h2>3. Tokens — A Unidade de Trabalho da IA</h2>
+
+<h3>3.1 O que é um token?</h3>
+
+<p>Token não é uma palavra. É um pedaço de texto que o modelo aprendeu a reconhecer como uma unidade.</p>
+
+<pre class="code-block"><code>"Bolinha está com parvovírus"
+<p>→ ["Bol", "inha", " está", " com", " par", "vov", "írus"]</p>
+<p>   7 tokens (aprox.)</p>
+
+<p>"cat" = 1 token</p>
+<p>"cachorro" = 2 tokens ("cach", "orro")</p>
+<p>"parvovírus" = 4 tokens (palavras raras = mais tokens)</code></pre></p>
+
+<p><strong>Regra prática:</strong> 1 token ≈ 0.75 palavras em inglês, ≈ 0.6 palavras em português (pt-BR usa mais tokens).</p>
+
+<h3>3.2 Por que tokens importam?</h3>
+
+<pre class="code-block"><code>Claude Sonnet 4.6:
+<p>  Preço entrada: ~$3 por 1 milhão de tokens</p>
+<p>  Preço saída:   ~$15 por 1 milhão de tokens</p>
+
+<p>Uma consulta no VetCopilot:</p>
+<p>  System prompt:    ~800 tokens</p>
+<p>  Contexto do pet:  ~500 tokens</p>
+<p>  Histórico chat:   ~300 tokens</p>
+<p>  Pergunta:         ~50 tokens</p>
+<p>  ────────────────────────────</p>
+<p>  Total entrada:    ~1.650 tokens = $0.005</p>
+<p>  Resposta (saída): ~300 tokens = $0.0045</p>
+<p>  ────────────────────────────</p>
+<p>  Custo por consulta: ~$0.01 (1 centavo de dólar)</p>
+<p>  100 consultas/dia = $1/dia = $30/mês</code></pre></p>
+
+<h3>3.3 Otimização de tokens no AgendaVet</h3>
+
+<pre class="code-block lang-typescript"><code>// RUIM — envia dados desnecessários
+<p>const petContext = JSON.stringify(pet) // inclui IDs internos, timestamps, etc.</p>
+<p>// ~800 tokens</p>
+
+<p>// BOM — envia apenas o que a IA precisa saber</p>
+<p>const petContext = <code class="inline"></p>
+<p>Pet: ${pet.name}, ${pet.species}, ${pet.breed}</p>
+<p>Idade: ${calculateAge(pet.birth_date)}</p>
+<p>Peso: ${pet.weight}kg</p>
+<p>Tutor: ${pet.owner_name}</p>
+<p></code></p>
+<p>// ~50 tokens — 94% de economia</code></pre></p>
+
+<hr>
+
+<h2>4. Context Window — A Memória de Curto Prazo</h2>
+
+<h3>4.1 O conceito</h3>
+
+<p>O context window é o limite máximo de tokens que o modelo pode "ver" de uma vez. Tudo que está dentro dele é processado. O que ficou fora, o modelo não sabe que existe.</p>
+
+<pre class="code-block"><code>Claude Sonnet 4.6: 200.000 tokens de context window
+<p>= ~150.000 palavras em pt-BR</p>
+<p>= um livro de 500 páginas inteiro</p>
+
+<p>GPT-4o: 128.000 tokens</p>
+<p>= ~95.000 palavras</code></pre></p>
+
+<h3>4.2 Como o chat "lembra" de conversas anteriores</h3>
+
+<p>O modelo não tem memória. A cada chamada, você envia <strong>todo o histórico</strong>:</p>
+
+<pre class="code-block lang-typescript"><code>// Turno 1
+<p>messages = [</p>
+<p>  { role: "system", content: "Você é VetCopilot..." },</p>
+<p>  { role: "user",   content: "O Bolinha tem tosse" },</p>
+<p>]</p>
+
+<p>// Turno 2 — você adiciona a resposta anterior + nova mensagem</p>
+<p>messages = [</p>
+<p>  { role: "system",    content: "Você é VetCopilot..." },</p>
+<p>  { role: "user",      content: "O Bolinha tem tosse" },</p>
+<p>  { role: "assistant", content: "Pode ser traqueobronquite..." },</p>
+<p>  { role: "user",      content: "Quais exames pedir?" },</p>
+<p>]</p>
+
+<p>// Turno 3 — acumula mais</p>
+<p>messages = [</p>
+<p>  { role: "system",    content: "Você é VetCopilot..." },</p>
+<p>  { role: "user",      content: "O Bolinha tem tosse" },</p>
+<p>  { role: "assistant", content: "Pode ser traqueobronquite..." },</p>
+<p>  { role: "user",      content: "Quais exames pedir?" },</p>
+<p>  { role: "assistant", content: "Radiografia torácica e..." },</p>
+<p>  { role: "user",      content: "Quanto custa em média?" },</p>
+<p>]</code></pre></p>
+
+<p><strong>Problema:</strong> Consultas longas ficam caras e podem chegar no limite do context window.</p>
+
+<p><strong>Solução — Summarização:</strong></p>
+
+<pre class="code-block lang-typescript"><code>// Quando o histórico passa de X tokens, resumir as mensagens antigas
+<p>async function summarizeHistory(messages: Message[]): Promise&lt;string&gt; {</p>
+<p>  const response = await ai.generateText({</p>
+<p>    model: "claude-haiku-4-5", // modelo barato para resumir</p>
+<p>    prompt: <code class="inline">Resuma esta consulta veterinária em 3-4 frases:</p>
+<p>    ${messages.map(m =&gt; </code>${m.role}: ${m.content}<code class="inline">).join('\n')}</code>,</p>
+<p>  })</p>
+<p>  return response.text</p>
+<p>}</p>
+
+<p>// Substitui N mensagens antigas por 1 resumo compacto</code></pre></p>
+
+<hr>
+
+<h2>5. System Prompt — Como Programar o Comportamento da IA</h2>
+
+<h3>5.1 O que é o System Prompt</h3>
+
+<p>É a "programação" do modelo para aquela sessão. Definido antes de qualquer mensagem do usuário. O modelo tratará as instruções do system prompt com mais autoridade.</p>
+
+<h3>5.2 Anatomia de um bom System Prompt para o VetCopilot</h3>
+
+<pre class="code-block lang-typescript"><code>// lib/vet-copilot/system-prompt.ts
+
+<p>export function buildSystemPrompt(context: PetContext): string {</p>
+<p>  return <code class="inline"></p>
+<h2>IDENTIDADE</h2>
+<p>Você é o VetCopilot, assistente clínico especializado em medicina veterinária</p>
+<p>integrado ao sistema AgendaVet. Você AUXILIA veterinários — nunca substitui.</p>
+
+<h2>PACIENTE ATUAL</h2>
+<p>${formatPetContext(context)}</p>
+
+<h2>REGRAS ABSOLUTAS (nunca viole)</h2>
+<li><span class="num">1.</span> SEMPRE apresente diagnósticos como "possíveis" ou "diferenciais", nunca definitivos</li>
+<li><span class="num">2.</span> SEMPRE inclua: "Decisão final é do veterinário responsável"</li>
+<li><span class="num">3.</span> NUNCA calcule doses sem confirmar peso atual do paciente</li>
+<li><span class="num">4.</span> NUNCA sugira eutanásia sem o veterinário perguntar explicitamente</li>
+<li><span class="num">5.</span> Se não tiver certeza, diga "Não tenho dados suficientes para afirmar"</li>
+
+<h2>COMPORTAMENTO</h2>
+<li>Seja direto e clínico — evite prolixidade</li>
+<li>Use terminologia veterinária adequada</li>
+<li>Organize respostas com bullets quando houver listas</li>
+<li>Para diagnósticos, use formato: (1) mais provável → (N) menos provável</li>
+<li>Sempre cite se a informação veio do prontuário ou de conhecimento geral</li>
+
+<h2>FONTES DE CONHECIMENTO</h2>
+<p>Baseie-se em:</p>
+<li>Dados do prontuário fornecidos (prioridade máxima)</li>
+<li>Diretrizes WSAVA e AAHA</li>
+<li>Farmacologia veterinária (Plumb's Veterinary Drug Handbook)</li>
+<li>Indique nível de evidência: [PRONTUÁRIO], [DIRETRIZ], [LITERATURA]</li>
+
+<h2>ESPECIALIDADE</h2>
+<p>${context.veterinarian.specialty</p>
+<p>  ? </code>O veterinário é especialista em ${context.veterinarian.specialty}.</p>
+<p>     Calibre o nível técnico das respostas adequadamente.<code class="inline"></p>
+<p>  : 'Clínica geral — respostas em nível de clínico geral.'}</p>
+<p></code>.trim()</p>
+<p>}</code></pre></p>
+
+<h3>5.3 Técnicas Avançadas de Prompt Engineering</h3>
+
+<p><strong>Chain of Thought (Raciocínio em Cadeia):</strong></p>
+<pre class="code-block lang-typescript"><code>// Força o modelo a pensar antes de responder
+<p>const prompt = <code class="inline"></p>
+<p>Antes de responder, raciocine internamente:</p>
+<li><span class="num">1.</span> Quais são os diagnósticos diferenciais?</li>
+<li><span class="num">2.</span> Qual evidência no prontuário apoia cada um?</li>
+<li><span class="num">3.</span> O que seria mais grave e precisa de atenção imediata?</li>
+<p>Depois, apresente sua conclusão.</p>
+
+<p>Pergunta: ${userMessage}</p>
+<p></code></code></pre></p>
+
+<p><strong>Few-Shot Learning (Exemplos no Prompt):</strong></p>
+<pre class="code-block lang-typescript"><code>// Mostrar exemplos do formato esperado
+<p>const prompt = <code class="inline"></p>
+<p>Ao sugerir exames, use exatamente este formato:</p>
+
+<p>EXEMPLO:</p>
+<p>Exames Recomendados:</p>
+<p>• Hemograma completo — [MOTIVO: avaliar resposta inflamatória] — Prioridade: ALTA</p>
+<p>• Radiografia torácica — [MOTIVO: descartar pneumonia] — Prioridade: MÉDIA</p>
+
+<p>Agora responda: ${userMessage}</p>
+<p></code></code></pre></p>
+
+<p><strong>Role Prompting (Definição de Papel):</strong></p>
+<pre class="code-block lang-typescript"><code>// Diferentes papéis para diferentes contextos
+<p>const roles = {</p>
+<p>  emergency:    "Você é especialista em emergências veterinárias. Priorize sempre o que salva vidas.",</p>
+<p>  dermatology:  "Você é dermatologista veterinário. Explore sistematicamente todas causas cutâneas.",</p>
+<p>  nutrition:    "Você é nutricionista veterinário. Foque em condição corporal e dieta.",</p>
+<p>}</code></pre></p>
+
+<hr>
+
+<h2>6. Tool Calling (Function Calling) — Como a IA Acessa Dados Reais</h2>
+
+<h3>6.1 O Conceito Fundamental</h3>
+
+<p>A IA não acessa banco de dados diretamente. O fluxo é:</p>
+
+<pre class="code-block"><code>IA detecta que precisa de dados
+<p>    ↓</p>
+<p>IA retorna uma "intenção de chamada" (JSON)</p>
+<p>    ↓</p>
+<p>SEU CÓDIGO executa a função real</p>
+<p>    ↓</p>
+<p>SEU CÓDIGO devolve o resultado para a IA</p>
+<p>    ↓</p>
+<p>IA gera a resposta final com os dados reais</code></pre></p>
+
+<h3>6.2 Como as Tools são definidas no AgendaVet</h3>
+
+<pre class="code-block lang-typescript"><code>// lib/vet-copilot/tools.ts
+
+<p>import { tool } from 'ai'</p>
+<p>import { z } from 'zod'</p>
+
+<p>export const vetCopilotTools = {</p>
+
+<p>  // TOOL 1: Buscar informações do pet</p>
+<p>  get_pet_info: tool({</p>
+<p>    description: <code class="inline"></p>
+<p>      Busca dados básicos do paciente: nome, espécie, raça, idade, peso,</p>
+<p>      cor, microchip, status reprodutivo e informações do tutor.</p>
+<p>      Use quando precisar confirmar dados do paciente.</p>
+<p>    </code>,</p>
+<p>    parameters: z.object({</p>
+<p>      petId: z.string().describe('ID único do pet no sistema')</p>
+<p>    }),</p>
+<p>    execute: async ({ petId }) =&gt; {</p>
+<p>      const { data } = await supabase</p>
+<p>        .from('pets')</p>
+<p>        .select('*, profiles(full_name, phone)')</p>
+<p>        .eq('id', petId)</p>
+<p>        .single()</p>
+
+<p>      return formatPetInfo(data) // retorna texto formatado, não JSON bruto</p>
+<p>    }</p>
+<p>  }),</p>
+
+<p>  // TOOL 2: Calcular dosagem de medicamento</p>
+<p>  calculate_medication_dosage: tool({</p>
+<p>    description: <code class="inline"></p>
+<p>      Calcula a dose de um medicamento com base no peso do animal.</p>
+<p>      Retorna dose, frequência, duração e alertas de segurança.</p>
+<p>      SEMPRE use esta tool para cálculos — nunca calcule manualmente.</p>
+<p>    </code>,</p>
+<p>    parameters: z.object({</p>
+<p>      medication: z.string().describe('Nome do medicamento (ex: Amoxicilina)'),</p>
+<p>      petWeight:  z.number().describe('Peso do animal em kg'),</p>
+<p>      species:    z.enum(['canino', 'felino', 'outros']),</p>
+<p>      indication: z.string().describe('Para qual condição é o medicamento')</p>
+<p>    }),</p>
+<p>    execute: async ({ medication, petWeight, species, indication }) =&gt; {</p>
+<p>      // Busca na tabela de doses ou chama API externa de farmacologia</p>
+<p>      const dosage = await getDosageFromDatabase(medication, species)</p>
+
+<p>      if (!dosage) {</p>
+<p>        return <code class="inline">Medicamento "${medication}" não encontrado na base.</p>
+<p>                Consulte Plumb's Veterinary Drug Handbook.</code></p>
+<p>      }</p>
+
+<p>      const doseMin = dosage.mg_per_kg_min * petWeight</p>
+<p>      const doseMax = dosage.mg_per_kg_max * petWeight</p>
+
+<p>      return <code class="inline"></p>
+<p>        Medicamento: ${medication}</p>
+<p>        Dose calculada: ${doseMin}mg - ${doseMax}mg por dose</p>
+<p>        Frequência: ${dosage.frequency}</p>
+<p>        Via: ${dosage.route}</p>
+<p>        Duração típica: ${dosage.duration}</p>
+<p>        ⚠️ Alertas: ${dosage.warnings}</p>
+<p>        [Cálculo baseado em: ${petWeight}kg × ${dosage.mg_per_kg_min}-${dosage.mg_per_kg_max}mg/kg]</p>
+<p>      </code></p>
+<p>    }</p>
+<p>  }),</p>
+
+<p>  // TOOL 3: Busca semântica (RAG) — Fase 2</p>
+<p>  search_clinical_knowledge: tool({</p>
+<p>    description: <code class="inline"></p>
+<p>      Busca em base de conhecimento veterinário (diretrizes WSAVA/AAHA,</p>
+<p>      protocolos clínicos, bulas). Use quando precisar de informação</p>
+<p>      baseada em evidência que não está no prontuário.</p>
+<p>    </code>,</p>
+<p>    parameters: z.object({</p>
+<p>      query: z.string().describe('O que você quer buscar'),</p>
+<p>      topic: z.enum([</p>
+<p>        'vacinação', 'parasitologia', 'cirurgia',</p>
+<p>        'farmacologia', 'nutrição', 'emergência', 'geral'</p>
+<p>      ])</p>
+<p>    }),</p>
+<p>    execute: async ({ query, topic }) =&gt; {</p>
+<p>      // Fase 2: Busca vetorial no Supabase pgvector</p>
+<p>      const embedding = await generateEmbedding(query)</p>
+<p>      const results = await searchVectorStore(embedding, topic, limit=3)</p>
+<p>      return formatSearchResults(results)</p>
+<p>    }</p>
+<p>  }),</p>
+<p>}</code></pre></p>
+
+<h3>6.3 Como o Modelo Decide Usar uma Tool</h3>
+
+<p>O modelo lê a <code class="inline">description</code> da tool e decide se precisa usá-la. Por isso, <strong>a descrição é crítica</strong>:</p>
+
+<pre class="code-block lang-typescript"><code>// DESCRIÇÃO RUIM — vaga
+<p>description: "Busca dados do pet"</p>
+
+<p>// DESCRIÇÃO BOA — específica sobre quando e por que usar</p>
+<p>description: <code class="inline"></p>
+<p>  Busca TODOS os dados clínicos do paciente: histórico de consultas,</p>
+<p>  diagnósticos anteriores, medicações em uso, alergias conhecidas.</p>
+<p>  Use quando o veterinário perguntar sobre histórico, condições existentes,</p>
+<p>  ou quando precisar de contexto para um diagnóstico diferencial.</p>
+<p>  NÃO use para dados básicos (nome, raça) — esses já estão no contexto.</p>
+<p></code></code></pre></p>
+
+<h3>6.4 Tool Calling Paralelo</h3>
+
+<p>O modelo pode chamar múltiplas tools ao mesmo tempo:</p>
+
+<pre class="code-block"><code>Pergunta: "Resuma o Bolinha e verifique as vacinas"
+<p>    ↓</p>
+<p>IA chama simultaneamente:</p>
+<p>  → get_pet_info(petId)        ← em paralelo</p>
+<p>  → get_vaccination_status(petId)  ← em paralelo</p>
+<p>    ↓</p>
+<p>Ambos retornam → IA monta resposta completa</code></pre></p>
+
+<p>Isso é gerenciado automaticamente pelo Vercel AI SDK com <code class="inline">streamText</code>.</p>
+
+<hr>
+
+<h2>7. Streaming — Por que a IA "Digita" em Tempo Real</h2>
+
+<h3>7.1 Como funciona</h3>
+
+<p>Sem streaming, você esperaria 10-15 segundos para receber a resposta inteira. Com streaming, os tokens chegam assim que são gerados (~50ms por token).</p>
+
+<pre class="code-block lang-typescript"><code>// app/api/vet-copilot/route.ts
+
+<p>export async function POST(req: Request) {</p>
+<p>  const { messages, petId } = await req.json()</p>
+
+<p>  // Monta contexto do pet</p>
+<p>  const context = await buildPetContext(petId)</p>
+
+<p>  // Chama o modelo com streaming</p>
+<p>  const result = streamText({</p>
+<p>    model: openrouter('anthropic/claude-sonnet-4-6'),</p>
+<p>    system: buildSystemPrompt(context),</p>
+<p>    messages,</p>
+<p>    tools: vetCopilotTools,</p>
+<p>    maxSteps: 5, // máximo de rounds de tool calling</p>
+<p>    onStepFinish: async ({ toolResults }) =&gt; {</p>
+<p>      // Log para auditoria após cada tool call</p>
+<p>      await logToolUsage(toolResults)</p>
+<p>    },</p>
+<p>  })</p>
+
+<p>  // Retorna stream para o frontend</p>
+<p>  return result.toDataStreamResponse()</p>
+<p>}</code></pre></p>
+
+<h3>7.2 No Frontend — Consumindo o Stream</h3>
+
+<pre class="code-block lang-typescript"><code>// components/vet-copilot/vet-copilot-chat.tsx
+
+<p>import { useChat } from 'ai/react'</p>
+
+<p>export function VetCopilotChat({ petId }: { petId: string }) {</p>
+<p>  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({</p>
+<p>    api: '/api/vet-copilot',</p>
+<p>    body: { petId }, // enviado em cada request</p>
+<p>    onFinish: (message) =&gt; {</p>
+<p>      // Salva no Supabase quando a resposta completa chegar</p>
+<p>      saveCopilotInteraction(message)</p>
+<p>    }</p>
+<p>  })</p>
+
+<p>  return (</p>
+<p>    &lt;div&gt;</p>
+<p>      {messages.map(m =&gt; (</p>
+<p>        &lt;div key={m.id} className={m.role === 'user' ? 'text-right' : 'text-left'}&gt;</p>
+<p>          {/<em> Renderiza markdown das respostas </em>/}</p>
+<p>          &lt;ReactMarkdown&gt;{m.content}&lt;/ReactMarkdown&gt;</p>
+<p>        &lt;/div&gt;</p>
+<p>      ))}</p>
+
+<p>      {/<em> Indicador de loading enquanto a IA "pensa" </em>/}</p>
+<p>      {isLoading && &lt;TypingIndicator /&gt;}</p>
+
+<p>      &lt;form onSubmit={handleSubmit}&gt;</p>
+<p>        &lt;input value={input} onChange={handleInputChange} /&gt;</p>
+<p>        &lt;button type="submit"&gt;Enviar&lt;/button&gt;</p>
+<p>      &lt;/form&gt;</p>
+<p>    &lt;/div&gt;</p>
+<p>  )</p>
+<p>}</code></pre></p>
+
+<hr>
+
+<h2>8. RAG — Retrieval Augmented Generation</h2>
+
+<h3>8.1 O Problema que o RAG Resolve</h3>
+
+<p>Os modelos de IA têm uma data de corte de conhecimento. Eles não sabem:</p>
+<li>As últimas diretrizes da WSAVA (2024/2025)</li>
+<li>O protocolo específico da SUA clínica</li>
+<li>Bulas de medicamentos lançados recentemente</li>
+<li>Casos clínicos documentados por você ao longo dos anos</li>
+
+<p>O RAG resolve isso: <strong>antes de responder, busca os documentos relevantes e os inclui no contexto.</strong></p>
+
+<h3>8.2 Como RAG Funciona — Passo a Passo</h3>
+
+<pre class="code-block"><code>FASE DE INGESTÃO (offline, feita uma vez):
+<p>  Documento PDF (diretriz WSAVA 2024)</p>
+<p>       │</p>
+<p>       ▼</p>
+<p>  Divide em chunks (pedaços de ~500 tokens cada)</p>
+<p>       │</p>
+<p>       ▼</p>
+<p>  Para cada chunk → gera um embedding (vetor de 1536 dimensões)</p>
+<p>       │</p>
+<p>       ▼</p>
+<p>  Salva (texto + vetor) no Supabase pgvector</p>
+
+<p>FASE DE QUERY (online, a cada pergunta):</p>
+<p>  Usuário pergunta: "Protocolo de vacinação para gatos adultos?"</p>
+<p>       │</p>
+<p>       ▼</p>
+<p>  Gera embedding da pergunta</p>
+<p>       │</p>
+<p>       ▼</p>
+<p>  Busca os 3-5 chunks mais similares por distância vetorial</p>
+<p>       │</p>
+<p>       ▼</p>
+<p>  Inclui esses chunks no prompt da IA</p>
+<p>       │</p>
+<p>       ▼</p>
+<p>  IA responde usando o conteúdo dos chunks + seu conhecimento geral</code></pre></p>
+
+<h3>8.3 Implementação Completa para o AgendaVet</h3>
+
+<p><strong>Passo 1 — Schema no Supabase:</strong></p>
+
+<pre class="code-block lang-sql"><code>-- Habilitar extensão pgvector
+<p>CREATE EXTENSION vector;</p>
+
+<p>-- Tabela de documentos veterinários</p>
+<p>CREATE TABLE vet_knowledge_base (</p>
+<p>  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),</p>
+<p>  title       TEXT NOT NULL,</p>
+<p>  content     TEXT NOT NULL,          -- texto original do chunk</p>
+<p>  embedding   VECTOR(1536),           -- vetor gerado pelo modelo</p>
+<p>  source      TEXT,                   -- ex: "WSAVA 2024", "AAHA 2023"</p>
+<p>  topic       TEXT,                   -- ex: "vacinação", "parasitologia"</p>
+<p>  created_at  TIMESTAMPTZ DEFAULT NOW()</p>
+<p>);</p>
+
+<p>-- Índice para busca rápida por similaridade</p>
+<p>CREATE INDEX ON vet_knowledge_base</p>
+<p>  USING ivfflat (embedding vector_cosine_ops)</p>
+<p>  WITH (lists = 100);</p>
+
+<p>-- Função SQL para busca semântica</p>
+<p>CREATE OR REPLACE FUNCTION search_vet_knowledge(</p>
+<p>  query_embedding VECTOR(1536),</p>
+<p>  match_topic     TEXT,</p>
+<p>  match_count     INT DEFAULT 5</p>
+<p>)</p>
+<p>RETURNS TABLE(id UUID, title TEXT, content TEXT, source TEXT, similarity FLOAT)</p>
+<p>LANGUAGE SQL AS $$</p>
+<p>  SELECT id, title, content, source,</p>
+<p>         1 - (embedding &lt;=&gt; query_embedding) AS similarity</p>
+<p>  FROM   vet_knowledge_base</p>
+<p>  WHERE  topic = match_topic OR match_topic = 'geral'</p>
+<p>  ORDER  BY embedding &lt;=&gt; query_embedding</p>
+<p>  LIMIT  match_count;</p>
+<p>$$;</code></pre></p>
+
+<p><strong>Passo 2 — Pipeline de Ingestão:</strong></p>
+
+<pre class="code-block lang-typescript"><code>// scripts/ingest-knowledge.ts
+<p>import { createClient } from '@supabase/supabase-js'</p>
+
+<p>async function ingestDocument(pdfPath: string, source: string, topic: string) {</p>
+<p>  // 1. Extrai texto do PDF</p>
+<p>  const text = await extractTextFromPDF(pdfPath)</p>
+
+<p>  // 2. Divide em chunks de ~500 tokens com overlap</p>
+<p>  const chunks = splitIntoChunks(text, {</p>
+<p>    chunkSize: 500,</p>
+<p>    overlap: 50,  // sobreposição para não perder contexto nas bordas</p>
+<p>  })</p>
+
+<p>  console.log(<code class="inline">Processando ${chunks.length} chunks de "${source}"...</code>)</p>
+
+<p>  // 3. Para cada chunk, gera embedding e salva</p>
+<p>  for (const chunk of chunks) {</p>
+<p>    const embedding = await generateEmbedding(chunk) // ver seção 9</p>
+
+<p>    await supabase.from('vet_knowledge_base').insert({</p>
+<p>      title:     <code class="inline">${source} — chunk ${chunks.indexOf(chunk) + 1}</code>,</p>
+<p>      content:   chunk,</p>
+<p>      embedding: embedding,</p>
+<p>      source:    source,</p>
+<p>      topic:     topic,</p>
+<p>    })</p>
+
+<p>    // Rate limiting — APIs de embedding têm limite de req/min</p>
+<p>    await sleep(100)</p>
+<p>  }</p>
+
+<p>  console.log(<code class="inline">✅ "${source}" ingerido com sucesso!</code>)</p>
+<p>}</p>
+
+<p>// Uso:</p>
+<p>await ingestDocument('./docs/wsava-vaccination-guidelines-2022.pdf', 'WSAVA 2022', 'vacinação')</p>
+<p>await ingestDocument('./docs/aaha-pain-management-2022.pdf', 'AAHA Pain 2022', 'analgesia')</p>
+<p>await ingestDocument('./docs/plumbs-drug-handbook.pdf', 'Plumb\'s 9th Ed', 'farmacologia')</code></pre></p>
+
+<p><strong>Passo 3 — Busca Semântica na Tool:</strong></p>
+
+<pre class="code-block lang-typescript"><code>// lib/vet-copilot/tools.ts
+
+<p>search_clinical_knowledge: tool({</p>
+<p>  description: 'Busca em base de conhecimento veterinário baseada em evidência',</p>
+<p>  parameters: z.object({</p>
+<p>    query: z.string(),</p>
+<p>    topic: z.enum(['vacinação', 'parasitologia', 'farmacologia', 'geral'])</p>
+<p>  }),</p>
+<p>  execute: async ({ query, topic }) =&gt; {</p>
+<p>    // Gera embedding da query</p>
+<p>    const queryEmbedding = await generateEmbedding(query)</p>
+
+<p>    // Busca os chunks mais relevantes</p>
+<p>    const { data: results } = await supabase.rpc('search_vet_knowledge', {</p>
+<p>      query_embedding: queryEmbedding,</p>
+<p>      match_topic:     topic,</p>
+<p>      match_count:     4</p>
+<p>    })</p>
+
+<p>    if (!results || results.length === 0) {</p>
+<p>      return 'Nenhuma informação encontrada na base de conhecimento.'</p>
+<p>    }</p>
+
+<p>    // Formata para a IA consumir</p>
+<p>    return results.map(r =&gt; <code class="inline"></p>
+<p>      FONTE: ${r.source} (similaridade: ${(r.similarity * 100).toFixed(0)}%)</p>
+<p>      CONTEÚDO: ${r.content}</p>
+<p>    </code>).join('\n---\n')</p>
+<p>  }</p>
+<p>})</code></pre></p>
+
+<hr>
+
+<h2>9. Embeddings — Como a IA Entende Semântica</h2>
+
+<h3>9.1 O Conceito</h3>
+
+<p>Um embedding é um vetor numérico que representa o <strong>significado</strong> de um texto. Textos com significado parecido ficam próximos no espaço vetorial.</p>
+
+<pre class="code-block"><code>"protocolo de vacinação para cães"  → [0.12, -0.34, 0.89, ...]  (1536 números)
+<p>"vacinas caninas e calendário"      → [0.11, -0.32, 0.91, ...]  (próximo!)</p>
+<p>"receita de bolo de chocolate"      → [-0.78, 0.45, -0.12, ...] (distante!)</code></pre></p>
+
+<p>A distância entre vetores mede a similaridade semântica. Isso permite buscar por <strong>significado</strong>, não por palavras exatas.</p>
+
+<h3>9.2 Gerando Embeddings no Projeto</h3>
+
+<pre class="code-block lang-typescript"><code>// lib/vet-copilot/embeddings.ts
+
+<p>import OpenAI from 'openai'</p>
+
+<p>const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })</p>
+
+<p>export async function generateEmbedding(text: string): Promise&lt;number[]&gt; {</p>
+<p>  const response = await openai.embeddings.create({</p>
+<p>    model: 'text-embedding-3-small', // barato: $0.02/1M tokens</p>
+<p>    input: text.slice(0, 8000),      // limite do modelo</p>
+<p>  })</p>
+<p>  return response.data[0].embedding</p>
+<p>}</p>
+
+<p>// Alternativa com Gemini (sem custo adicional se já usa Gemini)</p>
+<p>import { GoogleGenerativeAI } from '@google/generative-ai'</p>
+
+<p>const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)</p>
+
+<p>export async function generateEmbeddingGemini(text: string): Promise&lt;number[]&gt; {</p>
+<p>  const model = gemini.getGenerativeModel({ model: 'text-embedding-004' })</p>
+<p>  const result = await model.embedContent(text)</p>
+<p>  return result.embedding.values</p>
+<p>}</code></pre></p>
+
+<h3>9.3 Casos de Uso de Embeddings no AgendaVet</h3>
+
+<p>Além do RAG, embeddings têm outros usos poderosos:</p>
+
+<pre class="code-block"><code>1. BUSCA INTELIGENTE DE PRONTUÁRIOS
+<p>   Veterinário digita: "casos de insuficiência renal em gatos idosos"</p>
+<p>   Sistema busca semanticamente entre todos os prontuários</p>
+<p>   Resultado: casos similares mesmo com palavras diferentes</p>
+
+<li><span class="num">2.</span> DETECÇÃO DE SIMILARIDADE ENTRE CASOS</li>
+<p>   Novo caso com sintomas X, Y, Z</p>
+<p>   Busca casos históricos similares</p>
+<p>   Exibe: "3 casos similares encontrados — ver diagnósticos anteriores"</p>
+
+<li><span class="num">3.</span> SUGESTÃO AUTOMÁTICA DE DIAGNÓSTICOS</li>
+<p>   Com base nos sintomas atuais + embeddings de casos históricos</p>
+<p>   Sugere os diagnósticos mais comuns para esse perfil</code></pre></p>
+
+<hr>
+
+<h2>10. A Arquitetura do VetCopilot no AgendaVet</h2>
+
+<h3>10.1 Visão Completa do Sistema Atual</h3>
+
+<pre class="code-block"><code>┌─────────────────────────────────────────────────────────────────┐
+<p>│                    USUÁRIO (Veterinário)                         │</p>
+<p>│              Browser / App Expo (tablet/celular)                 │</p>
+<p>└─────────────────────────┬───────────────────────────────────────┘</p>
+<p>                          │ HTTPS</p>
+<p>                          ▼</p>
+<p>┌─────────────────────────────────────────────────────────────────┐</p>
+<p>│              NEXT.JS APP (Vercel Edge)                           │</p>
+<p>│                                                                  │</p>
+<p>│  ┌──────────────────────────────────────────────────────────┐   │</p>
+<p>│  │              /app/api/vet-copilot/route.ts               │   │</p>
+<p>│  │                                                          │   │</p>
+<p>│  │  1. Verifica JWT (Supabase Auth)                        │   │</p>
+<p>│  │  2. Carrega contexto do pet (gatherPetContext)           │   │</p>
+<p>│  │  3. Monta system prompt (buildSystemPrompt)             │   │</p>
+<p>│  │  4. Chama streamText() com tools                        │   │</p>
+<p>│  │  5. Executa tools quando solicitado                     │   │</p>
+<p>│  │  6. Faz streaming da resposta                           │   │</p>
+<p>│  └──────────────────────────────────────────────────────────┘   │</p>
+<p>└─────────────────┬────────────────────────────┬──────────────────┘</p>
+<p>                  │                            │</p>
+<p>                  ▼ API CALL                   ▼ QUERIES</p>
+<p>┌─────────────────────────┐    ┌───────────────────────────────┐</p>
+<p>│   OPENROUTER (Proxy)    │    │   SUPABASE (PostgreSQL)        │</p>
+<p>│                         │    │                               │</p>
+<p>│  claude-sonnet-4-6      │    │  • pets                       │</p>
+<p>│  claude-opus-4-6        │    │  • appointments               │</p>
+<p>│  gpt-4o (fallback)      │    │  • pet_vaccines               │</p>
+<p>│                         │    │  • pet_exams                  │</p>
+<p>│  Vantagens:             │    │  • pet_observations           │</p>
+<p>│  - Um billing só        │    │  • pet_prescriptions          │</p>
+<p>│  - Fallback automático  │    │  • vet_knowledge_base (RAG)   │</p>
+<p>│  - Monitoramento unif.  │    │  • copilot_interactions (log) │</p>
+<p>└─────────────────────────┘    └───────────────────────────────┘</code></pre></p>
+
+<h3>10.2 Fluxo de Dados Detalhado por Tipo de Pergunta</h3>
+
+<p><strong>Caso A — Pergunta sobre dados do pet:</strong></p>
+<pre class="code-block"><code>"O Bolinha tem alergia a algum medicamento?"
+<p>→ IA usa tool: get_pet_info(petId: "abc")</p>
+<p>→ Supabase: SELECT allergies FROM pets WHERE id = 'abc'</p>
+<p>→ Retorna: "Amoxicilina — reação alérgica (2023)"</p>
+<p>→ IA responde: "⚠️ SIM — Bolinha tem alergia registrada a Amoxicilina..."</code></pre></p>
+
+<p><strong>Caso B — Pergunta de conhecimento geral:</strong></p>
+<pre class="code-block"><code>"Qual a dose de Prednisolona para gatos?"
+<p>→ IA usa tool: calculate_medication_dosage(med: "Prednisolona", weight: X, species: "felino")</p>
+<p>→ Busca na tabela de doses</p>
+<p>→ IA responde com dose calculada + alertas</code></pre></p>
+
+<p><strong>Caso C — Pergunta clínica complexa (Fase 2 — RAG):</strong></p>
+<pre class="code-block"><code>"Qual o protocolo WSAVA para vacinação de filhotes?"
+<p>→ IA usa tool: search_clinical_knowledge(query: "vacinação filhotes", topic: "vacinação")</p>
+<p>→ Busca vetorial no Supabase pgvector</p>
+<p>→ Recupera chunks relevantes das diretrizes WSAVA</p>
+<p>→ IA responde citando a fonte: "[WSAVA 2022] Protocolo recomendado..."</code></pre></p>
+
+<hr>
+
+<h2>11. Como Escrever Prompts Poderosos</h2>
+
+<h3>11.1 Os 7 Elementos de um Prompt Eficaz</h3>
+
+<pre class="code-block"><code>1. PAPEL   — quem a IA é neste contexto
+<li><span class="num">2.</span> OBJETIVO — o que ela deve fazer</li>
+<li><span class="num">3.</span> CONTEXTO — informações relevantes para a tarefa</li>
+<li><span class="num">4.</span> FORMATO  — como a resposta deve ser estruturada</li>
+<li><span class="num">5.</span> TOM      — como a IA deve se comunicar</li>
+<li><span class="num">6.</span> RESTRIÇÕES — o que ela NÃO deve fazer</li>
+<li><span class="num">7.</span> EXEMPLOS — few-shot para calibrar o comportamento</code></pre></li>
+
+<h3>11.2 Exemplos Comparativos</h3>
+
+<p><strong>Prompt fraco:</strong></p>
+<pre class="code-block"><code>"Analise este pet e diga se tem algum problema."</code></pre>
+<p>Resultado: resposta vaga, genérica, sem estrutura.</p>
+
+<p><strong>Prompt forte:</strong></p>
+<pre class="code-block"><code>Você é um clínico veterinário sênior auxiliando durante uma consulta.
+
+<p>PACIENTE:</p>
+<li>Nome: ${pet.name}</li>
+<li>Espécie: ${pet.species} | Raça: ${pet.breed}</li>
+<li>Idade: ${pet.age} | Peso: ${pet.weight}kg</li>
+<li>Queixa principal: ${consultation.complaint}</li>
+
+<p>HISTÓRICO RELEVANTE:</p>
+<p>${formatRecentHistory(pet.history, limit=3)}</p>
+
+<p>TAREFA:</p>
+<li><span class="num">1.</span> Liste os 3 diagnósticos diferenciais mais prováveis (ordem decrescente de probabilidade)</li>
+<li><span class="num">2.</span> Para cada diagnóstico, indique:</li>
+<p>   - Evidências que suportam (baseadas no histórico acima)</p>
+<p>   - Exames confirmatórios sugeridos</p>
+<p>   - Urgência: [IMEDIATA / 24h / ELETIVA]</p>
+<li><span class="num">3.</span> Se houver qualquer sinal de emergência, destaque em ⚠️</li>
+
+<p>FORMATO DE RESPOSTA:</p>
+<h3>Diagnósticos Diferenciais</h3>
+
+<p><strong>1. [Nome do diagnóstico]</strong> — Probabilidade: Alta/Média/Baixa</p>
+<li>Evidências: ...</li>
+<li>Exames: ...</li>
+<li>Urgência: ...</li>
+
+<p>RESTRIÇÕES:</p>
+<li>Não inclua diagnósticos sem base nos dados fornecidos</li>
+<li>Não use jargões desnecessários — o veterinário pode ser recém-formado</code></pre></li>
+
+<h3>11.3 Prompt Engineering para Casos Específicos</h3>
+
+<p><strong>Para resumo de prontuário:</strong></p>
+<pre class="code-block lang-typescript"><code>export const SUMMARIZE_HISTORY_PROMPT = <code class="inline">
+<p>Você vai resumir o histórico médico de ${pet.name} para auxiliar o veterinário</p>
+<p>durante a consulta de hoje.</p>
+
+<p>HISTÓRICO (últimos 12 meses):</p>
+<p>${medicalHistory}</p>
+
+<p>CRIE UM RESUMO com:</p>
+<li><span class="num">1.</span> CONDIÇÕES ATIVAS: doenças/condições em acompanhamento</li>
+<li><span class="num">2.</span> MEDICAÇÕES EM USO: nome + dose + frequência</li>
+<li><span class="num">3.</span> ALERGIAS: se houver</li>
+<li><span class="num">4.</span> ÚLTIMAS CONSULTAS: data + motivo + resolução (máx 3)</li>
+<li><span class="num">5.</span> PONTOS DE ATENÇÃO: qualquer coisa relevante para hoje</li>
+
+<p>Seja conciso. Máximo 200 palavras. Use bullets.</p>
+<p></code></code></pre></p>
+
+<p><strong>Para cálculo de dose:</strong></p>
+<pre class="code-block lang-typescript"><code>export const DOSAGE_CALC_PROMPT = <code class="inline">
+<p>Calcule a dose para o caso abaixo.</p>
+
+<p>MEDICAMENTO: ${medication}</p>
+<p>PACIENTE: ${pet.species}, ${pet.weight}kg, ${pet.age}</p>
+<p>INDICAÇÃO: ${indication}</p>
+
+<p>RESPONDA EXATAMENTE NESTE FORMATO:</p>
+<hr>
+<p>DOSE: X mg/kg = Y mg por dose (para ${pet.weight}kg)</p>
+<p>FREQUÊNCIA: a cada X horas / X vezes ao dia</p>
+<p>VIA: oral / IM / IV / subcutânea</p>
+<p>DURAÇÃO: X dias (típico para ${indication})</p>
+<p>FORMA FARMACÊUTICA SUGERIDA: [comprimido/suspensão/injetável]</p>
+
+<p>⚠️ ALERTAS:</p>
+<li>[qualquer contraindicação relevante]</li>
+<li>[ajuste necessário se doença renal/hepática]</li>
+<hr>
+<p>FONTE: [Plumb's Veterinary Drug Handbook / WSAVA / outro]</p>
+<p></code></code></pre></p>
+
+<hr>
+
+<h2>12. Gerenciamento de Custos e Tokens</h2>
+
+<h3>12.1 Estratégia de Modelos por Tarefa</h3>
+
+<p>A regra de ouro: <strong>use o modelo mais barato que resolve o problema.</strong></p>
+
+<pre class="code-block lang-typescript"><code>// lib/vet-copilot/model-selector.ts
+
+<p>type TaskComplexity = 'simple' | 'moderate' | 'complex'</p>
+
+<p>export function selectModel(task: TaskComplexity): string {</p>
+<p>  switch (task) {</p>
+<p>    case 'simple':</p>
+<p>      // Resumos, formatação, perguntas diretas</p>
+<p>      // Custo: ~$0.001 por chamada</p>
+<p>      return 'anthropic/claude-haiku-4-5'</p>
+
+<p>    case 'moderate':</p>
+<p>      // Maioria das consultas clínicas</p>
+<p>      // Custo: ~$0.01 por chamada</p>
+<p>      return 'anthropic/claude-sonnet-4-6'</p>
+
+<p>    case 'complex':</p>
+<p>      // Diagnósticos raros, casos oncológicos, análise de exames complexos</p>
+<p>      // Custo: ~$0.10 por chamada</p>
+<p>      return 'anthropic/claude-opus-4-6'</p>
+<p>  }</p>
+<p>}</p>
+
+<p>// Detector de complexidade baseado na query</p>
+<p>export function detectComplexity(userMessage: string): TaskComplexity {</p>
+<p>  const complexKeywords = [</p>
+<p>    'oncologia', 'cardiopatia', 'neurologia', 'diagnóstico diferencial complexo',</p>
+<p>    'interação medicamentosa', 'prognóstico', 'protocolo quimioterapia'</p>
+<p>  ]</p>
+
+<p>  const simpleKeywords = [</p>
+<p>    'dose', 'peso', 'vacina', 'vermífugo', 'resumo', 'data', 'quando'</p>
+<p>  ]</p>
+
+<p>  if (complexKeywords.some(kw =&gt; userMessage.toLowerCase().includes(kw))) {</p>
+<p>    return 'complex'</p>
+<p>  }</p>
+<p>  if (simpleKeywords.some(kw =&gt; userMessage.toLowerCase().includes(kw))) {</p>
+<p>    return 'simple'</p>
+<p>  }</p>
+<p>  return 'moderate'</p>
+<p>}</code></pre></p>
+
+<h3>12.2 Cache de Respostas</h3>
+
+<pre class="code-block lang-typescript"><code>// lib/vet-copilot/cache.ts
+
+<p>// Algumas perguntas são idênticas entre veterinários</p>
+<p>// Ex: "dose de Amoxicilina para cão de 10kg" — mesma resposta sempre</p>
+
+<p>export async function getCachedResponse(cacheKey: string): Promise&lt;string | null&gt; {</p>
+<p>  const { data } = await supabase</p>
+<p>    .from('ai_response_cache')</p>
+<p>    .select('response')</p>
+<p>    .eq('cache_key', cacheKey)</p>
+<p>    .gt('expires_at', new Date().toISOString())</p>
+<p>    .single()</p>
+
+<p>  return data?.response ?? null</p>
+<p>}</p>
+
+<p>export async function setCachedResponse(</p>
+<p>  cacheKey: string,</p>
+<p>  response: string,</p>
+<p>  ttlHours = 24</p>
+<p>) {</p>
+<p>  const expiresAt = new Date()</p>
+<p>  expiresAt.setHours(expiresAt.getHours() + ttlHours)</p>
+
+<p>  await supabase.from('ai_response_cache').upsert({</p>
+<p>    cache_key:  cacheKey,</p>
+<p>    response:   response,</p>
+<p>    expires_at: expiresAt.toISOString(),</p>
+<p>  })</p>
+<p>}</p>
+
+<p>// Uso na API route:</p>
+<p>const cacheKey = <code class="inline">dosage:${medication}:${species}:${Math.round(weight)}</code></p>
+<p>const cached = await getCachedResponse(cacheKey)</p>
+<p>if (cached) return cached // economiza 100% do custo do LLM</code></pre></p>
+
+<h3>12.3 Monitoramento de Gastos em Tempo Real</h3>
+
+<pre class="code-block lang-typescript"><code>// lib/analytics/cost-tracker.ts
+
+<p>interface AIUsageLog {</p>
+<p>  id:              string</p>
+<p>  model:           string</p>
+<p>  input_tokens:    number</p>
+<p>  output_tokens:   number</p>
+<p>  cost_usd:        number</p>
+<p>  veterinarian_id: string</p>
+<p>  pet_id:          string</p>
+<p>  task_type:       string</p>
+<p>  created_at:      Date</p>
+<p>}</p>
+
+<p>const MODEL_COSTS = {</p>
+<p>  'claude-haiku-4-5':    { input: 0.25,  output: 1.25  }, // $ por 1M tokens</p>
+<p>  'claude-sonnet-4-6':   { input: 3.00,  output: 15.00 },</p>
+<p>  'claude-opus-4-6':     { input: 15.00, output: 75.00 },</p>
+<p>}</p>
+
+<p>export async function logAIUsage(params: {</p>
+<p>  model: string</p>
+<p>  inputTokens: number</p>
+<p>  outputTokens: number</p>
+<p>  veterinarianId: string</p>
+<p>  petId: string</p>
+<p>  taskType: string</p>
+<p>}) {</p>
+<p>  const costs = MODEL_COSTS[params.model]</p>
+<p>  const costUsd =</p>
+<p>    (params.inputTokens  / 1_000_000 * costs.input) +</p>
+<p>    (params.outputTokens / 1_000_000 * costs.output)</p>
+
+<p>  await supabase.from('ai_usage_logs').insert({</p>
+<p>    model:           params.model,</p>
+<p>    input_tokens:    params.inputTokens,</p>
+<p>    output_tokens:   params.outputTokens,</p>
+<p>    cost_usd:        costUsd,</p>
+<p>    veterinarian_id: params.veterinarianId,</p>
+<p>    pet_id:          params.petId,</p>
+<p>    task_type:       params.taskType,</p>
+<p>  })</p>
+<p>}</p>
+
+<p>// Dashboard de custos:</p>
+<p>// SELECT DATE(created_at), SUM(cost_usd), COUNT(*)</p>
+<p>// FROM ai_usage_logs</p>
+<p>// GROUP BY DATE(created_at)</p>
+<p>// ORDER BY 1 DESC</code></pre></p>
+
+<hr>
+
+<h2>13. O que Pode Ser Implementado — Mapa Completo</h2>
+
+<h3>Fase Atual (MVP — Implementado)</h3>
+<pre class="code-block"><code>✅ VetCopilot com tool calling
+<p>✅ 7 tools de acesso a dados do Supabase</p>
+<p>✅ Streaming de respostas</p>
+<p>✅ Interface de chat</p>
+<p>✅ System prompt especializado</p>
+<p>✅ Disclaimer de segurança</code></pre></p>
+
+<h3>Fase 2 — RAG (Próxima — Alta Prioridade)</h3>
+<pre class="code-block"><code>○ Supabase pgvector configurado
+<div class="check">⬜ Pipeline de ingestão de documentos PDF</div>
+<div class="check">⬜ WSAVA/AAHA guidelines indexadas</div>
+<div class="check">⬜ Tool search_clinical_knowledge com busca real</div>
+<div class="check">⬜ Respostas citando fontes com nível de evidência</code></pre></div>
+
+<h3>Fase 3 — Análise Diagnóstica</h3>
+<pre class="code-block"><code>○ Matriz de diagnósticos diferenciais por sintoma/espécie
+<div class="check">⬜ Interpretação automática de hemograma</div>
+<p>  - Valores de referência por espécie/idade</p>
+<p>  - Alertas de valores críticos</p>
+<p>  - Sugestão de diagnóstico baseada em alterações</p>
+<div class="check">⬜ Interpretação de bioquímica</div>
+<div class="check">⬜ Sistema de scoring de gravidade (IRIS para doença renal, etc.)</code></pre></div>
+
+<h3>Fase 4 — Geração de Documentos</h3>
+<pre class="code-block"><code>○ Geração de anamnese estruturada em SOAP
+<p>   S (Subjective): queixas do tutor</p>
+<p>   O (Objective):  exame físico</p>
+<p>   A (Assessment): diagnóstico/hipóteses</p>
+<p>   P (Plan):       plano terapêutico</p>
+<div class="check">⬜ Receituário com instruções automáticas</div>
+<div class="check">⬜ Relatório de alta para o tutor (linguagem acessível)</div>
+<div class="check">⬜ Sumário de consulta para prontuário</code></pre></div>
+
+<h3>Fase 5 — Visão Computacional</h3>
+<pre class="code-block"><code>○ Análise de radiografias (Claude Vision / GPT-4 Vision)
+<div class="check">⬜ Análise de fotos de lesões cutâneas</div>
+<div class="check">⬜ Comparação temporal (evolução de lesões)</div>
+<div class="check">⬜ Medições automatizadas em imagens</code></pre></div>
+
+<h3>Fase 6 — Agente Proativo</h3>
+<pre class="code-block"><code>○ Alertas de interações medicamentosas em tempo real
+<div class="check">⬜ Notificação de vacinas vencendo (3 dias antes)</div>
+<div class="check">⬜ Detecção de padrões: "Gatos desta raça com estes sintomas têm</div>
+<p>  alto risco de doença cardíaca"</p>
+<div class="check">⬜ Análise de tendências populacionais da clínica</code></pre></div>
+
+<h3>Fase 7 — App Tutor com IA</h3>
+<pre class="code-block"><code>○ Chat simplificado para tutores (linguagem acessível)
+<div class="check">⬜ Triagem automática de urgência</div>
+<div class="check">⬜ Orientações pós-consulta personalizadas</div>
+<div class="check">⬜ Lembretes inteligentes baseados no histórico do pet</code></pre></div>
+
+<h3>Fase 8 — Fine-tuning (Longo Prazo)</h3>
+<pre class="code-block"><code>○ Treinar modelo específico com dados da clínica
+<div class="check">⬜ Aprender padrões locais (raças prevalentes na região, etc.)</div>
+<div class="check">⬜ Personalização do estilo do veterinário específico</code></pre></div>
+
+<hr>
+
+<h2>14. Próximos Passos Concretos com Código</h2>
+
+<h3>Passo 1 — Configurar pgvector no Supabase (1-2 horas)</h3>
+
+<pre class="code-block lang-sql"><code>-- Execute no SQL Editor do Supabase
+
+<p>-- 1. Habilitar extensão</p>
+<p>CREATE EXTENSION IF NOT EXISTS vector;</p>
+
+<p>-- 2. Criar tabela de base de conhecimento</p>
+<p>CREATE TABLE IF NOT EXISTS vet_knowledge_base (</p>
+<p>  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),</p>
+<p>  title      TEXT NOT NULL,</p>
+<p>  content    TEXT NOT NULL,</p>
+<p>  embedding  VECTOR(1536),</p>
+<p>  source     TEXT NOT NULL,</p>
+<p>  topic      TEXT NOT NULL,</p>
+<p>  created_at TIMESTAMPTZ DEFAULT NOW()</p>
+<p>);</p>
+
+<p>-- 3. Criar índice vetorial</p>
+<p>CREATE INDEX IF NOT EXISTS vet_knowledge_embedding_idx</p>
+<p>  ON vet_knowledge_base</p>
+<p>  USING ivfflat (embedding vector_cosine_ops)</p>
+<p>  WITH (lists = 50);</p>
+
+<p>-- 4. Criar função de busca</p>
+<p>CREATE OR REPLACE FUNCTION match_vet_knowledge(</p>
+<p>  query_embedding VECTOR(1536),</p>
+<p>  match_count     INT DEFAULT 4,</p>
+<p>  filter_topic    TEXT DEFAULT NULL</p>
+<p>)</p>
+<p>RETURNS TABLE(id UUID, title TEXT, content TEXT, source TEXT, similarity FLOAT)</p>
+<p>LANGUAGE PLPGSQL AS $$</p>
+<p>BEGIN</p>
+<p>  RETURN QUERY</p>
+<p>  SELECT</p>
+<p>    vkb.id,</p>
+<p>    vkb.title,</p>
+<p>    vkb.content,</p>
+<p>    vkb.source,</p>
+<p>    1 - (vkb.embedding &lt;=&gt; query_embedding) AS similarity</p>
+<p>  FROM vet_knowledge_base vkb</p>
+<p>  WHERE</p>
+<p>    filter_topic IS NULL OR vkb.topic = filter_topic</p>
+<p>  ORDER BY vkb.embedding &lt;=&gt; query_embedding</p>
+<p>  LIMIT match_count;</p>
+<p>END;</p>
+<p>$$;</code></pre></p>
+
+<h3>Passo 2 — Script de Ingestão de Documentos (3-4 horas)</h3>
+
+<pre class="code-block lang-typescript"><code>// scripts/ingest-vet-knowledge.ts
+<p>// Rode com: npx ts-node scripts/ingest-vet-knowledge.ts</p>
+
+<p>import { createClient } from '@supabase/supabase-js'</p>
+<p>import OpenAI from 'openai'</p>
+<p>import fs from 'fs'</p>
+
+<p>const supabase = createClient(</p>
+<p>  process.env.NEXT_PUBLIC_SUPABASE_URL!,</p>
+<p>  process.env.SUPABASE_SERVICE_ROLE_KEY! // chave service role para ingestão</p>
+<p>)</p>
+
+<p>const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })</p>
+
+<p>function splitIntoChunks(text: string, chunkSize = 500, overlap = 50): string[] {</p>
+<p>  const words  = text.split(' ')</p>
+<p>  const chunks: string[] = []</p>
+<p>  let start    = 0</p>
+
+<p>  while (start &lt; words.length) {</p>
+<p>    const end   = Math.min(start + chunkSize, words.length)</p>
+<p>    const chunk = words.slice(start, end).join(' ')</p>
+<p>    chunks.push(chunk)</p>
+<p>    start += chunkSize - overlap</p>
+<p>  }</p>
+
+<p>  return chunks.filter(c =&gt; c.trim().length &gt; 100) // ignora chunks muito curtos</p>
+<p>}</p>
+
+<p>async function generateEmbedding(text: string): Promise&lt;number[]&gt; {</p>
+<p>  const response = await openai.embeddings.create({</p>
+<p>    model: 'text-embedding-3-small',</p>
+<p>    input: text,</p>
+<p>  })</p>
+<p>  return response.data[0].embedding</p>
+<p>}</p>
+
+<p>async function ingestText(text: string, source: string, topic: string) {</p>
+<p>  const chunks = splitIntoChunks(text)</p>
+<p>  console.log(<code class="inline">\n📚 Ingerindo "${source}" — ${chunks.length} chunks</code>)</p>
+
+<p>  let processed = 0</p>
+<p>  for (const chunk of chunks) {</p>
+<p>    try {</p>
+<p>      const embedding = await generateEmbedding(chunk)</p>
+
+<p>      await supabase.from('vet_knowledge_base').insert({</p>
+<p>        title:     <code class="inline">${source} — parte ${processed + 1}</code>,</p>
+<p>        content:   chunk,</p>
+<p>        embedding: embedding,</p>
+<p>        source:    source,</p>
+<p>        topic:     topic,</p>
+<p>      })</p>
+
+<p>      processed++</p>
+<p>      if (processed % 10 === 0) {</p>
+<p>        console.log(<code class="inline">  ✓ ${processed}/${chunks.length} chunks processados</code>)</p>
+<p>      }</p>
+
+<p>      await new Promise(r =&gt; setTimeout(r, 200)) // evita rate limit</p>
+<p>    } catch (error) {</p>
+<p>      console.error(<code class="inline">  ✗ Erro no chunk ${processed}:</code>, error)</p>
+<p>    }</p>
+<p>  }</p>
+
+<p>  console.log(<code class="inline">✅ "${source}" concluído — ${processed} chunks</code>)</p>
+<p>}</p>
+
+<p>// EXEMPLO — ingerir texto direto (você pode adaptar para PDF depois)</p>
+<p>const wsavaVaccinationGuide = <code class="inline"></p>
+<h1>WSAVA Vaccination Guidelines 2022</h1>
+<h2>Princípios Fundamentais</h2>
+
+<p>Os programas de vacinação devem ser individualizados para cada paciente,</p>
+<p>levando em conta fatores como estilo de vida, saúde geral, risco de exposição</p>
+<p>e histórico vacinal prévio.</p>
+
+<h3>Vacinas Core para Cães</h3>
+<p>Vacinas core são aquelas recomendadas para todos os cães independente do</p>
+<p>estilo de vida:</p>
+<li>Raiva (obrigatória por lei)</li>
+<li>Cinomose (CDV)</li>
+<li>Hepatite Infecciosa Canina (CAV-2)</li>
+<li>Parvovirose (CPV-2)</li>
+
+<p>Protocolo para filhotes:</p>
+<li>6-8 semanas: CDV + CAV-2 + CPV-2</li>
+<li>10-12 semanas: CDV + CAV-2 + CPV-2 (reforço)</li>
+<li>14-16 semanas: CDV + CAV-2 + CPV-2 (reforço final)</li>
+<li>12-16 semanas: Raiva (1ª dose)</li>
+<li>12 meses: Reforço anual (avaliar título sorológico)</li>
+<li>Adultos: Reforço a cada 1-3 anos (baseado em sorologia)</li>
+<p>[... continua com mais conteúdo ...]</p>
+<p></code></p>
+
+<p>await ingestText(wsavaVaccinationGuide, 'WSAVA Vaccination Guidelines 2022', 'vacinação')</code></pre></p>
+
+<h3>Passo 3 — Atualizar a Tool de Busca (30 min)</h3>
+
+<pre class="code-block lang-typescript"><code>// lib/vet-copilot/tools.ts — substituir a implementação mock
+
+<p>search_clinical_knowledge: tool({</p>
+<p>  description: <code class="inline"></p>
+<p>    Busca em base de conhecimento veterinário baseada em evidência.</p>
+<p>    Contém: diretrizes WSAVA 2022, AAHA 2023, Plumb's Drug Handbook.</p>
+<p>    Use quando precisar de: protocolos de vacinação, dosagens detalhadas,</p>
+<p>    diretrizes terapêuticas, protocolos de emergência, base científica.</p>
+<p>    NÃO use para dados do paciente específico — use get_pet_info para isso.</p>
+<p>  </code>,</p>
+<p>  parameters: z.object({</p>
+<p>    query: z.string().describe('O que você quer buscar — seja específico'),</p>
+<p>    topic: z.enum(['vacinação', 'parasitologia', 'farmacologia', 'cirurgia', 'geral'])</p>
+<p>      .describe('Tema para filtrar a busca')</p>
+<p>  }),</p>
+<p>  execute: async ({ query, topic }) =&gt; {</p>
+<p>    // Gera embedding da query</p>
+<p>    const queryEmbedding = await generateEmbedding(query)</p>
+
+<p>    // Busca no Supabase</p>
+<p>    const { data, error } = await supabase.rpc('match_vet_knowledge', {</p>
+<p>      query_embedding: queryEmbedding,</p>
+<p>      match_count:     4,</p>
+<p>      filter_topic:    topic === 'geral' ? null : topic,</p>
+<p>    })</p>
+
+<p>    if (error) {</p>
+<p>      console.error('Erro na busca RAG:', error)</p>
+<p>      return 'Erro ao buscar na base de conhecimento.'</p>
+<p>    }</p>
+
+<p>    if (!data || data.length === 0) {</p>
+<p>      return 'Nenhuma informação específica encontrada. Baseie-se em conhecimento geral.'</p>
+<p>    }</p>
+
+<p>    // Formata resultado para a IA</p>
+<p>    const formatted = data</p>
+<p>      .filter(r =&gt; r.similarity &gt; 0.7) // filtra resultados pouco relevantes</p>
+<p>      .map((r, i) =&gt; <code class="inline"></p>
+<p>[Fonte ${i+1}: ${r.source}] (relevância: ${(r.similarity * 100).toFixed(0)}%)</p>
+<p>${r.content}</p>
+<p>      </code>.trim())</p>
+<p>      .join('\n\n---\n\n')</p>
+
+<p>    return formatted || 'Informações encontradas mas com baixa relevância para a query.'</p>
+<p>  }</p>
+<p>})</code></pre></p>
+
+<h3>Passo 4 — Logging de Auditoria Completo (2 horas)</h3>
+
+<pre class="code-block lang-typescript"><code>// app/api/vet-copilot/route.ts — versão com auditoria
+
+<p>export async function POST(req: Request) {</p>
+<p>  const { messages, petId } = await req.json()</p>
+
+<p>  // Autentica</p>
+<p>  const { data: { user } } = await supabase.auth.getUser(</p>
+<p>    req.headers.get('Authorization')?.replace('Bearer ', '') ?? ''</p>
+<p>  )</p>
+<p>  if (!user) return new Response('Unauthorized', { status: 401 })</p>
+
+<p>  // Monta contexto</p>
+<p>  const context = await gatherPetContext(petId)</p>
+<p>  const startTime = Date.now()</p>
+
+<p>  const result = streamText({</p>
+<p>    model: openrouter(selectModel(detectComplexity(</p>
+<p>      messages[messages.length - 1]?.content ?? ''</p>
+<p>    ))),</p>
+<p>    system:   buildSystemPrompt(context),</p>
+<p>    messages,</p>
+<p>    tools:    vetCopilotTools,</p>
+<p>    maxSteps: 5,</p>
+
+<p>    onFinish: async ({ usage, text, toolCalls }) =&gt; {</p>
+<p>      const duration = Date.now() - startTime</p>
+
+<p>      // Salva interação completa para auditoria</p>
+<p>      await supabase.from('copilot_interactions').insert({</p>
+<p>        veterinarian_id: user.id,</p>
+<p>        pet_id:          petId,</p>
+<p>        user_message:    messages[messages.length - 1]?.content,</p>
+<p>        ai_response:     text,</p>
+<p>        tools_used:      toolCalls?.map(t =&gt; t.toolName) ?? [],</p>
+<p>        model_used:      result.model,</p>
+<p>        input_tokens:    usage.promptTokens,</p>
+<p>        output_tokens:   usage.completionTokens,</p>
+<p>        cost_usd:        calculateCost(result.model, usage),</p>
+<p>        latency_ms:      duration,</p>
+<p>        created_at:      new Date().toISOString(),</p>
+<p>      })</p>
+<p>    }</p>
+<p>  })</p>
+
+<p>  return result.toDataStreamResponse()</p>
+<p>}</code></pre></p>
+
+<hr>
+
+<h2>15. Riscos, Limitações e Ética</h2>
+
+<h3>15.1 Limitações Técnicas</h3>
+
+<div class="table-wrap"><table><thead><tr><th>Limitação</th><th>Impacto</th><th>Mitigação</th></tr></thead><tbody><tr><td><strong>Alucinação</strong></td><td>IA pode inventar doses ou diagnósticos</td><td>Sempre verificar com tools reais; never trust output cego</td></tr><tr><td><strong>Data de corte</strong></td><td>Modelo não conhece literatura após 2024</td><td>RAG com documentos atualizados</td></tr><tr><td><strong>Context window</strong></td><td>Históricos longos são truncados</td><td>Summarização automática</td></tr><tr><td><strong>Latência</strong></td><td>2-8 segundos por resposta</td><td>Streaming + feedback visual</td></tr><tr><td><strong>Custo</strong></td><td>$0.01-0.10 por consulta</td><td>Cache + seleção inteligente de modelo</td></tr></tbody></table></div>
+<h3>15.2 Riscos Clínicos</h3>
+
+<pre class="code-block"><code>RISCO ALTO:
+<p>  ❌ Calcular doses sem confirmar peso atualizado do paciente</p>
+<p>  ❌ Sugerir diagnóstico definitivo baseado em sintomas vagos</p>
+<p>  ❌ Recomendar medicamento sem verificar alergias conhecidas</p>
+
+<p>RISCO MÉDIO:</p>
+<p>  ⚠️ Resposta sem citar a fonte da informação</p>
+<p>  ⚠️ Protocolo desatualizado (sem RAG com docs recentes)</p>
+<p>  ⚠️ Sugestão sem considerar interações medicamentosas</p>
+
+<p>MITIGAÇÕES IMPLEMENTADAS:</p>
+<p>  ✅ SAFETY_PREFIX no system prompt</p>
+<p>  ✅ Disclaimer obrigatório em todas respostas</p>
+<p>  ✅ Tools com validação antes de calcular doses</p>
+<p>  ✅ Log de auditoria de todas as interações</code></pre></p>
+
+<h3>15.3 LGPD e Privacidade</h3>
+
+<pre class="code-block lang-typescript"><code>// DADOS QUE NÃO DEVEM IR PARA A IA:
+<p>const sensitiveFields = [</p>
+<p>  'cpf',        // CPF do tutor</p>
+<p>  'rg',         // RG</p>
+<p>  'address',    // endereço completo</p>
+<p>  'phone',      // telefone (pode ser omitido)</p>
+<p>  'payment_*',  // qualquer dado de pagamento</p>
+<p>]</p>
+
+<p>// Use apenas o necessário clinicamente:</p>
+<p>const clinicalContext = {</p>
+<p>  petName:   pet.name,       // OK — necessário</p>
+<p>  species:   pet.species,    // OK — necessário clinicamente</p>
+<p>  breed:     pet.breed,      // OK — necessário clinicamente</p>
+<p>  age:       calculateAge(pet.birth_date), // OK — calculado</p>
+<p>  weight:    pet.weight,     // OK — necessário para doses</p>
+<p>  // ownerCpf: pet.owner_cpf  ← NÃO INCLUA</p>
+<p>  // ownerAddress: ...        ← NÃO INCLUA</p>
+<p>}</code></pre></p>
+
+<hr>
+
+<h2>16. Glossário Técnico</h2>
+
+<div class="table-wrap"><table><thead><tr><th>Termo</th><th>O que é</th></tr></thead><tbody><tr><td><strong>LLM</strong></td><td>Large Language Model — modelo de linguagem de grande escala (Claude, GPT)</td></tr><tr><td><strong>Token</strong></td><td>Unidade de texto processada pelo modelo (~0.75 palavras em inglês)</td></tr><tr><td><strong>Context Window</strong></td><td>Limite máximo de tokens que o modelo processa de uma vez</td></tr><tr><td><strong>System Prompt</strong></td><td>Instruções dadas ao modelo antes da conversa começar</td></tr><tr><td><strong>Tool Calling</strong></td><td>Capacidade do modelo de solicitar execução de funções externas</td></tr><tr><td><strong>Streaming</strong></td><td>Envio da resposta token por token em vez de esperar o texto completo</td></tr><tr><td><strong>RAG</strong></td><td>Retrieval Augmented Generation — combinar busca em documentos + geração de texto</td></tr><tr><td><strong>Embedding</strong></td><td>Representação numérica (vetor) do significado semântico de um texto</td></tr><tr><td><strong>pgvector</strong></td><td>Extensão do PostgreSQL para armazenar e buscar vetores (embeddings)</td></tr><tr><td><strong>Fine-tuning</strong></td><td>Treinar um modelo base em dados específicos para especialização</td></tr><tr><td><strong>RLHF</strong></td><td>Reinforcement Learning from Human Feedback — como modelos aprendem preferências humanas</td></tr><tr><td><strong>Transformer</strong></td><td>Arquitetura neural que fundamenta todos os LLMs modernos</td></tr><tr><td><strong>Atenção (Attention)</strong></td><td>Mecanismo que permite o modelo focar nas partes relevantes do contexto</td></tr><tr><td><strong>Temperature</strong></td><td>Controla a criatividade/aleatoriedade (0 = determinístico, 1 = criativo)</td></tr><tr><td><strong>Top-P / Top-K</strong></td><td>Outros parâmetros de aleatoriedade das respostas</td></tr><tr><td><strong>Alucinação</strong></td><td>Quando o modelo gera informações plausíveis mas incorretas</td></tr><tr><td><strong>Chain of Thought</strong></td><td>Técnica de forçar o modelo a "pensar em voz alta" antes de responder</td></tr><tr><td><strong>Few-Shot</strong></td><td>Incluir exemplos no prompt para calibrar o comportamento</td></tr><tr><td><strong>Zero-Shot</strong></td><td>Pedir ao modelo que faça algo sem dar exemplos</td></tr><tr><td><strong>Chunking</strong></td><td>Dividir documentos longos em pedaços menores para indexação</td></tr><tr><td><strong>Vector Store</strong></td><td>Banco de dados otimizado para armazenar e buscar embeddings</td></tr><tr><td><strong>Similarity Search</strong></td><td>Busca por similaridade semântica (não por palavras exatas)</td></tr><tr><td><strong>OpenRouter</strong></td><td>Proxy que unifica acesso a múltiplos modelos de IA em uma API</td></tr><tr><td><strong>AI SDK (Vercel)</strong></td><td>Biblioteca TypeScript que simplifica integração com modelos de IA</td></tr></tbody></table></div>
+<hr>
+
+<h2>Evolução Esperada do VetCopilot</h2>
+
+<pre class="code-block"><code>HOJE (MVP)                    FASE 2 (RAG)               FASE 3+ (Autônomo)
+<p>──────────────────────        ──────────────────────      ──────────────────</p>
+<p>Responde perguntas       →    Cita fontes científicas →   Sugere proativamente</p>
+<p>Acessa prontuário             Busca diretrizes              Alerta interações</p>
+<p>Calcula doses                 Base de conhecimento          Prediz riscos</p>
+<p>Streaming                     Evidência baseada             Gera documentos</p>
+<p>                              em dados reais                Análisa imagens</code></pre></p>
+
+<hr>
+
+<p><em>Última atualização: Março 2026</em></p>
+<p><em>Baseado na arquitetura real do AgendaVet — AgendaVetVet e AgendaVetWeb</em></p>
+
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <p>🐾 <span class="gradient-text">AgendaVet</span> — Sistema de Gestão Veterinária</p>
+      <p style="margin-top:6px;">Documento gerado em 16/03/2026 • Todos os direitos reservados</p>
+    </div>
+  </div>
+</body>
+</html>

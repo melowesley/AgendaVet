@@ -61,11 +61,8 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
     const [editingId, setEditingId] = useState<string | null>(null)
     const [veterinarian, setVeterinarian] = useState('Dr. Cleyton Chaves')
 
-    useEffect(() => {
-        if (open) loadRecords()
-    }, [open, petId])
-
     const loadRecords = async () => {
+        if (!petId) return
         const { data, error } = await (supabase
             .from('pet_weight_records' as any)
             .select('*')
@@ -78,6 +75,16 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
         }
         if (data) setRecords(data)
     }
+
+    useEffect(() => {
+        if (open && petId) {
+            loadRecords()
+        }
+        if (!open) {
+            resetForm()
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open])
 
     const handleSave = async () => {
         if (!weight || !date) {
@@ -108,10 +115,10 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
                 await addMedicalRecord({
                     petId,
                     date: new Date(date).toISOString(),
-                    type: 'procedure',
+                    type: 'peso',
                     title: 'Pesagem',
                     description: `Peso: ${weight} kg. ${notes ? `Obs: ${notes}` : ''}`,
-                    veterinarian: 'Dr. Cleyton Chaves',
+                    veterinarian: veterinarian || 'Dr. Cleyton Chaves',
                 })
 
                 // Also insert into pet_weight_records for historical tracking
@@ -180,7 +187,7 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
                                 <ArrowLeft size={18} />
                             </Button>
                         )}
-                        <div className={`flex size-10 items-center justify-center rounded-full text-white`} style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
+                        <div className={`flex size-10 items-center justify-center rounded-full ${themeColor.bgGhost} ${themeColor.text}`}>
                             <Scale className="size-5" />
                         </div>
                         <div>
@@ -282,7 +289,7 @@ export function PesoDialog({ open, onOpenChange, onBack, petId, petName }: PesoD
                                 </div>
 
                                 <div className="flex gap-3">
-                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-12 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white shadow-xl`}>
+                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-12 ${themeColor.bg} ${themeColor.bgHover} text-white shadow-xl`}>
                                         <Save className="size-5 mr-3" />
                                         {loading ? 'Processando...' : editingId ? 'Atualizar Registro' : 'Confirmar Pesagem'}
                                     </Button>

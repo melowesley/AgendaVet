@@ -3,27 +3,15 @@
 import { useState, useEffect } from 'react'
 import { mutate } from 'swr'
 import { supabase } from '@/lib/data-store'
-import { useRef } from 'react'
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+import { usePet, useOwner, useMedicalRecords } from '@/lib/data-store'
+import { BaseAttendanceDialog } from '../shared/base-attendance-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { Syringe, Save, Trash2, Calendar, Edit2, ArrowLeft, FileDown, Plus, Printer, PawPrint, DollarSign, Clock } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { useReactToPrint } from 'react-to-print'
-import { usePet, useOwner, useMedicalRecords } from '@/lib/data-store'
-import DOMPurify from 'dompurify'
 
 interface VacinaDialogProps {
     open: boolean
@@ -48,17 +36,6 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
     const { owner } = useOwner(pet?.profileId || '')
     const { records: allRecords } = useMedicalRecords(petId)
 
-    const isFemale = pet?.gender === 'Fêmea'
-    const themeColor = {
-        bg: isFemale ? 'bg-pink-600' : 'bg-blue-600',
-        bgHover: isFemale ? 'hover:bg-pink-700' : 'hover:bg-blue-700',
-        bgGhost: isFemale ? 'bg-pink-500/10' : 'bg-blue-500/10',
-        bgLight: isFemale ? 'bg-pink-50' : 'bg-blue-50',
-        text: isFemale ? 'text-pink-600' : 'text-blue-600',
-        border: isFemale ? 'border-pink-500' : 'border-blue-500',
-        borderLight: isFemale ? 'border-pink-200' : 'border-blue-200',
-    }
-
     const [loading, setLoading] = useState(false)
     const [records, setRecords] = useState<Vaccine[]>([])
     const [vaccineName, setVaccineName] = useState('')
@@ -70,11 +47,8 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
     const [editingId, setEditingId] = useState<string | null>(null)
 
     // Billing state
-    const [baseValue, setBaseValue] = useState('0.00')
+    const [baseValue, setBaseValue] = useState('50.00')
     const [services, setServices] = useState<{ id: string, name: string, value: number }[]>([])
-
-    const printRef = useRef<HTMLDivElement>(null)
-    const handlePrint = useReactToPrint({ contentRef: printRef, documentTitle: `Vacina_${vaccineName}_${petName}` })
 
     useEffect(() => {
         if (open) loadRecords()
@@ -111,22 +85,12 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
                 application_date: applicationDate,
                 next_dose_date: nextDoseDate || null,
                 batch_number: batchNumber || null,
-                veterinarian: veterinarian || 'Dr. Cleyton Chaves',
-                notes: JSON.stringify({
-                    observation: notes,
-                    billing: {
-                        baseValue: parseFloat(baseValue),
-                        services: services,
-                        total: parseFloat(baseValue) + services.reduce((acc, s) => acc + s.value, 0)
-                    }
-                }),
+                veterinarian: veterinarian || null,
+                notes: notes || null,
             }
 
             if (editingId) {
-                const { error } = await (supabase
-                    .from('pet_vaccines' as any)
-                    .update(payload as any)
-                    .eq('id', editingId) as any)
+                const { error } = await (supabase.from('pet_vaccines' as any).update(payload as any).eq('id', editingId) as any)
                 if (error) throw error
                 toast.success('Vacina atualizada com sucesso!')
             } else {
@@ -147,13 +111,11 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
 
     const resetForm = () => {
         setVaccineName('')
+        setApplicationDate(format(new Date(), 'yyyy-MM-dd'))
         setNextDoseDate('')
         setBatchNumber('')
         setVeterinarian('Dr. Cleyton Chaves')
         setNotes('')
-        setBaseValue('0.00')
-        setServices([])
-        setApplicationDate(format(new Date(), 'yyyy-MM-dd'))
         setEditingId(null)
     }
 
@@ -163,18 +125,7 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
         setNextDoseDate(record.next_dose_date || '')
         setBatchNumber(record.batch_number || '')
         setVeterinarian(record.veterinarian || 'Dr. Cleyton Chaves')
-
-        try {
-            const parsed = JSON.parse(record.notes || '{}')
-            setNotes(parsed.observation || record.notes || '')
-            if (parsed.billing) {
-                setBaseValue(parsed.billing.baseValue?.toString() || '0.00')
-                setServices(parsed.billing.services || [])
-            }
-        } catch {
-            setNotes(record.notes || '')
-        }
-
+        setNotes(record.notes || '')
         setEditingId(record.id)
     }
 
@@ -186,333 +137,233 @@ export function VacinaDialog({ open, onOpenChange, onBack, petId, petName }: Vac
             loadRecords()
             mutate('medical-records')
         } catch (error: any) {
-            toast.error(error.message || 'Erro ao excluir vacina')
+            toast.error(error.message || 'Erro ao excluir registro')
         }
     }
+
+    // Generate auth code for QR
+    const authCode = `VAC-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+
+    const previewContent = (
+        <div className="flex flex-col h-full border-2 border-green-100 rounded-lg p-10 bg-white">
+            {/* Cabeçalho com Selo de Autenticidade */}
+            <div className="flex justify-between items-start border-b-2 border-green-500 pb-6 mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold text-green-700 tracking-tight">CERTIFICADO DE VACINAÇÃO</h1>
+                    <p className="text-sm text-gray-500 mt-1 uppercase font-semibold">Registro de Imunização Veterinária</p>
+                </div>
+                <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center border-2 border-green-200">
+                    <div className="text-green-600 text-2xl">💉</div>
+                </div>
+            </div>
+
+            {/* Info do Paciente em Grid */}
+            <div className="grid grid-cols-2 gap-6 mb-10 bg-gray-50 p-6 rounded-xl border border-gray-100">
+                <div>
+                    <p className="text-[10px] text-gray-400 uppercase font-bold">Paciente</p>
+                    <p className="text-lg font-bold text-gray-800">{petName}</p>
+                </div>
+                <div>
+                    <p className="text-[10px] text-gray-400 uppercase font-bold">Espécie / Raça</p>
+                    <p className="text-lg text-gray-700">{pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : 'Animal'} - {pet?.breed}</p>
+                </div>
+                <div>
+                    <p className="text-[10px] text-gray-400 uppercase font-bold">Proprietário</p>
+                    <p className="text-lg text-gray-700">{owner?.fullName || 'Proprietário S/R'}</p>
+                </div>
+                <div>
+                    <p className="text-[10px] text-gray-400 uppercase font-bold">Data de Nascimento</p>
+                    <p className="text-lg text-gray-700">{pet?.dateOfBirth ? format(new Date(pet.dateOfBirth), 'dd/MM/yyyy') : '-'}</p>
+                </div>
+            </div>
+
+            {/* Tabela de Vacinas */}
+            <div className="flex-grow">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Histórico de Vacinação</h2>
+                <table className="w-full text-left">
+                    <thead>
+                        <tr className="border-b-2 border-gray-100">
+                            <th className="py-3 text-[11px] font-bold text-gray-400 uppercase">Vacina/Aplicação</th>
+                            <th className="py-3 text-[11px] font-bold text-gray-400 uppercase">Data</th>
+                            <th className="py-3 text-[11px] font-bold text-gray-400 uppercase text-right">Próxima Dose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {/* Mostrar vacina atual sendo editada */}
+                        {vaccineName && (
+                            <tr className="border-b border-gray-50 bg-green-50">
+                                <td className="py-4 font-semibold text-gray-800">{vaccineName}</td>
+                                <td className="py-4 text-gray-600">{format(new Date(applicationDate), 'dd/MM/yyyy')}</td>
+                                <td className="py-4 text-right font-bold text-green-600">{nextDoseDate ? format(new Date(nextDoseDate), 'dd/MM/yyyy') : '-'}</td>
+                            </tr>
+                        )}
+                        {/* Mostrar vacinas já registradas */}
+                        {records.map((record) => (
+                            <tr key={record.id} className="border-b border-gray-50">
+                                <td className="py-4 font-semibold text-gray-800">{record.vaccine_name}</td>
+                                <td className="py-4 text-gray-600">{format(new Date(record.application_date), 'dd/MM/yyyy')}</td>
+                                <td className="py-4 text-right font-bold text-green-600">
+                                    {record.next_dose_date ? format(new Date(record.next_dose_date), 'dd/MM/yyyy') : '-'}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Rodapé com Assinatura e QR Code */}
+            <div className="mt-12 pt-8 border-t border-gray-100 flex justify-between items-end">
+                <div className="text-center">
+                    <div className="w-48 border-b border-gray-400 mb-2"></div>
+                    <p className="text-[12px] font-bold text-gray-800">{veterinarian || 'Dr. Cleyton Chaves'}</p>
+                    <p className="text-[10px] text-gray-500 italic">Médico Veterinário - CRMV-SP</p>
+                </div>
+                <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded mb-1 flex items-center justify-center border border-gray-200">
+                        <span className="text-[8px] text-gray-400 font-mono">QR</span>
+                    </div>
+                    <p className="text-[9px] text-gray-400 font-mono">AUTENTICIDADE: {authCode}</p>
+                </div>
+            </div>
+        </div>
+    )
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] max-w-[1400px] h-[90vh] max-h-[90vh] rounded-2xl p-0 flex flex-col overflow-hidden border border-border/20 shadow-2xl text-slate-800">
-                <DialogHeader className="p-4 md:p-6 border-b border-border/50 bg-white flex flex-row items-center justify-between shrink-0 z-20 shadow-sm">
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-slate-100" onClick={onBack}>
-                            <ArrowLeft className="size-5" />
-                        </Button>
-                        <div className="flex size-12 items-center justify-center rounded-xl text-white shadow-inner" style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
-                            <Syringe className="size-6" />
+        <BaseAttendanceDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Vacinação"
+            previewContent={previewContent}
+            onSave={handleSave}
+            saveLabel="Registrar Vacina"
+            isSaving={loading}
+            printTitle={`Vacina_${petName}_${format(new Date(), 'dd_MM_yyyy')}`}
+            onBack={onBack}
+        >
+            <div className="space-y-6 bg-slate-50/50 p-6 rounded-lg">
+                <div className="space-y-4">
+                    <div>
+                        <Label className="text-sm font-bold text-slate-600 font-semibold">Vacina *</Label>
+                        <Input
+                            value={vaccineName}
+                            onChange={(e) => setVaccineName(e.target.value)}
+                            placeholder="Ex: V8 ou Antirrábica"
+                            className="h-9 bg-white border-slate-200 focus-within:ring-2 focus-within:ring-blue-500/20"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label className="text-sm font-bold text-slate-600 font-semibold">Data de Aplicação *</Label>
+                            <Input
+                                type="date"
+                                value={applicationDate}
+                                onChange={(e) => setApplicationDate(e.target.value)}
+                                className="h-9 bg-white border-slate-200 focus-within:ring-2 focus-within:ring-blue-500/20"
+                            />
                         </div>
                         <div>
-                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-800">
-                                Controle de Vacinação
-                            </DialogTitle>
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5 font-medium">
-                                <span className="flex items-center gap-1"><PawPrint className="size-3.5" /> <span className="font-bold text-slate-700">{petName}</span></span>
-                                <span className="text-slate-300">•</span>
-                                <span className="flex items-center gap-1 font-bold text-emerald-600 uppercase tracking-tighter text-[11px] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">Doses & Reforços</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <Button variant="outline" onClick={() => onOpenChange(false)} className="h-10 px-6 font-bold text-slate-500">
-                            Fechar
-                        </Button>
-                        <Button onClick={handleSave} disabled={loading} className="h-10 px-6 font-black text-white shadow-lg bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700">
-                            <Save className="size-4 mr-2" />
-                            {loading ? 'Salvando...' : 'Salvar Registro'}
-                        </Button>
-                    </div>
-                </DialogHeader>
-
-                <div className="flex-1 overflow-hidden flex bg-slate-100/50">
-                    {/* NEW: Left Sidebar with Patient History */}
-                    <div className="hidden xl:block w-[380px] bg-slate-50/80 border-r border-border/30 p-8 overflow-y-auto shrink-0 shadow-inner">
-                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 border-l-4 border-emerald-500 pl-4 mb-8">
-                            Histórico do Paciente
-                        </h3>
-                        
-                        {allRecords.length === 0 ? (
-                            <div className="text-center py-20 flex flex-col items-center gap-4 opacity-50">
-                                <Clock className="size-10 text-slate-300" />
-                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Sem registros prévios</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {allRecords.map(record => (
-                                    <div key={record.id} className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-emerald-500 transition-all hover:shadow-md group">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <span className="text-[11px] font-black text-white bg-slate-900 px-2 py-0.5 rounded-[3px]">
-                                                {format(new Date(record.date || record.createdAt), "dd/MM/yyyy")}
-                                            </span>
-                                            <span className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-                                                {record.type}
-                                            </span>
-                                        </div>
-                                        <h4 className="text-sm font-black text-slate-800 line-clamp-2 leading-snug">{record.title}</h4>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Form Side */}
-                    <div className="w-full md:w-[450px] p-8 bg-white border-r border-border/30 overflow-y-auto shrink-0 shadow-lg z-10 relative">
-                        <div className="space-y-8">
-                            <div className="flex justify-between items-center border-l-4 border-slate-900 pl-4">
-                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 leading-none py-1">
-                                    {editingId ? 'Editar Vacina' : 'Nova Aplicação'}
-                                </h3>
-                                {editingId && (
-                                    <Button variant="ghost" size="sm" onClick={resetForm} className="h-7 text-xs font-bold text-slate-500">
-                                        Cancelar
-                                    </Button>
-                                )}
-                            </div>
-
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <Label htmlFor="vaccine_name" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nome da Vacina *</Label>
-                                    <Input
-                                        id="vaccine_name"
-                                        value={vaccineName}
-                                        onChange={(e) => setVaccineName(e.target.value)}
-                                        placeholder="Ex: V10, Antirrábica..."
-                                        className="h-12 border-slate-200 rounded-xl focus:ring-emerald-500 font-bold"
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="app_date" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Data de Aplicação *</Label>
-                                        <Input id="app_date" type="date" value={applicationDate} onChange={(e) => setApplicationDate(e.target.value)} className="h-12 border-slate-200 rounded-xl font-bold" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="next_date" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Próxima Dose</Label>
-                                        <Input id="next_date" type="date" value={nextDoseDate} onChange={(e) => setNextDoseDate(e.target.value)} className="h-12 border-slate-200 rounded-xl font-bold" />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="batch" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Lote</Label>
-                                        <Input id="batch" value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} placeholder="Nº do Lote" className="h-12 border-slate-200 rounded-xl font-bold" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="vet" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Veterinário</Label>
-                                        <Input id="vet" value={veterinarian} onChange={(e) => setVeterinarian(e.target.value)} placeholder="Dr. Cleyton Chaves" className="h-12 border-slate-200 rounded-xl font-bold" />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="vac-notes" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Observações Clínicas</Label>
-                                    <Textarea
-                                        id="vac-notes"
-                                        value={notes}
-                                        onChange={(e) => setNotes(e.target.value)}
-                                        placeholder="Notas adicionais sobre a aplicação ou reação..."
-                                        className="min-h-[100px] border-slate-200 rounded-xl font-medium"
-                                    />
-                                </div>
-
-                                {/* Billing Section */}
-                                <div className="p-6 rounded-2xl border-2 border-dashed border-emerald-500/20 bg-emerald-500/[0.02] space-y-4">
-                                    <div className="flex items-center gap-2 text-emerald-700 font-black text-[10px] uppercase tracking-[0.2em]">
-                                        <DollarSign className="size-4" />
-                                        Serviços e Valores
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor da Vacina (R$)</Label>
-                                            <Input
-                                                type="number"
-                                                value={baseValue}
-                                                onChange={(e) => setBaseValue(e.target.value)}
-                                                className="h-10 border-slate-200 rounded-xl font-bold"
-                                            />
-                                        </div>
-                                        <div className="flex items-end">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="w-full h-10 border-emerald-500/30 text-emerald-600 font-bold rounded-xl hover:bg-emerald-50"
-                                                onClick={() => setServices([...services, { id: Math.random().toString(), name: 'Serviço Extra', value: 0 }])}
-                                            >
-                                                <Plus className="size-4 mr-1" /> Serviço
-                                            </Button>
-                                        </div>
-                                    </div>
-
-                                    {services.map((service, idx) => (
-                                        <div key={service.id} className="flex gap-2 items-center bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
-                                            <Input
-                                                value={service.name}
-                                                onChange={(e) => {
-                                                    const newServices = [...services]
-                                                    newServices[idx].name = e.target.value
-                                                    setServices(newServices)
-                                                }}
-                                                placeholder="Serviço"
-                                                className="h-8 border-none shadow-none text-xs font-bold flex-1"
-                                            />
-                                            <Input
-                                                type="number"
-                                                value={service.value}
-                                                onChange={(e) => {
-                                                    const newServices = [...services]
-                                                    newServices[idx].value = parseFloat(e.target.value) || 0
-                                                    setServices(newServices)
-                                                }}
-                                                className="h-8 border-none shadow-none text-xs font-black w-20 text-right"
-                                            />
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive rounded-full"
-                                                onClick={() => setServices(services.filter((_, i) => i !== idx))}
-                                            >
-                                                <Trash2 className="size-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-
-                                    <div className="pt-4 border-t border-emerald-500/10 flex justify-between items-center text-lg font-black text-emerald-800 uppercase tracking-tighter">
-                                        <span>Total:</span>
-                                        <span>R$ {(parseFloat(baseValue) + services.reduce((acc, s) => acc + s.value, 0)).toFixed(2)}</span>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3 pt-4">
-                                    <Button onClick={handleSave} disabled={loading} className="flex-1 h-10 font-semibold text-white shadow-sm rounded-lg bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700">
-                                        <Save className="size-4 mr-2" />
-                                        {loading ? 'Salvando...' : 'Salvar Registro'}
-                                    </Button>
-
-                                    <Button variant="outline" className="h-10 px-4 rounded-lg" title="Visualizar/Imprimir" onClick={() => handlePrint()}>
-                                        <Printer className="size-4" />
-                                    </Button>
-                                </div>
-                            </div>
+                            <Label className="text-sm font-bold text-slate-600 font-semibold">Próxima Dose</Label>
+                            <Input
+                                type="date"
+                                value={nextDoseDate}
+                                onChange={(e) => setNextDoseDate(e.target.value)}
+                                className="h-9 bg-white border-slate-200 focus-within:ring-2 focus-within:ring-blue-500/20"
+                            />
                         </div>
                     </div>
 
-                    <div className="hidden md:flex flex-1 bg-slate-200/50 p-6 lg:p-12 overflow-y-auto justify-center items-start">
-                        <div
-                            ref={printRef}
-                            className={`w-full max-w-[650px] min-h-[700px] bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-sm border p-12 flex flex-col text-slate-900`}
-                        >
-                            {/* AgendaVet Header A4 */}
-                            <div className="flex justify-between items-start pb-6 mb-8 border-b-2" style={{borderImage: 'linear-gradient(to right, #13C8CC, #002653) 1'}}>
-                              <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
-                                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                                    <path d="M14 4C9 4 5 8 5 13c0 3 1.5 5.5 3.8 7L14 24l5.2-4C21.5 18.5 23 16 23 13c0-5-4-9-9-9z" fill="white" opacity="0.9"/>
-                                    <path d="M14 8v10M9 13h10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                                  </svg>
-                                </div>
-                                <div>
-                                  <div className="text-2xl font-black tracking-tight" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
-                                    AgendaVet
-                                  </div>
-                                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">Gestão Veterinária Inteligente</p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-lg font-black text-slate-800 uppercase tracking-tight">Comprovante de Vacinação</p>
-                                <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Registro de Imunização Veterinária</p>
-                                <p className="text-[9px] text-slate-400 mt-2">Emitido em {format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
-                              </div>
-                            </div>
-
-                            <div className="border border-slate-400 p-6 mb-8 rounded-sm bg-slate-50/50">
-                                <div className="grid grid-cols-2 gap-8">
-                                    <div className="space-y-1.5">
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">PACIENTE</p>
-                                        <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{petName}</p>
-                                        <div className="text-[10px] space-y-0.5 mt-2 border-t border-slate-200 pt-2 text-slate-600 font-medium">
-                                            <p><span className="font-bold text-slate-400 uppercase text-[9px]">Espécie:</span> {pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : pet?.species}</p>
-                                            <p><span className="font-bold text-slate-400 uppercase text-[9px]">Raça:</span> {pet?.breed}</p>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1.5 text-right border-l border-slate-200 pl-8">
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">TUTOR</p>
-                                        <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{owner?.fullName || 'S/R'}</p>
-                                        <p className="text-[10px] mt-2 border-t border-slate-200 pt-2 text-slate-600 font-medium">{owner?.phone || 'Sem contato'}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex-1 space-y-8">
-                                <div className={`border border-slate-300 p-6 rounded-sm bg-white relative`}>
-                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-600"></div>
-                                    <div className="flex items-center gap-5 mb-6 border-b border-slate-100 pb-5">
-                                        <div className={`p-4 rounded-xl bg-emerald-600 text-white shadow-lg`}>
-                                            <Syringe className="size-8" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-black text-2xl text-slate-900 tracking-tighter">{vaccineName || 'Aguardando nome...'}</h3>
-                                            <p className="text-xs text-emerald-600 font-black uppercase tracking-widest mt-0.5">Aplicada em {format(new Date(applicationDate), 'dd/MM/yyyy')}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-8">
-                                        <div className="bg-slate-50 p-3 border border-slate-200 rounded-sm text-center">
-                                            <p className="font-black text-slate-400 uppercase text-[9px] tracking-[0.2em] mb-2">Próxima Dose</p>
-                                            <p className="text-base font-black text-emerald-600 tracking-tight">{nextDoseDate ? format(new Date(nextDoseDate), 'dd/MM/yyyy') : 'Não agendada'}</p>
-                                        </div>
-                                        <div className="bg-slate-50 p-3 border border-slate-200 rounded-sm text-center">
-                                            <p className="font-black text-slate-400 uppercase text-[9px] tracking-[0.2em] mb-2">Vigilância Sanitária</p>
-                                            <p className="text-base font-black text-slate-800 tracking-tight">{batchNumber || 'Lote N/I'}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="border border-slate-300 p-6 rounded-sm min-h-[150px] bg-slate-50/20">
-                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-200 pb-2 mb-4">Observações Clínicas</h4>
-                                    <div className="text-[12px] leading-relaxed text-slate-700 font-medium whitespace-pre-wrap">
-                                        {notes || "Nenhuma observação clínica adicional registrada para esta aplicação."}
-                                    </div>
-                                </div>
-
-                                {(parseFloat(baseValue) > 0 || services.length > 0) && (
-                                    <div className="border border-slate-800 rounded-sm overflow-hidden mt-6 bg-white shadow-sm">
-                                        <div className="bg-slate-800 px-4 py-2 text-[10px] font-black uppercase text-white tracking-[0.25em]">Resumo Financeiro</div>
-                                        <div className="p-6 space-y-3">
-                                            {parseFloat(baseValue) > 0 && (
-                                                <div className="flex justify-between text-[12px] border-b border-slate-100 pb-2">
-                                                    <span className="font-bold text-slate-500 uppercase tracking-widest text-[10px]">Vacina: {vaccineName}</span>
-                                                    <span className="font-black text-slate-900">R$ {parseFloat(baseValue).toFixed(2)}</span>
-                                                </div>
-                                            )}
-                                            {services.map(s => (
-                                                <div key={s.id} className="flex justify-between text-[12px] border-b border-slate-100 pb-2">
-                                                    <span className="font-bold text-slate-500 uppercase tracking-widest text-[10px]">{s.name}</span>
-                                                    <span className="font-black text-slate-900">R$ {s.value.toFixed(2)}</span>
-                                                </div>
-                                            ))}
-                                            <div className="flex justify-between pt-4 mt-2 font-black text-xl text-emerald-600 tracking-tighter">
-                                                <span>VALOR TOTAL</span>
-                                                <span>R$ {(parseFloat(baseValue) + services.reduce((acc, s) => acc + s.value, 0)).toFixed(2)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="mt-auto pt-8 border-t border-slate-100">
-                              <div className="flex justify-between items-end">
-                                <div className="text-[9px] text-slate-400 leading-tight max-w-[220px]">
-                                  <p className="font-semibold" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>AgendaVet © 2026</p>
-                                  <p className="opacity-70 mt-0.5">Gestão Veterinária Profissional. As informações são de responsabilidade do médico veterinário.</p>
-                                </div>
-                                <div className="text-center w-56">
-                                  <div className="h-[2px] w-full mb-3 rounded" style={{background: 'linear-gradient(to right, #13C8CC, #002653)'}}></div>
-                                  <p className="text-[13px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Dr. Responsável'}</p>
-                                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
-                                </div>
-                              </div>
-                            </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label className="text-sm font-bold text-slate-600 font-semibold">Lote</Label>
+                            <Input
+                                value={batchNumber}
+                                onChange={(e) => setBatchNumber(e.target.value)}
+                                placeholder="Número do lote"
+                                className="h-9 bg-white border-slate-200 focus-within:ring-2 focus-within:ring-blue-500/20"
+                            />
                         </div>
+                        <div>
+                            <Label className="text-sm font-bold text-slate-600 font-semibold">Veterinário</Label>
+                            <Input
+                                value={veterinarian}
+                                onChange={(e) => setVeterinarian(e.target.value)}
+                                className="h-9 bg-white border-slate-200 focus-within:ring-2 focus-within:ring-blue-500/20"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <Label className="text-sm font-bold text-slate-600 font-semibold">Observações</Label>
+                        <Textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="Reações, recomendações..."
+                            className="min-h-[80px] bg-white border-slate-200 focus-within:ring-2 focus-within:ring-blue-500/20"
+                        />
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+
+                {/* Histórico de Vacinas */}
+                {records.length > 0 && (
+                    <div className="space-y-4 bg-white/80 p-4 rounded-lg border border-white/50 shadow-sm">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-600 font-semibold">Histórico de Vacinas</h3>
+                        <div className="space-y-2">
+                            {records.map((record) => (
+                                <div key={record.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-slate-200">
+                                    <div className="flex-1">
+                                        <p className="font-semibold text-sm">{record.vaccine_name}</p>
+                                        <p className="text-xs text-gray-600">
+                                            {format(new Date(record.application_date), 'dd/MM/yyyy')}
+                                            {record.next_dose_date && ` • Próxima: ${format(new Date(record.next_dose_date), 'dd/MM/yyyy')}`}
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleEdit(record)}
+                                            className="h-8 px-2 border-slate-200 hover:bg-slate-100"
+                                        >
+                                            Editar
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleDelete(record.id)}
+                                            className="h-8 px-2 text-red-600 hover:text-red-700"
+                                        >
+                                            <Trash2 className="size-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Billing Section */}
+                <div className="p-4 rounded-xl border border-white/50 shadow-sm bg-white/80 space-y-3">
+                    <div className="flex items-center gap-2 text-green-700 font-bold text-xs uppercase tracking-wider">
+                        💉 Serviços e Faturamento
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <Label className="text-[10px] text-slate-600 font-semibold">Valor da Vacinação (R$)</Label>
+                            <Input
+                                type="number"
+                                value={baseValue}
+                                onChange={(e) => setBaseValue(e.target.value)}
+                                className="h-8 text-sm bg-white border-slate-200 focus-within:ring-2 focus-within:ring-blue-500/20"
+                            />
+                        </div>
+                    </div>
+                    <div className="pt-2 border-t border-green-200 flex justify-between items-center text-sm font-bold text-green-700">
+                        <span>Total:</span>
+                        <span>R$ {(parseFloat(baseValue) + services.reduce((acc, s) => acc + s.value, 0)).toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+        </BaseAttendanceDialog>
     )
 }

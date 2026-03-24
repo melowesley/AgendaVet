@@ -8,12 +8,15 @@ import {
   Users,
   Calendar,
   FileText,
+  MessageSquare,
   Settings,
+  Stethoscope,
   BarChart3,
-  ShoppingBag,
-  Bot,
-  Shield,
+  DollarSign,
+  Package,
+  LogOut,
 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import {
   Sidebar,
   SidebarContent,
@@ -28,19 +31,20 @@ import {
 } from '@/components/ui/sidebar'
 
 const navItems = [
-  { title: 'Visão Geral', href: '/', icon: LayoutDashboard },
+  { title: 'Visão Geral', href: '/vet/dashboard', icon: LayoutDashboard },
   { title: 'Pacientes', href: '/pets', icon: PawPrint },
   { title: 'Tutores', href: '/owners', icon: Users },
   { title: 'Agenda', href: '/appointments', icon: Calendar },
   { title: 'Prontuários', href: '/medical-records', icon: FileText },
   { title: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { title: 'Produtos & Serviços', href: '/products-services', icon: ShoppingBag },
-  { title: 'Vet AI', href: '/vet-copilot', icon: Bot },
+  { title: 'Financeiro', href: '/financeiro', icon: DollarSign },
+  { title: 'Produtos & Serviços', href: '/products-services', icon: Package },
+  { title: 'Assistente IA', href: '/assistant', icon: MessageSquare },
+  { title: 'Vet Copilot', href: '/vet-copilot', icon: Stethoscope },
 ]
 
 const bottomNavItems = [
   { title: 'Configurações', href: '/settings', icon: Settings },
-  { title: 'Admin', href: '/admin', icon: Shield },
 ]
 
 export function AppSidebar() {
@@ -49,6 +53,12 @@ export function AppSidebar() {
 
   const handleNavClick = () => {
     setOpenMobile(false)
+  }
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    window.location.href = '/'
   }
 
   return (
@@ -124,6 +134,15 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 )
               })}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={handleLogout}
+                  className="h-10 transition-all duration-200 text-sidebar-foreground/70 hover:text-red-500 hover:bg-red-500/10 cursor-pointer"
+                >
+                  <LogOut className="size-4" />
+                  <span>Sair</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

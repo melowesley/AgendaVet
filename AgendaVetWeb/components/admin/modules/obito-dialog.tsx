@@ -1,24 +1,23 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { supabase, usePet, useOwner, useMedicalRecords } from '@/lib/data-store'
 import { mutate } from 'swr'
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from '@/components/ui/dialog'
+import dynamic from 'next/dynamic'
+import DOMPurify from 'dompurify'
+import 'react-quill-new/dist/quill.snow.css'
+import { BaseAttendanceDialog } from '../shared/base-attendance-dialog'
+import { useReactToPrint } from 'react-to-print'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { Skull, Save, ArrowLeft, Printer, DollarSign, Plus, Trash2, Heart, Clock, Calendar } from 'lucide-react'
+import { Skull, Save, ArrowLeft, Printer, DollarSign, Plus, Trash2, Heart, Clock, Calendar, User, FileText } from 'lucide-react'
 import { format } from 'date-fns'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useReactToPrint } from 'react-to-print'
+
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false, loading: () => <div className="h-[150px] w-full animate-pulse bg-muted rounded-md" /> })
 
 interface ObitoDialogProps {
     open: boolean
@@ -54,7 +53,20 @@ export function ObitoDialog({ open, onOpenChange, onBack, petId, petName }: Obit
     const [services, setServices] = useState<{ id: string, name: string, value: number }[]>([])
 
     const printRef = useRef<HTMLDivElement>(null)
-    const handlePrint = useReactToPrint({ contentRef: printRef })
+    
+    const handlePrint = useReactToPrint({
+        contentRef: printRef,
+        documentTitle: `Declaracao_Obito_${petName}_${format(new Date(), 'dd_MM_yyyy')}`,
+        pageStyle: `
+            @page { size: A4; margin: 0; }
+            @media print {
+                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
+                html { margin: 0; padding: 0; }
+                .no-print { display: none !important; }
+                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            }
+        `
+    })
 
     const handleSave = async () => {
         if (!causa.trim()) {
@@ -107,264 +119,261 @@ export function ObitoDialog({ open, onOpenChange, onBack, petId, petName }: Obit
         }
     }
 
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] max-w-[1400px] h-[95vh] flex flex-col p-0 overflow-hidden bg-background">
-                <DialogHeader className="p-6 pb-2 border-b border-border/50">
-                    <div className="flex items-center gap-4">
-                        {onBack && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={onBack}>
-                                <ArrowLeft size={18} />
-                            </Button>
-                        )}
-                        <div className={`flex size-10 items-center justify-center rounded-full text-white`} style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
-                            <Skull className="size-5" />
+    const previewContent = (
+        <div className="space-y-8">
+            {/* Cabeçalho Solene */}
+            <div className="text-center border-b-2 border-slate-600 pb-6">
+                <h1 className="text-3xl font-bold mb-2 text-slate-700 flex items-center justify-center gap-3">
+                    <FileText className="w-8 h-8 text-slate-600" />
+                    DECLARAÇÃO DE ÓBITO E ENCERRAMENTO DE FICHA
+                </h1>
+                <p className="text-lg text-gray-600">AgendaVet Medical Unit v2.0</p>
+                <p className="text-sm text-gray-500">Centro de Saúde e Bem-Estar Animal</p>
+                <p className="text-xs mt-2">Data: {format(new Date(), 'dd/MM/yyyy')}</p>
+            </div>
+
+            {/* Cards de Dados */}
+            <div className="grid grid-cols-2 gap-6">
+                {/* Card DADOS DO PACIENTE */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-md">
+                    <h3 className="font-bold text-lg mb-4 text-blue-400 flex items-center gap-2">
+                        <Heart className="w-5 h-5" />
+                        DADOS DO PACIENTE
+                    </h3>
+                    <div className="space-y-2">
+                        <p><span className="font-bold">Nome:</span> {petName}</p>
+                        <p><span className="font-bold">Espécie:</span> {pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : 'Animal'}</p>
+                        <p><span className="font-bold">Raça:</span> {pet?.breed || 'Não informada'}</p>
+                        <p><span className="font-bold">Idade:</span> {pet ? Math.floor((new Date().getTime() - new Date(pet.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 365)) + ' anos' : ''}</p>
+                        <p><span className="font-bold">Sexo:</span> {pet?.gender === 'Macho' ? 'Macho' : pet?.gender === 'Fêmea' ? 'Fêmea' : 'Não informado'}</p>
+                    </div>
+                </div>
+
+                {/* Card DADOS DO PROPRIETÁRIO */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-md">
+                    <h3 className="font-bold text-lg mb-4 text-blue-400 flex items-center gap-2">
+                        <User className="w-5 h-5" />
+                        DADOS DO PROPRIETÁRIO
+                    </h3>
+                    <div className="space-y-2">
+                        <p><span className="font-bold">Nome:</span> {owner?.fullName || 'Proprietário S/R'}</p>
+                        <p><span className="font-bold">Contato:</span> {owner?.phone || 'Não informado'}</p>
+                        <p><span className="font-bold">Endereço:</span> {owner?.address || 'Não informado'}</p>
+                        <p><span className="font-bold">CPF/CNPJ:</span> Não informado</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Informações do Óbito */}
+            <div className="bg-white border border-gray-300 rounded-lg p-4 shadow-sm">
+                <h3 className="font-bold text-lg mb-3 text-slate-600">INFORMAÇÕES DO ÓBITO</h3>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <p><span className="font-bold">Data do Óbito:</span> {date || 'A definir'}</p>
+                        <p><span className="font-bold">Hora do Óbito:</span> {time || 'A definir'}</p>
+                    </div>
+                    <div>
+                        <p><span className="font-bold">Causa Provável:</span> {causa || 'A ser determinada'}</p>
+                        <p><span className="font-bold">Veterinário:</span> {veterinarian}</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Observações com Rich Text */}
+            {observacoes && (
+                <div className="bg-white border border-gray-300 rounded-lg p-4 shadow-sm">
+                    <h3 className="font-bold text-lg mb-3 text-slate-600">OBSERVAÇÕES E CIRCUNSTÂNCIAS</h3>
+                    <div className="text-base leading-relaxed prose prose-sm max-w-none" 
+                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(observacoes) }} />
+                </div>
+            )}
+
+            {/* AUTORIZAÇÃO DE DESTINAÇÃO */}
+            <div className="bg-slate-50 border border-slate-300 rounded-lg p-4 shadow-sm">
+                <h3 className="font-bold text-lg mb-3 text-slate-600">AUTORIZAÇÃO DE DESTINAÇÃO</h3>
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-700">
+                        Eu, abaixo assinado, proprietário(a) do animal acima descrito, autorizo o procedimento de destinação final conforme orientação médica veterinária.
+                    </p>
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <p className="text-sm font-bold mb-2">Assinatura do Responsável:</p>
+                            <div className="border-b-2 border-slate-400 h-12"></div>
+                            <p className="text-xs text-gray-500 mt-1">Data: ___/___/_____</p>
                         </div>
                         <div>
-                            <DialogTitle className="text-xl">Registro de Óbito - {petName}</DialogTitle>
-                            <DialogDescription>Procedimento de encerramento de ficha clínica</DialogDescription>
-                        </div>
-                    </div>
-                </DialogHeader>
-
-                <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-                    {/* NEW: Left Sidebar with Patient History */}
-                    <div className="hidden lg:block w-[300px] bg-slate-50/50 border-r border-border/30 p-6 overflow-y-auto shrink-0 mt-0">
-                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 border-l-4 border-zinc-500 pl-3 mb-4">
-                            Histórico do Paciente
-                        </h3>
-                        
-                        {allRecords.length === 0 ? (
-                            <div className="text-center py-8">
-                                <p className="text-xs text-muted-foreground italic">Nenhum registro anterior.</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {allRecords.map(record => (
-                                    <div key={record.id} className="p-3 bg-white border border-slate-100 rounded-lg shadow-sm hover:border-zinc-300 transition-colors">
-                                        <div className="flex justify-between items-start mb-1.5">
-                                            <span className="text-[9px] font-bold text-slate-400">
-                                                {format(new Date(record.date || record.createdAt), "dd/MM")}
-                                            </span>
-                                            <span className="text-[9px] font-black uppercase text-zinc-600 bg-zinc-100 px-1.5 py-0.5 rounded">
-                                                {record.type}
-                                            </span>
-                                        </div>
-                                        <h4 className="text-xs font-bold text-slate-800 line-clamp-2">{record.title}</h4>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Form Side */}
-                    <div className="w-full md:w-1/3 lg:w-[400px] p-6 border-r border-border/30 overflow-y-auto shrink-0">
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Data do Óbito *</Label>
-                                    <Input
-                                        type="date"
-                                        value={date}
-                                        onChange={(e) => setDate(e.target.value)}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Hora do Óbito *</Label>
-                                    <Input
-                                        type="time"
-                                        value={time}
-                                        onChange={(e) => setTime(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Causa Provável *</Label>
-                                <Input
-                                    placeholder="Ex: Parada Cardiorrespiratória, Falência Múltipla..."
-                                    value={causa}
-                                    onChange={(e) => setCausa(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Observações Adicionais</Label>
-                                <Textarea
-                                    value={observacoes}
-                                    onChange={(e) => setObservacoes(e.target.value)}
-                                    placeholder="Circunstâncias, eutanásia (se houver), condutas finais..."
-                                    rows={4}
-                                />
-                            </div>
-
-                            {/* Billing Section */}
-                            <div className={`p-4 rounded-xl border-2 border-dashed ${themeColor.border}/20 bg-zinc-50/50 space-y-3`}>
-                                <div className={`flex items-center gap-2 ${themeColor.text} font-bold text-xs uppercase tracking-wider`}>
-                                    <DollarSign className="size-4" />
-                                    Custos Finais (Eutanásia/Destinação)
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1">
-                                        <Label className="text-[10px]">Taxa Base (R$)</Label>
-                                        <Input
-                                            type="number"
-                                            value={baseValue}
-                                            onChange={(e) => setBaseValue(e.target.value)}
-                                            className="h-8 text-sm"
-                                        />
-                                    </div>
-                                    <div className="flex items-end">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className={`w-full h-8 text-[10px] ${themeColor.border}/30 ${themeColor.text}`}
-                                            onClick={() => setServices([...services, { id: Math.random().toString(), name: 'Taxa Adicional', value: 0 }])}
-                                        >
-                                            <Plus className="size-3 mr-1" /> Add Taxa
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                {services.map((service, idx) => (
-                                    <div key={service.id} className="flex gap-2 items-center">
-                                        <Input
-                                            value={service.name}
-                                            onChange={(e) => {
-                                                const newServices = [...services]
-                                                newServices[idx].name = e.target.value
-                                                setServices(newServices)
-                                            }}
-                                            placeholder="Descrição"
-                                            className="h-7 text-[10px] flex-1"
-                                        />
-                                        <Input
-                                            type="number"
-                                            value={service.value}
-                                            onChange={(e) => {
-                                                const newServices = [...services]
-                                                newServices[idx].value = parseFloat(e.target.value) || 0
-                                                setServices(newServices)
-                                            }}
-                                            className="h-7 text-[10px] w-16"
-                                        />
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-7 w-7 p-0 text-destructive"
-                                            onClick={() => setServices(services.filter((_, i) => i !== idx))}
-                                        >
-                                            <Trash2 className="size-3" />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="flex gap-3">
-                                <Button onClick={handleSave} disabled={loading} className={`flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white shadow-lg`}>
-                                    <Save className="size-4 mr-2" />
-                                    {loading ? 'Processando...' : 'Finalizar Registro'}
-                                </Button>
-
-                                <Button variant="outline" className="flex-1" onClick={() => handlePrint()}>
-                                    <Printer className="size-4 mr-2" />
-                                    Imprimir Declaração
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="hidden md:block flex-1 bg-zinc-100/50 p-4 lg:p-8 overflow-y-auto">
-                        <div
-                            ref={printRef}
-                            className="w-full max-w-[600px] mx-auto min-h-[842px] bg-white shadow-2xl rounded-sm border-2 border-slate-200 p-12 flex flex-col text-zinc-900"
-                            style={{borderImage: 'linear-gradient(to right, #13C8CC, #002653) 1', borderTopWidth: '4px'}}
-                        >
-                            {/* AgendaVet Header A4 */}
-                            <div className="flex justify-between items-start pb-6 mb-8 border-b-2" style={{borderImage: 'linear-gradient(to right, #13C8CC, #002653) 1'}}>
-                              <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
-                                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                                    <path d="M14 4C9 4 5 8 5 13c0 3 1.5 5.5 3.8 7L14 24l5.2-4C21.5 18.5 23 16 23 13c0-5-4-9-9-9z" fill="white" opacity="0.9"/>
-                                    <path d="M14 8v10M9 13h10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                                  </svg>
-                                </div>
-                                <div>
-                                  <div className="text-2xl font-black tracking-tight" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
-                                    AgendaVet
-                                  </div>
-                                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">Gestão Veterinária Inteligente</p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-lg font-black text-slate-800 uppercase tracking-tight">DECLARAÇÃO DE ÓBITO</p>
-                                <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Registro de Falecimento Animal</p>
-                                <p className="text-[9px] text-slate-400 mt-2">Emitido em {format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
-                              </div>
-                            </div>
-
-                            <div className="flex-1 space-y-10">
-                                <section>
-                                    <p className="text-[12px] leading-relaxed text-zinc-800 text-justify font-serif italic">
-                                        Declaramos para os devidos fins que o paciente animal de estimação, cujas especificações seguem abaixo,
-                                        veio a óbito nesta unidade hospitalar na data e horário informados, sob os cuidados da equipe médica veterinária.
-                                    </p>
-                                </section>
-
-                                <div className="border border-zinc-300 p-6 rounded-sm bg-zinc-50/50">
-                                    <div className="grid grid-cols-2 gap-x-12 gap-y-8">
-                                        <div className="space-y-1.5">
-                                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">PACIENTE</p>
-                                            <p className="text-base font-bold text-zinc-900 border-b border-zinc-200 pb-1">{petName}</p>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">ESPÉCIE / RAÇA</p>
-                                            <p className="text-base text-zinc-800 border-b border-zinc-200 pb-1">{pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : pet?.species} / {pet?.breed}</p>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">TUTOR RESPONSÁVEL</p>
-                                            <p className="text-base text-zinc-800 border-b border-zinc-200 pb-1">{owner?.fullName || "S/R"}</p>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">DATA E HORÁRIO</p>
-                                            <p className="text-base text-zinc-800 border-b border-zinc-200 pb-1">{format(new Date(date), 'dd/MM/yyyy')} às {time}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <section>
-                                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-3 border-b border-zinc-200 pb-1">Causa Provável do Óbito</h3>
-                                    <div className="p-8 bg-zinc-900 text-white rounded-sm italic text-xl text-center shadow-inner break-words break-all whitespace-pre-wrap">
-                                        {causa || "_________________________________"}
-                                    </div>
-                                </section>
-
-                                <section>
-                                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-3 border-b border-zinc-200 pb-1">Notas e Observações Adicionais</h3>
-                                    <p className="text-sm text-zinc-700 leading-relaxed min-h-[120px] bg-zinc-50/30 p-4 border-l-4 border-zinc-200 break-words break-all whitespace-pre-wrap">
-                                        {observacoes || "Nenhuma observação clínica adicional registrada para este evento."}
-                                    </p>
-                                </section>
-                            </div>
-
-                            {/* AgendaVet Footer A4 */}
-                            <div className="mt-auto pt-8 border-t border-slate-100">
-                              <div className="flex justify-between items-end">
-                                <div className="text-[9px] text-slate-400 leading-tight max-w-[220px]">
-                                  <p className="font-semibold" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>AgendaVet © 2026</p>
-                                  <p className="opacity-70 mt-0.5">Gestão Veterinária Profissional. As informações são de responsabilidade do médico veterinário.</p>
-                                </div>
-                                <div className="text-center w-56">
-                                  <div className="h-[2px] w-full mb-3 rounded" style={{background: 'linear-gradient(to right, #13C8CC, #002653)'}}></div>
-                                  <p className="text-[13px] font-black uppercase text-slate-900 tracking-tight">{veterinarian || 'Dr. Responsável'}</p>
-                                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Médico Veterinário • CRMV</p>
-                                </div>
-                              </div>
-                            </div>
+                            <p className="text-sm font-bold mb-2">Testemunha (se houver):</p>
+                            <div className="border-b-2 border-slate-400 h-12"></div>
+                            <p className="text-xs text-gray-500 mt-1">Data: ___/___/_____</p>
                         </div>
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+            </div>
+
+            {/* Rodapé com Assinaturas */}
+            <div className="mt-12 pt-8 border-t-2 border-slate-600">
+                <div className="grid grid-cols-2 gap-8">
+                    <div className="text-center">
+                        <div className="border-t-2 border-slate-600 w-64 mx-auto mb-2"></div>
+                        <p className="font-bold text-slate-700">{veterinarian}</p>
+                        <p className="text-sm">Médico Veterinário Responsável</p>
+                        <p className="text-xs mt-2">CRMV: 12345-SP</p>
+                        <p className="text-xs mt-1">Carimbo e Assinatura</p>
+                    </div>
+                    <div className="text-center">
+                        <div className="border-t-2 border-slate-600 w-64 mx-auto mb-2"></div>
+                        <p className="font-bold text-slate-700">{owner?.fullName || 'Proprietário'}</p>
+                        <p className="text-sm">Responsável pelo Animal</p>
+                        <p className="text-xs mt-2">Assinatura</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+
+    return (
+        <BaseAttendanceDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            onBack={onBack}
+            title="Registro de Óbito"
+            previewContent={previewContent}
+            onSave={handleSave}
+            saveLabel="Finalizar Registro"
+            isSaving={loading}
+            printTitle={`Declaracao_Obito_${petName}_${format(new Date(), 'dd_MM_yyyy')}`}
+        >
+            <div className="space-y-6">
+                {/* Data e Hora */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <Label className="text-sm font-bold">Data do Óbito *</Label>
+                        <Input
+                            type="date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className="h-9"
+                        />
+                    </div>
+                    <div>
+                        <Label className="text-sm font-bold">Hora do Óbito *</Label>
+                        <Input
+                            type="time"
+                            value={time}
+                            onChange={(e) => setTime(e.target.value)}
+                            className="h-9"
+                        />
+                    </div>
+                </div>
+
+                {/* Causa Provável */}
+                <div>
+                    <Label className="text-sm font-bold">Causa Provável *</Label>
+                    <Input
+                        placeholder="Ex: Parada Cardiorrespiratória, Falência Múltipla..."
+                        value={causa}
+                        onChange={(e) => setCausa(e.target.value)}
+                        className="h-9"
+                    />
+                </div>
+
+                {/* Rich Text Editor para Observações */}
+                <div>
+                    <Label className="text-sm font-bold">Observações e Circunstâncias</Label>
+                    <div className="border border-gray-200 rounded-lg">
+                        <ReactQuill
+                            value={observacoes}
+                            onChange={setObservacoes}
+                            theme="snow"
+                            modules={{
+                                toolbar: [
+                                    [{ 'header': [1, 2, 3, false] }],
+                                    ['bold', 'italic', 'underline'],
+                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                    ['clean']
+                                ],
+                            }}
+                            style={{ height: '150px' }}
+                            placeholder="Descreva as circunstâncias do óbito, procedimentos realizados, eutanásia (se houver), condutas finais..."
+                        />
+                    </div>
+                </div>
+
+                {/* Custos Finais */}
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                    <h3 className="font-bold text-lg mb-4 text-slate-600 flex items-center gap-2">
+                        <DollarSign className="w-5 h-5" />
+                        Custos Finais
+                    </h3>
+                    <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label className="text-sm">Taxa Base (R$)</Label>
+                                <Input
+                                    type="number"
+                                    value={baseValue}
+                                    onChange={(e) => setBaseValue(e.target.value)}
+                                    className="h-8"
+                                />
+                            </div>
+                            <div className="flex items-end">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full h-8"
+                                    onClick={() => setServices([...services, { id: Math.random().toString(), name: 'Taxa Adicional', value: 0 }])}
+                                >
+                                    <Plus className="w-3 h-3 mr-1" /> Adicionar
+                                </Button>
+                            </div>
+                        </div>
+
+                        {services.map((service, idx) => (
+                            <div key={service.id} className="flex gap-2 items-center">
+                                <Input
+                                    value={service.name}
+                                    onChange={(e) => {
+                                        const newServices = [...services]
+                                        newServices[idx].name = e.target.value
+                                        setServices(newServices)
+                                    }}
+                                    placeholder="Descrição"
+                                    className="h-7 text-sm flex-1"
+                                />
+                                <Input
+                                    type="number"
+                                    value={service.value}
+                                    onChange={(e) => {
+                                        const newServices = [...services]
+                                        newServices[idx].value = parseFloat(e.target.value) || 0
+                                        setServices(newServices)
+                                    }}
+                                    className="h-7 text-sm w-16"
+                                />
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0 text-destructive"
+                                    onClick={() => setServices(services.filter((_, i) => i !== idx))}
+                                >
+                                    <Trash2 className="w-3 h-3" />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Veterinário Responsável */}
+                <div>
+                    <Label className="text-sm font-bold">Veterinário Responsável</Label>
+                    <Input
+                        value={veterinarian}
+                        onChange={(e) => setVeterinarian(e.target.value)}
+                        placeholder="Nome do veterinário"
+                        className="h-9"
+                    />
+                </div>
+            </div>
+        </BaseAttendanceDialog>
     )
 }

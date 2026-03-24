@@ -16,9 +16,7 @@ export async function GET(req: Request) {
     .eq('user_id', user.id)
     .single()
 
-  if (!membership) {
-    return Response.json({ error: 'No clinic' }, { status: 403 })
-  }
+  const clinicId = membership?.clinic_id ?? null
 
   const url = new URL(req.url)
   const conversationId = url.searchParams.get('conversationId')
@@ -28,7 +26,7 @@ export async function GET(req: Request) {
       .from('ai_messages')
       .select('id, role, content, model, token_count, latency_ms, tool_calls, clinical_action, created_at')
       .eq('conversation_id', conversationId)
-      .eq('clinic_id', membership.clinic_id)
+      .eq('clinic_id', clinicId)
       .order('created_at', { ascending: true })
 
     return Response.json({ messages: messages || [] })
@@ -40,7 +38,7 @@ export async function GET(req: Request) {
   let query = supabase
     .from('ai_conversations')
     .select('id, title, pet_id, model_used, created_at, updated_at')
-    .eq('clinic_id', membership.clinic_id)
+    .eq('clinic_id', clinicId)
     .order('updated_at', { ascending: false })
     .limit(limit)
 

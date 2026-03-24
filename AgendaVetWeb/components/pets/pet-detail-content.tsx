@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 import Link from 'next/link'
 import DOMPurify from 'dompurify'
@@ -28,10 +26,10 @@ import { GaleriaDialog } from '../admin/modules/galeria-dialog'
 import { InternacaoDialog } from '../admin/modules/internacao-dialog'
 import { ObitoDialog } from '../admin/modules/obito-dialog'
 import { BanhoTosaDialog } from '../admin/modules/banho-tosa-dialog'
+import { RetornoDialog } from '../admin/modules/retorno-dialog'
+import { DocumentoJuridicoDialog } from '../admin/modules/documento-juridico-dialog'
 import type { MedicalRecord } from '@/lib/types'
 import { ArchiveDialog } from '@/components/admin/modules/archive-dialog'
-import { RegistroLivreDialog } from '../admin/modules/registro-livre-dialog'
-import { FinanceiroDialog } from '../admin/modules/financeiro-dialog'
 
 interface PetDetailContentProps {
   petId: string
@@ -66,8 +64,7 @@ const medicalRecordTypeLabels: Record<string, string> = {
 
 export function PetDetailContent({ petId }: PetDetailContentProps) {
   const { pet, isLoading: petLoading } = usePet(petId)
-  // Use profileId as the primary link; fall back to legacy ownerId
-  const { owner, isLoading: ownerLoading } = useOwner(pet?.profileId || pet?.ownerId || '')
+  const { owner, isLoading: ownerLoading } = useOwner(pet?.ownerId || '')
   const { records } = useMedicalRecords(petId)
   const { appointments } = useAppointments()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -84,9 +81,8 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
   const [internacaoDialogOpen, setInternacaoDialogOpen] = useState(false)
   const [obitoDialogOpen, setObitoDialogOpen] = useState(false)
   const [banhoTosaDialogOpen, setBanhoTosaDialogOpen] = useState(false)
-  const [registroLivreOpen, setRegistroLivreOpen] = useState(false)
-  const [registroLivreType, setRegistroLivreType] = useState('observacoes')
-  const [financeiroDialogOpen, setFinanceiroDialogOpen] = useState(false)
+  const [retornoDialogOpen, setRetornoDialogOpen] = useState(false)
+  const [documentoJuridicoDialogOpen, setDocumentoJuridicoDialogOpen] = useState(false)
   const [recordDialogType, setRecordDialogType] = useState<MedicalRecord['type']>('vaccination')
 
   const openMedicalRecord = (type: MedicalRecord['type']) => {
@@ -117,13 +113,25 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
       setBanhoTosaDialogOpen(true)
     } else if (type === 'fotos' || type === 'video') {
       setGaleriaDialogOpen(true)
-    } else if (type === 'financeiro') {
-      setFinanceiroDialogOpen(true)
-    } else if (['procedimento', 'diagnostico', 'documento', 'observacoes', 'retorno', 'outros'].includes(type)) {
-      setRegistroLivreType(type)
-      setRegistroLivreOpen(true)
+    } else if (type === 'retorno') {
+      setRetornoDialogOpen(true)
+    } else if (type === 'documento') {
+      setDocumentoJuridicoDialogOpen(true)
+    } else if (type === 'observacoes') {
+      setConsultaDialogOpen(true)
+    } else if (type === 'procedimento' || type === 'diagnostico') {
+      setConsultaDialogOpen(true)
     } else {
-      openMedicalRecord('note')
+      // Map other types to general MedicalRecord types for now
+      const mapping: Record<string, MedicalRecord['type']> = {
+        'procedimento': 'procedure',
+      }
+
+      if (mapping[type]) {
+        openMedicalRecord(mapping[type])
+      } else {
+        openMedicalRecord('note')
+      }
     }
   }
 
@@ -602,24 +610,23 @@ export function PetDetailContent({ petId }: PetDetailContentProps) {
           setAttendanceDialogOpen(true)
         }}
       />
-      <RegistroLivreDialog
-        open={registroLivreOpen}
-        onOpenChange={setRegistroLivreOpen}
+      <RetornoDialog
+        open={retornoDialogOpen}
+        onOpenChange={setRetornoDialogOpen}
         petId={petId}
         petName={pet.name}
-        recordType={registroLivreType}
         onBack={() => {
-          setRegistroLivreOpen(false)
+          setRetornoDialogOpen(false)
           setAttendanceDialogOpen(true)
         }}
       />
-      <FinanceiroDialog
-        open={financeiroDialogOpen}
-        onOpenChange={setFinanceiroDialogOpen}
+      <DocumentoJuridicoDialog
+        open={documentoJuridicoDialogOpen}
+        onOpenChange={setDocumentoJuridicoDialogOpen}
         petId={petId}
         petName={pet.name}
         onBack={() => {
-          setFinanceiroDialogOpen(false)
+          setDocumentoJuridicoDialogOpen(false)
           setAttendanceDialogOpen(true)
         }}
       />

@@ -1,7 +1,7 @@
 'use client'
 
 import useSWR, { mutate } from 'swr'
-import type { Pet, Owner, Appointment, MedicalRecord, AgentSettings, Service, Product } from './types'
+import type { Pet, Owner, Appointment, MedicalRecord, AgentSettings } from './types'
 import { supabase } from './supabase/client'
 export { supabase }
 import { useAuthStore } from './auth-store'
@@ -250,7 +250,7 @@ export async function addPet(pet: Omit<Pet, 'id' | 'createdAt'>) {
     type: pet.species,
     breed: pet.breed,
     age: pet.dateOfBirth,
-    weight: pet.weight != null ? pet.weight.toString() : '0',
+    weight: pet.weight.toString(),
     user_id: currentUserId || null, // ID of the logged-in vet
     profile_id: pet.profileId,     // ID of the tutor profile
     notes: pet.notes + (pet.gender ? ` | Gênero: ${pet.gender}` : ''),
@@ -344,7 +344,7 @@ export async function addTutorAndPet(
     type: petData.species,
     breed: petData.breed,
     age: petData.dateOfBirth,
-    weight: petData.weight != null ? petData.weight.toString() : '0',
+    weight: petData.weight.toString(),
     user_id: currentUserId || null, // Logged in Vet ID
     profile_id: tutor.id,         // Newly created Tutor Profile ID
     notes: petData.notes + (petData.gender ? ` | Gênero: ${petData.gender}` : ''),
@@ -352,8 +352,6 @@ export async function addTutorAndPet(
 
   if (petError) {
     console.error('Error adding pet during unified registration:', petError)
-    // Rollback: delete the tutor profile that was just created
-    await supabase.from('profiles').delete().eq('id', tutor.id)
     throw petError
   }
 
@@ -374,8 +372,6 @@ export async function updateOwner(id: string, updates: Partial<Owner>) {
   }
   if (updates.phone) supabaseUpdates.phone = updates.phone
   if (updates.address) supabaseUpdates.address = updates.address
-  if (updates.email !== undefined) supabaseUpdates.email = updates.email
-  if (updates.whatsapp !== undefined) supabaseUpdates.whatsapp = updates.whatsapp
 
   const { data, error } = await supabase.from('profiles').update(supabaseUpdates).eq('id', id).select().single()
   if (error) {
@@ -388,7 +384,7 @@ export async function updateOwner(id: string, updates: Partial<Owner>) {
 }
 
 export async function deleteOwner(id: string) {
-  const { error } = await supabase.from('profiles').delete().eq('id', id)
+  const { error } = await supabase.from('profiles').delete().eq('user_id', id)
   if (error) {
     console.error('Error deleting owner profile:', error)
     throw error
@@ -488,147 +484,5 @@ export function updateAgentSettings(settings: Partial<AgentSettings>) {
   agentSettingsStore = { ...agentSettingsStore, ...settings }
   mutate('agent-settings')
   return agentSettingsStore
-}
-
-// Services (Produtos & Serviços)
-const mapSupabaseService = (s: any): Service => ({
-  id: s.id,
-  name: s.name,
-  description: s.description || undefined,
-  price: typeof s.price === 'number' ? s.price : parseFloat(s.price) || 0,
-  durationMinutes: s.duration_minutes ?? undefined,
-  active: s.active !== false, // default to true if null/undefined
-  createdAt: s.created_at,
-})
-
-const servicesFetcher = async () => {
-  const { data, error } = await supabase
-    .from('services')
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return (data || []).map(mapSupabaseService)
-}
-
-export function useServices() {
-  const { data, error, isLoading } = useSWR<Service[]>('services', servicesFetcher)
-  return { services: data ?? [], error, isLoading }
-}
-
-export async function addService(service: Omit<Service, 'id' | 'createdAt'>) {
-  const { data, error } = await supabase.from('services').insert([{
-    name: service.name,
-    description: service.description ?? null,
-    price: service.price,
-    duration_minutes: service.durationMinutes ?? null,
-    active: service.active,
-  }]).select().single()
-
-  if (error) {
-    console.error('Error adding service:', error)
-    throw error
-  }
-  const newService = mapSupabaseService(data)
-  mutate('services')
-  return newService
-}
-
-export async function updateService(id: string, updates: Partial<Service>) {
-  const supabaseUpdates: any = {}
-  if (updates.name !== undefined) supabaseUpdates.name = updates.name
-  if (updates.description !== undefined) supabaseUpdates.description = updates.description ?? null
-  if (updates.price !== undefined) supabaseUpdates.price = updates.price
-  if (updates.durationMinutes !== undefined) supabaseUpdates.duration_minutes = updates.durationMinutes ?? null
-  if (updates.active !== undefined) supabaseUpdates.active = updates.active
-
-  const { data, error } = await supabase.from('services').update(supabaseUpdates).eq('id', id).select().single()
-  if (error) {
-    console.error('Error updating service:', error)
-    throw error
-  }
-  const updatedService = mapSupabaseService(data)
-  mutate('services')
-  return updatedService
-}
-
-export async function deleteService(id: string) {
-  const { error } = await supabase.from('services').delete().eq('id', id)
-  if (error) throw error
-  mutate('services')
-  return true
-}
-
-// Products (Materiais & Medicamentos)
-const mapSupabaseProduct = (p: any): Product => ({
-  id: p.id,
-  name: p.name,
-  description: p.description || undefined,
-  category: p.category === 'medicamento' ? 'medicamento' : 'material',
-  price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0,
-  unit: p.unit || undefined,
-  stock: p.stock != null ? Number(p.stock) : undefined,
-  active: p.active !== false,
-  createdAt: p.created_at,
-})
-
-const productsFetcher = async () => {
-  const { data, error } = await supabase
-    .from('products' as any)
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return (data || []).map(mapSupabaseProduct)
-}
-
-export function useProducts() {
-  const { data, error, isLoading } = useSWR<Product[]>('products', productsFetcher)
-  return { products: data ?? [], error, isLoading }
-}
-
-export async function addProduct(product: Omit<Product, 'id' | 'createdAt'>) {
-  const { data, error } = await (supabase.from('products' as any).insert([{
-    name: product.name,
-    description: product.description ?? null,
-    category: product.category,
-    price: product.price,
-    unit: product.unit ?? null,
-    stock: product.stock ?? null,
-    active: product.active,
-  }]) as any).select().single()
-
-  if (error) {
-    console.error('Error adding product:', error)
-    throw error
-  }
-  const newProduct = mapSupabaseProduct(data)
-  mutate('products')
-  return newProduct
-}
-
-export async function updateProduct(id: string, updates: Partial<Product>) {
-  const supabaseUpdates: any = {}
-  if (updates.name !== undefined) supabaseUpdates.name = updates.name
-  if (updates.description !== undefined) supabaseUpdates.description = updates.description ?? null
-  if (updates.category !== undefined) supabaseUpdates.category = updates.category
-  if (updates.price !== undefined) supabaseUpdates.price = updates.price
-  if (updates.unit !== undefined) supabaseUpdates.unit = updates.unit ?? null
-  if (updates.stock !== undefined) supabaseUpdates.stock = updates.stock ?? null
-  if (updates.active !== undefined) supabaseUpdates.active = updates.active
-
-  const { data, error } = await (supabase.from('products' as any).update(supabaseUpdates).eq('id', id) as any).select().single()
-  if (error) {
-    console.error('Error updating product:', error)
-    throw error
-  }
-  const updatedProduct = mapSupabaseProduct(data)
-  mutate('products')
-  return updatedProduct
-}
-
-export async function deleteProduct(id: string) {
-  const { error } = await supabase.from('products' as any).delete().eq('id', id)
-  if (error) throw error
-  mutate('products')
-  return true
 }
 

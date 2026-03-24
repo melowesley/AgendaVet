@@ -47,7 +47,7 @@
     "@supabase/supabase-js": "^2.98.0",
     "@vercel/analytics": "1.3.1",
     "ai": "6.0.43",
-    "autoprefixer": "^10.4.20",
+    "autoprefixer": "^10.4.27",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
@@ -83,8 +83,8 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "postcss": "^8.5",
-    "tailwindcss": "^4.1.9",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.1",
     "tw-animate-css": "1.3.3",
     "typescript": "^5"
   }

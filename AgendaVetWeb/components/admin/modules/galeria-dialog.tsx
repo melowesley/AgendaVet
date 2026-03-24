@@ -103,12 +103,12 @@ export function GaleriaDialog({ open, onOpenChange, onBack, petId, petName }: Ga
             const { data: userData } = await supabase.auth.getUser()
             const tagsArray = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : null
 
-            const table = mediaType === 'photo' ? 'pet_photos' : 'pet_videos'
+            const table = 'pet_photos'
             const payload = {
                 pet_id: petId,
                 user_id: userData.user?.id,
                 title: title || null,
-                [mediaType === 'photo' ? 'photo_url' : 'video_url']: mediaUrl,
+                photo_url: mediaUrl,
                 description: description || null,
                 date,
                 tags: tagsArray,
@@ -118,7 +118,7 @@ export function GaleriaDialog({ open, onOpenChange, onBack, petId, petName }: Ga
             if (error) throw error
 
             mutate('medical-records')
-            toast.success(`${mediaType === 'photo' ? 'Foto' : 'Vídeo'} salvo com sucesso!`)
+            toast.success('Mídia salva com sucesso!')
             resetForm()
             loadRecords()
         } catch (error: any) {
@@ -138,15 +138,15 @@ export function GaleriaDialog({ open, onOpenChange, onBack, petId, petName }: Ga
 
     const handleDelete = async (id: string, type: 'photo' | 'video') => {
         try {
-            const table = type === 'photo' ? 'pet_photos' : 'pet_videos'
+            const table = 'pet_photos'
             const { error } = await (supabase.from(table as any).delete().eq('id', id) as any)
             if (error) throw error
 
             mutate('medical-records')
-            toast.success('Mídia excluída')
+            toast.success('Mídia removida com sucesso!')
             loadRecords()
         } catch (error: any) {
-            toast.error(error.message || 'Erro ao excluir arquivo')
+            toast.error(error.message || 'Erro ao remover mídia')
         }
     }
 
@@ -160,7 +160,7 @@ export function GaleriaDialog({ open, onOpenChange, onBack, petId, petName }: Ga
                                 <ArrowLeft size={18} />
                             </Button>
                         )}
-                        <div className="flex size-10 items-center justify-center rounded-xl text-white shadow-md" style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
+                        <div className="flex size-10 items-center justify-center rounded-full bg-orange-500/10 text-orange-500">
                             <ImageIcon className="size-5" />
                         </div>
                         <div>
@@ -173,16 +173,14 @@ export function GaleriaDialog({ open, onOpenChange, onBack, petId, petName }: Ga
                 <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
                     {/* Add Media Section */}
                     <div className="w-full md:w-[40%] p-6 border-r border-border/30 overflow-y-auto">
-                        <Tabs defaultValue="photo" value={mediaType} onValueChange={(v) => setMediaType(v as 'photo' | 'video')} className="w-full">
+                        <Tabs defaultValue="photo" value="photo" className="w-full">
                             <h3 className="font-semibold text-sm mb-4">Adicionar Nova Mídia</h3>
-                            <TabsList className="grid w-full grid-cols-2 mb-6">
-                                <TabsTrigger value="photo" className="flex items-center gap-2">
-                                    <Camera size={14} /> Foto
-                                </TabsTrigger>
-                                <TabsTrigger value="video" className="flex items-center gap-2">
-                                    <Video size={14} /> Vídeo
-                                </TabsTrigger>
-                            </TabsList>
+                            <div className="w-full mb-6 p-3 bg-muted/50 rounded-lg border border-border/50">
+                                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                                    <Camera size={16} />
+                                    Imagem e Vídeo
+                                </div>
+                            </div>
 
                             <div className="space-y-4">
                                 <div className="space-y-1.5">
@@ -191,7 +189,7 @@ export function GaleriaDialog({ open, onOpenChange, onBack, petId, petName }: Ga
                                         id="media-url"
                                         value={mediaUrl}
                                         onChange={(e) => setMediaUrl(e.target.value)}
-                                        placeholder={`https://... (Drive, iCloud, ${mediaType === 'video' ? 'YouTube' : 'Imagens'})`}
+                                        placeholder="https://... (Drive, iCloud, YouTube, Imagens)"
                                     />
                                 </div>
 
@@ -216,9 +214,9 @@ export function GaleriaDialog({ open, onOpenChange, onBack, petId, petName }: Ga
                                     <Input id="media-tags" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Ex: pele, alergia, olho direito" />
                                 </div>
 
-                                <Button onClick={handleSave} disabled={loading} className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white mt-4">
+                                <Button onClick={handleSave} disabled={loading} className="w-full bg-orange-600 hover:bg-orange-700 text-white mt-4">
                                     <Save className="size-4 mr-2" />
-                                    {loading ? 'Salvando...' : `Salvar ${mediaType === 'photo' ? 'Foto' : 'Vídeo'}`}
+                                    {loading ? 'Salvando...' : 'Salvar Mídia'}
                                 </Button>
                             </div>
                         </Tabs>

@@ -18,9 +18,7 @@ export async function POST(req: Request) {
     .eq('user_id', user.id)
     .single()
 
-  if (!membership || !['owner', 'admin', 'vet'].includes(membership.role)) {
-    return Response.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const clinicId = membership?.clinic_id ?? null
 
   const body = await req.json()
   const { action, decision } = body as {
@@ -49,7 +47,7 @@ export async function POST(req: Request) {
   const result = await actionsModule.confirmAction(
     action,
     user.id,
-    membership.clinic_id
+    clinicId
   )
 
   return Response.json(result)

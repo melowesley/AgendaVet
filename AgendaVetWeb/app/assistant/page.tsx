@@ -1,5 +1,12 @@
-import { redirect } from 'next/navigation'
+'use client'
+
+import { AppLayout } from '@/components/app-layout'
+import { AssistantContent } from '@/components/assistant/assistant-content'
 
 export default function AssistantPage() {
-  redirect('/vet-copilot')
+  return (
+    <AppLayout breadcrumbs={[{ label: 'AI Assistant' }]}>
+      <AssistantContent />
+    </AppLayout>
+  )
 }

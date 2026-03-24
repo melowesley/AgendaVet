@@ -81,7 +81,7 @@ export function DashboardContent() {
   }
 
   const getPetById = (petId: string) => pets.find((p) => p.id === petId)
-  const getOwnerById = (ownerId: string) => owners.find((o) => o.id === ownerId)
+  const getOwnerById = (ownerId: string | undefined) => ownerId ? owners.find((o) => o.id === ownerId) : undefined
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">

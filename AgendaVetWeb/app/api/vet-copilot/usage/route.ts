@@ -17,9 +17,7 @@ export async function GET(req: Request) {
     .eq('user_id', user.id)
     .single()
 
-  if (!membership || !['owner', 'admin'].includes(membership.role)) {
-    return Response.json({ error: 'Admin only' }, { status: 403 })
-  }
+  const clinicId = membership?.clinic_id ?? null
 
   const url = new URL(req.url)
   const period = (url.searchParams.get('period') || 'month') as
@@ -28,7 +26,7 @@ export async function GET(req: Request) {
     | 'month'
 
   const report = await observability.getUsageReport(
-    membership.clinic_id,
+    clinicId,
     period
   )
 

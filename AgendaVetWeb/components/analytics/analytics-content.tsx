@@ -21,23 +21,12 @@ import { ptBR } from 'date-fns/locale'
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
 export function AnalyticsContent() {
-  const { pets, isLoading: petsLoading, error: petsError } = usePets()
-  const { owners, isLoading: ownersLoading, error: ownersError } = useOwners()
-  const { appointments, isLoading: appointmentsLoading, error: appointmentsError } = useAppointments()
+  const { pets, isLoading: petsLoading } = usePets()
+  const { owners, isLoading: ownersLoading } = useOwners()
+  const { appointments, isLoading: appointmentsLoading } = useAppointments()
   const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d')
 
   const isLoading = petsLoading || ownersLoading || appointmentsLoading
-  const loadError = petsError || ownersError || appointmentsError
-
-  // NOTE: These are estimated prices used for revenue projections only.
-  // They do not reflect actual prices charged. Update to use real prices from
-  // the services/products table when available.
-  const SERVICE_PRICE_ESTIMATES: Record<string, number> = {
-    checkup: 150,
-    vaccination: 80,
-    surgery: 500,
-  }
-  const DEFAULT_PRICE_ESTIMATE = 120
 
   const periodDays = period === '7d' ? 7 : period === '30d' ? 30 : 90
   const startDate = subDays(new Date(), periodDays)
@@ -104,6 +93,9 @@ export function AnalyticsContent() {
   }, [filteredAppointments, periodDays, period])
 
   const revenueData = useMemo(() => {
+    const basePrice: Record<string, number> = {
+      checkup: 150, vaccination: 80, surgery: 500
+    }
     const monthStart = startOfMonth(new Date())
     const monthEnd = endOfMonth(new Date())
     const prevMonthStart = startOfMonth(subDays(monthStart, 1))
@@ -114,7 +106,7 @@ export function AnalyticsContent() {
 
     appointments.forEach(a => {
       if (a.status !== 'completed' && a.status !== 'confirmed') return
-      const price = SERVICE_PRICE_ESTIMATES[a.type] ?? DEFAULT_PRICE_ESTIMATE
+      const price = basePrice[a.type] || 120
       try {
         const d = parseISO(a.date)
         if (isWithinInterval(d, { start: monthStart, end: monthEnd })) currentRevenue += price
@@ -136,26 +128,6 @@ export function AnalyticsContent() {
     return (
       <div className="p-6 flex items-center justify-center h-[50vh]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    )
-  }
-
-  if (loadError) {
-    return (
-      <div className="p-6 flex flex-col items-center justify-center h-[50vh] text-center">
-        <div className="p-4 rounded-full bg-red-500/10 mb-4">
-          <Activity className="size-8 text-red-500" />
-        </div>
-        <h2 className="text-xl font-semibold mb-2">Erro ao carregar dados</h2>
-        <p className="text-muted-foreground text-sm mb-4">
-          Não foi possível carregar os dados de analytics. Verifique sua conexão e tente novamente.
-        </p>
-        <button
-          onClick={() => window.location.reload()}
-          className="text-sm text-primary underline underline-offset-2"
-        >
-          Recarregar
-        </button>
       </div>
     )
   }
@@ -331,7 +303,7 @@ export function AnalyticsContent() {
                   </p>
                 </div>
                 <div className="pt-2 border-t">
-                  <p className="text-xs text-muted-foreground">Valores estimados. Configure os preços reais na tela de Produtos & Serviços.</p>
+                  <p className="text-xs text-muted-foreground">Valores estimados com base nos tipos de serviço: Consulta R$150, Vacina R$80, Cirurgia R$500</p>
                 </div>
               </CardContent>
             </Card>

@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { updateAppointment } from '@/lib/data-store'
+import type { Appointment } from '@/lib/types'
 
 interface WeekAppointmentsProps {
   weekStart: Date
@@ -75,8 +76,8 @@ export function WeekAppointments({ weekStart, weekEnd }: WeekAppointmentsProps) 
     return <Badge variant="outline" className="bg-background/50">{labels[type] || type}</Badge>
   }
 
-  const handleStatusChange = (id: string, status: string) => {
-    updateAppointment(id, { status: status as any })
+  const handleStatusChange = (id: string, newStatus: string) => {
+    updateAppointment(id, { status: newStatus as Appointment['status'] })
   }
 
   if (isLoading) {

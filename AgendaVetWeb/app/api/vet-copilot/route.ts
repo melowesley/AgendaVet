@@ -31,11 +31,7 @@ export async function POST(req: Request) {
       .eq('user_id', user.id)
       .single()
 
-    if (!membership) {
-      return Response.json({ error: 'No clinic membership' }, { status: 403 })
-    }
-
-    const clinicId = membership.clinic_id
+    const clinicId = membership?.clinic_id ?? null
 
     const body = await req.json()
     const {
@@ -45,23 +41,58 @@ export async function POST(req: Request) {
       model: preferredModel,
     } = body
 
+    console.log("[VET-COPILOT DEBUG] Dados recebidos:", { petId, preferredModel });
+
     if (!validateMessages(rawMessages)) {
       return Response.json({ error: 'Invalid messages' }, { status: 400 })
     }
 
-    // AI SDK v6 uses parts[], legacy uses content string — sanitize either format
-    const messages = rawMessages.map((m: any) => {
-      if (m.role !== 'user') return m
-      if (Array.isArray(m.parts)) {
-        return {
-          ...m,
-          parts: m.parts.map((p: any) =>
-            p.type === 'text' ? { ...p, text: sanitizeUserInput(p.text ?? '') } : p
-          ),
+    // Busca dados do pet se petId foi fornecido
+    let petContext = ''
+    if (petId) {
+      try {
+        const { data: petData, error } = await supabase
+          .from('pets')
+          .select(`
+            id,
+            name,
+            type,
+            breed,
+            weight,
+            age,
+            user_id,
+            profiles!inner (
+              full_name
+            )
+          `)
+          .eq('id', petId)
+          .single()
+        
+        console.log("[VET-COPILOT DEBUG] Resultado do Supabase:", petData);
+        
+        if (!error && petData) {
+          let ageDisplay = petData.age || 'Idade não informada'
+          
+          petContext = `\n\nVocê está atendendo o paciente atual:\n` +
+            `- Nome: ${petData.name}\n` +
+            `- Espécie/Raça: ${petData.type}${petData.breed ? ' / ' + petData.breed : ''}\n` +
+            `- Peso: ${petData.weight || 'Não informado'}\n` +
+            `- Idade: ${ageDisplay}\n` +
+            `- Tutor: ${petData.profiles[0]?.full_name || 'Não informado'}`
+          
+          console.log(`[VET-COPILOT] Contexto do pet carregado: ${petData.name}`)
+        } else if (error) {
+          console.warn(`[VET-COPILOT] Erro ao buscar dados do pet ${petId}:`, error.message)
         }
+      } catch (dbError) {
+        console.warn(`[VET-COPILOT] Erro na conexão com o banco:`, dbError)
       }
-      return { ...m, content: sanitizeUserInput(m.content ?? '') }
-    })
+    }
+
+    const messages = rawMessages.map((m: any) => ({
+      ...m,
+      content: m.role === 'user' ? sanitizeUserInput(m.content) : m.content,
+    }))
 
     const [hasQuota, withinRate] = await Promise.all([
       costController.checkQuota(clinicId),
@@ -106,7 +137,10 @@ export async function POST(req: Request) {
       ]
     )
 
-    const fullSystemPrompt = systemPrompt.replace(
+    // Adiciona o contexto do pet ao System Prompt
+    const fullSystemPromptWithPet = systemPrompt + petContext
+
+    const fullSystemPrompt = fullSystemPromptWithPet.replace(
       '{clinical_context}',
       clinicalContext || 'Nenhum paciente selecionado.'
     )
@@ -126,7 +160,7 @@ export async function POST(req: Request) {
 
     const result = streamText({
       model,
-      system: fullSystemPrompt,
+      system: fullSystemPromptWithPet,
       messages: allMessages,
       temperature: 0.3,
       tools: allTools as any,

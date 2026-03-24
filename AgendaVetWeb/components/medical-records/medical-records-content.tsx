@@ -45,6 +45,9 @@ import { ObitoDialog } from "../admin/modules/obito-dialog"
 import { BanhoTosaDialog } from "../admin/modules/banho-tosa-dialog"
 import { ReceitaDialog } from "../admin/modules/receita-dialog"
 import { ExameDialog } from "../admin/modules/exame-dialog"
+import { RetornoDialog } from "../admin/modules/retorno-dialog"
+import { GaleriaDialog } from "../admin/modules/galeria-dialog"
+import { DocumentoJuridicoDialog } from "../admin/modules/documento-juridico-dialog"
 import { toast } from 'sonner'
 import Link from 'next/link'
 import {
@@ -572,6 +575,51 @@ export function MedicalRecordsContent() {
 
       <ExameDialog
         open={activeDialog === 'exame'}
+        onOpenChange={(open) => !open && setActiveDialog(null)}
+        petId={selectedPetId}
+        petName={selectedPet?.name || ''}
+      />
+
+      {/* Procedimento usa ConsultaDialog com contexto de procedimento */}
+      <ConsultaDialog
+        open={activeDialog === 'procedimento'}
+        onOpenChange={(open) => !open && setActiveDialog(null)}
+        petId={selectedPetId}
+        petName={selectedPet?.name || ''}
+      />
+
+      {/* Diagnóstico usa ConsultaDialog com contexto de diagnóstico */}
+      <ConsultaDialog
+        open={activeDialog === 'diagnostico'}
+        onOpenChange={(open) => !open && setActiveDialog(null)}
+        petId={selectedPetId}
+        petName={selectedPet?.name || ''}
+      />
+
+      <RetornoDialog
+        open={activeDialog === 'retorno'}
+        onOpenChange={(open) => !open && setActiveDialog(null)}
+        petId={selectedPetId}
+        petName={selectedPet?.name || ''}
+      />
+
+      <GaleriaDialog
+        open={activeDialog === 'fotos' || activeDialog === 'video'}
+        onOpenChange={(open) => !open && setActiveDialog(null)}
+        petId={selectedPetId}
+        petName={selectedPet?.name || ''}
+      />
+
+      {/* Observações usa ConsultaDialog como formulário genérico */}
+      <ConsultaDialog
+        open={activeDialog === 'observacoes'}
+        onOpenChange={(open) => !open && setActiveDialog(null)}
+        petId={selectedPetId}
+        petName={selectedPet?.name || ''}
+      />
+
+      <DocumentoJuridicoDialog
+        open={activeDialog === 'documento'}
         onOpenChange={(open) => !open && setActiveDialog(null)}
         petId={selectedPetId}
         petName={selectedPet?.name || ''}

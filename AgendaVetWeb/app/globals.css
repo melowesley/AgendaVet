@@ -3,6 +3,47 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme inline {
+  --font-sans: 'Geist', 'Geist Fallback';
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
 :root {
   --background: oklch(0.985 0.002 180);
   --foreground: oklch(0.205 0.015 180);
@@ -74,52 +115,78 @@
   --sidebar-ring: oklch(0.65 0.15 160);
 }
 
-@theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-}
-
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--border);
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--background);
+    color: var(--foreground);
   }
+}
+
+/* LAYOUT AGENDAVET - Prontuários e Documentos Clínicos */
+
+/* 1. Modal compacto estilo Galeria */
+.clinical-modal-content {
+    max-width: 64rem !important; /* max-w-5xl - mesmo tamanho da Galeria */
+    max-height: 95vh !important;
+    border-radius: 0.75rem !important;
+}
+
+/* 2. Preview do documento - compacto no modal */
+.a4-paper-preview {
+    background-color: white !important;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.08) !important;
+    border-radius: 0.5rem !important;
+    border: 1px solid hsl(var(--border) / 0.3) !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 1.5rem !important;
+    box-sizing: border-box !important;
+    font-size: 10pt !important;
+    line-height: 1.5 !important;
+}
+
+/* 5. Impressão A4 real - página inteira legível */
+@media print {
+    @page {
+        size: A4;
+        margin: 15mm 12mm;
+    }
+
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .no-print,
+    .clinical-modal-content > header,
+    .clinical-modal-content > div:last-child {
+        display: none !important;
+    }
+
+    .a4-paper-preview {
+        width: 100% !important;
+        min-height: auto !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        font-size: 10pt !important;
+        line-height: 1.4 !important;
+        page-break-inside: auto !important;
+    }
+
+    .a4-paper-preview h1 { font-size: 16pt !important; }
+    .a4-paper-preview h2 { font-size: 14pt !important; }
+    .a4-paper-preview h3 { font-size: 12pt !important; }
+    .a4-paper-preview p { font-size: 10pt !important; }
+    .a4-paper-preview table { font-size: 9pt !important; }
+
+    /* Forçar quebra de página entre seções grandes */
+    .a4-paper-preview .page-break {
+        page-break-before: always;
+    }
 }

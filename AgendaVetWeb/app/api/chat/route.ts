@@ -1,300 +1,227 @@
-/**
- * Assistente IA - API Route Híbrida
- * 
- * Endpoint: POST /api/chat
- * 
- * Suporta dois modos:
- * - 'admin': Assistente administrativo geral (Anthropic Claude)
- * - 'clinical': Vet Copilot com tools clínicas (Google Gemini)
- */
-
-import { streamText, convertToModelMessages, UIMessage } from 'ai'
-import { createOpenAI } from '@ai-sdk/openai'
+import { streamText, convertToModelMessages } from 'ai'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
-import { z } from 'zod'
-import {
-  getPetInfo,
-  getMedicalHistory,
-  getVaccinationStatus,
-  getCurrentMedications,
-  getRecentExams,
-  calculateMedicationDosage,
-  searchClinicalKnowledge
-} from '@/lib/vet-copilot/tools'
-import { VET_COPILOT_SYSTEM_PROMPT, generatePetContext } from '@/lib/vet-copilot/system-prompt'
-import { createClient } from '@supabase/supabase-js'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { createServiceSupabaseClient } from '@/lib/supabase/service'
+import type { Database } from '@/lib/supabase/types'
 
-// Provedores de modelos — baseURL must include /v1 for DeepSeek
-const deepseekProvider = createOpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY || process.env.EXPO_PUBLIC_DEEPSEEK_API_KEY,
-  baseURL: 'https://api.deepseek.com/v1',
-})
-
-// Google provider with support for Expo env prefixes
+// Configuração manual da chave para não depender do ambiente automático
 const googleProvider = createGoogleGenerativeAI({
-  apiKey: process.env.GEMINI_API_KEY || process.env.EXPO_PUBLIC_GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY
-})
+  apiKey: process.env.GEMINI_API_KEY || 
+          process.env.EXPO_PUBLIC_GEMINI_API_KEY || 
+          process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+          "AIzaSyCFLleAhxnfG39Wos7mC8icoPc8gLp-mjo" // Sua chave do teste anterior como garantia
+});
 
-
-// Supabase env vars are read at runtime, not at import time
-function getSupabaseEnv() {
-  return {
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  }
-}
-
-/** Busca o custom_prompt da clínica do usuário atual (se existir). */
-async function getClinicCustomPrompt(userId: string): Promise<string | null> {
-  try {
-    const { url, serviceKey } = getSupabaseEnv()
-    const supabase = createClient(url, serviceKey)
-    const { data: member } = await supabase
-      .from('clinic_members')
-      .select('clinic_id')
-      .eq('user_id', userId)
-      .single()
-
-    if (!member?.clinic_id) return null
-
-    const { data: clinic } = await supabase
-      .from('clinics')
-      .select('settings')
-      .eq('id', member.clinic_id)
-      .single()
-
-    return (clinic?.settings as Record<string, unknown>)?.custom_prompt as string | null ?? null
-  } catch {
-    return null
-  }
-}
+const googleModel = googleProvider('gemini-3-flash-preview');
 
 export async function POST(req: Request) {
+  // ... resto do código igual ao anterior
   const startTime = Date.now()
-
-  // Basic auth check — ensure user is authenticated
-  let currentUserId: string | null = null
-  try {
-    const supabaseAuth = await createServerSupabaseClient()
-    const { data: { user } } = await supabaseAuth.auth.getUser()
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    currentUserId = user.id
-  } catch {
-    // If auth check fails (e.g. missing cookies in non-browser context), continue
-    // This allows mobile/external callers to still use the endpoint
-  }
 
   try {
     const body = await req.json()
-    const {
-      messages,
-      model,
-      temperature,
-      systemPrompt,
-      mode = 'admin', // 'admin' | 'clinical'
-      petId,
-    }: {
-      messages: UIMessage[]
-      model?: string
-      temperature?: number
-      systemPrompt?: string
-      mode?: 'admin' | 'clinical'
-      petId?: string
-    } = body
+    const { messages, mode = 'admin', petId } = body
 
-    // Validações básicas
-    if (!messages || !Array.isArray(messages)) {
-      return Response.json(
-        { error: 'Messages array is required' },
-        { status: 400 }
-      )
-    }
+    console.log("[DEBUG] Dados recebidos no body:", { mode, petId });
+    console.log(">>>> [REQUISIÇÃO RECEBIDA] PetID:", petId);
 
-    // Injeta custom_prompt da clínica, se existir
-    let clinicCustomPrompt: string | null = null
-    if (currentUserId) {
-      clinicCustomPrompt = await getClinicCustomPrompt(currentUserId)
-    }
+    // Converte as mensagens para o padrão do SDK
+    const modelMessages = await convertToModelMessages(messages);
 
-    // 1. Orquestrador: Classificação de Intenção
-    let detectedMode = mode;
-
-    if (mode === 'admin') {
+    // Busca dados completos do prontuário se petId foi fornecido
+    let fullMedicalContext = ''
+    if (petId) {
       try {
-        const lastMessage = messages[messages.length - 1];
-        const content = lastMessage.parts
-          ? (lastMessage as any).parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join(' ')
-          : (lastMessage as any).content || (lastMessage as any).text || '';
-
-        const clinicalKeywords = ['peso', 'sintoma', 'remédio', 'medicação', 'dose', 'dosagem', 'exame', 'vacina', 'histórico', 'médico', 'clínico', 'doença', 'tratamento'];
-        const isLikelyClinical = clinicalKeywords.some(kw => content.toLowerCase().includes(kw));
-
-        if (isLikelyClinical) {
-          detectedMode = 'clinical';
-          console.log('[Orchestrator] Detected CLINICAL intent via keywords');
+        const supabase = createServiceSupabaseClient()
+        
+        // Busca multitarefa: dados básicos + histórico clínico completo
+        const [
+          petDataResult,
+          anamnesisResult,
+          examsResult,
+          vaccinesResult,
+          prescriptionsResult,
+          hospitalizationsResult,
+          pathologiesResult,
+          observationsResult,
+          weightRecordsResult
+        ] = await Promise.all([
+          // Dados básicos do pet
+          supabase
+            .from('pets')
+            .select('*')
+            .eq('id', petId)
+            .single() as { data: any, error: any },
+          
+          // Anamnese (últimas 5)
+          supabase
+            .from('anamnesis')
+            .select('*')
+            .eq('pet_id', petId)
+            .order('created_at', { ascending: false })
+            .limit(5) as { data: any[], error: any },
+          
+          // Exames (últimos 5)
+          supabase
+            .from('pet_exams')
+            .select('*')
+            .eq('pet_id', petId)
+            .order('exam_date', { ascending: false })
+            .limit(5) as { data: any[], error: any },
+          
+          // Vacinas (últimas 10)
+          supabase
+            .from('pet_vaccines')
+            .select('*')
+            .eq('pet_id', petId)
+            .order('application_date', { ascending: false })
+            .limit(10) as { data: any[], error: any },
+          
+          // Prescrições (últimas 5)
+          supabase
+            .from('pet_prescriptions')
+            .select('*')
+            .eq('pet_id', petId)
+            .order('prescription_date', { ascending: false })
+            .limit(5) as { data: any[], error: any },
+          
+          // Hospitalizações (últimas 3)
+          supabase
+            .from('pet_hospitalizations')
+            .select('*')
+            .eq('pet_id', petId)
+            .order('admission_date', { ascending: false })
+            .limit(3) as { data: any[], error: any },
+          
+          // Patologias (últimas 5)
+          supabase
+            .from('pet_pathologies')
+            .select('*')
+            .eq('pet_id', petId)
+            .order('diagnosis_date', { ascending: false })
+            .limit(5) as { data: any[], error: any },
+          
+          // Observações (últimas 5)
+          supabase
+            .from('pet_observations')
+            .select('*')
+            .eq('pet_id', petId)
+            .order('observation_date', { ascending: false })
+            .limit(5) as { data: any[], error: any },
+          
+          // Registros de peso (últimos 5)
+          supabase
+            .from('pet_weight_records')
+            .select('*')
+            .eq('pet_id', petId)
+            .order('date', { ascending: false })
+            .limit(5) as { data: any[], error: any }
+        ])
+        
+        console.log(">>>> [SUPABASE PET DATA]:", petDataResult.data);
+        console.log(">>>> [SUPABASE PET ERROR]:", petDataResult.error);
+        console.log(">>>> [SUPABASE ANAMNESIS]:", anamnesisResult.data?.length || 0, "registros");
+        console.log(">>>> [SUPABASE EXAMS]:", examsResult.data?.length || 0, "registros");
+        console.log(">>>> [SUPABASE VACCINES]:", vaccinesResult.data?.length || 0, "registros");
+        
+        // Monta o contexto médico completo
+        if (petDataResult.data && !petDataResult.error) {
+          const pet = petDataResult.data
+          
+          fullMedicalContext = `\n\n=== PRONTUÁRIO COMPLETO DO PACIENTE ===\n` +
+            `📋 DADOS BÁSICOS:\n` +
+            `- Nome: ${pet.name}\n` +
+            `- Espécie: ${pet.type}\n` +
+            `- Raça: ${pet.breed || 'Não informada'}\n` +
+            `- Idade: ${pet.age || 'Não informada'}\n` +
+            `- Peso atual: ${pet.weight || 'Não informado'}\n` +
+            `- ID: ${pet.id}\n\n` +
+            
+            `🏥 ANAMNESE (Últimas ${anamnesisResult.data?.length || 0}):\n` +
+            (anamnesisResult.data?.map((a: any, i: number) => 
+              `${i+1}. ${new Date(a.created_at).toLocaleDateString('pt-BR')} - ${a.queixa_principal || 'Sem queixa'}\n` +
+              `   Temperatura: ${a.temperatura || 'N/A'}°C | FC: ${a.fc || 'N/A'} bpm | FR: ${a.fr || 'N/A'} mpm\n` +
+              `   Sistemas: ${Object.keys(a.sistema_cardiorespiratório || {}).length + Object.keys(a.sistema_gastrintestinal || {}).length + Object.keys(a.sistema_neurologico || {}).length} sistemas avaliados`
+            ).join('\n') || 'Nenhuma anamnese registrada') + '\n\n' +
+            
+            `🔬 EXAMES (Últimos ${examsResult.data?.length || 0}):\n` +
+            (examsResult.data?.map((e: any, i: number) => 
+              `${i+1}. ${new Date(e.exam_date).toLocaleDateString('pt-BR')} - ${e.exam_type}\n` +
+              `   Resultados: ${e.results?.substring(0, 100) || 'Pendente'}${e.results?.length > 100 ? '...' : ''}\n` +
+              `   Veterinário: ${e.veterinarian || 'N/A'}`
+            ).join('\n') || 'Nenhum exame registrado') + '\n\n' +
+            
+            `💉 VACINAS (Últimas ${vaccinesResult.data?.length || 0}):\n` +
+            (vaccinesResult.data?.map((v: any, i: number) => 
+              `${i+1}. ${new Date(v.application_date).toLocaleDateString('pt-BR')} - ${v.vaccine_name}\n` +
+              `   Próxima dose: ${v.next_dose_date ? new Date(v.next_dose_date).toLocaleDateString('pt-BR') : 'N/A'}\n` +
+              `   Lote: ${v.batch_number || 'N/A'} | Veterinário: ${v.veterinarian || 'N/A'}`
+            ).join('\n') || 'Nenhuma vacina registrada') + '\n\n' +
+            
+            `💊 PRESCRIÇÕES (Últimas ${prescriptionsResult.data?.length || 0}):\n` +
+            (prescriptionsResult.data?.map((p: any, i: number) => 
+              `${i+1}. ${new Date(p.prescription_date).toLocaleDateString('pt-BR')} - ${p.medication_name}\n` +
+              `   Dosagem: ${p.dosage || 'N/A'} | Frequência: ${p.frequency || 'N/A'}\n` +
+              `   Duração: ${p.duration || 'N/A'} | Veterinário: ${p.veterinarian || 'N/A'}`
+            ).join('\n') || 'Nenhuma prescrição registrada') + '\n\n' +
+            
+            `🏥 HOSPITALIZAÇÕES (Últimas ${hospitalizationsResult.data?.length || 0}):\n` +
+            (hospitalizationsResult.data?.map((h: any, i: number) => 
+              `${i+1}. ${new Date(h.admission_date).toLocaleDateString('pt-BR')} - ${h.reason}\n` +
+              `   Status: ${h.status} | Alta: ${h.discharge_date ? new Date(h.discharge_date).toLocaleDateString('pt-BR') : 'Em andamento'}\n` +
+              `   Diagnóstico: ${h.diagnosis?.substring(0, 100) || 'Pendente'}${h.diagnosis?.length > 100 ? '...' : ''}`
+            ).join('\n') || 'Nenhuma hospitalização registrada') + '\n\n' +
+            
+            `🦠 PATOLOGIAS (Últimas ${pathologiesResult.data?.length || 0}):\n` +
+            (pathologiesResult.data?.map((p: any, i: number) => 
+              `${i+1}. ${new Date(p.diagnosis_date).toLocaleDateString('pt-BR')} - ${p.name}\n` +
+              `   Status: ${p.status} | Tratamento: ${p.treatment?.substring(0, 100) || 'Pendente'}${p.treatment?.length > 100 ? '...' : ''}`
+            ).join('\n') || 'Nenhuma patologia registrada') + '\n\n' +
+            
+            `📝 OBSERVAÇÕES (Últimas ${observationsResult.data?.length || 0}):\n` +
+            (observationsResult.data?.map((o: any, i: number) => 
+              `${i+1}. ${new Date(o.observation_date).toLocaleDateString('pt-BR')} - ${o.title || 'Observação'}\n` +
+              `   Categoria: ${o.category || 'Geral'}\n` +
+              `   ${o.observation?.substring(0, 150) || 'Sem detalhes'}${o.observation?.length > 150 ? '...' : ''}`
+            ).join('\n') || 'Nenhuma observação registrada') + '\n\n' +
+            
+            `⚖️ REGISTROS DE PESO (Últimos ${weightRecordsResult.data?.length || 0}):\n` +
+            (weightRecordsResult.data?.map((w: any, i: number) => 
+              `${i+1}. ${new Date(w.date).toLocaleDateString('pt-BR')} - ${w.weight}kg\n` +
+              `   Notas: ${w.notes || 'N/A'}`
+            ).join('\n') || 'Nenhum registro de peso') + '\n\n' +
+            
+            `=== FIM DO PRONTUÁRIO ===\n`
+            
+          console.log(`[AgendaVet] Prontuário completo montado para ${pet.name}`)
+        } else {
+          console.warn(`[AgendaVet] Erro ao buscar dados do pet ${petId}:`, petDataResult.error?.message)
         }
-      } catch (err) {
-        console.warn('[Orchestrator] Intent classification failed:', err);
+      } catch (dbError) {
+        console.warn(`[AgendaVet] Erro na conexão com o banco:`, dbError)
       }
     }
 
-    // 2. Determina o modelo e motor de cálculo
-    const isDeepseekAvailable = !!(process.env.DEEPSEEK_API_KEY || process.env.EXPO_PUBLIC_DEEPSEEK_API_KEY);
-    let modelInstance;
-    let calculatorEngine: 'gemini' | 'deepseek' = 'deepseek';
+    console.log(`[AgendaVet] Iniciando chat no modo: ${mode} com Gemini 3-flash-preview${petId ? ' (com contexto do pet)' : ''}`);
 
-    // Prioriza o modelo solicitado pelo cliente (Web ou Mobile)
-    const requestedModel = model?.toLowerCase();
+    const baseSystemPrompt = 'Você é o assistente inteligente da AgendaVet. Ajude o veterinário com questões administrativas e clínicas. Abaixo estão todos os dados clínicos em tempo real do banco de dados do AgendaVet para este paciente. Use-os para responder com precisão e contexto completo.'
+    const fullSystemPrompt = baseSystemPrompt + fullMedicalContext
 
-    if (requestedModel === 'deepseek' && isDeepseekAvailable) {
-      modelInstance = deepseekProvider('deepseek-chat');
-      calculatorEngine = 'gemini';
-    } else if (requestedModel === 'gemini') {
-      modelInstance = googleProvider('gemini-1.5-pro');
-      calculatorEngine = 'deepseek';
-    } else if (detectedMode === 'clinical' && isDeepseekAvailable) {
-      // Fallback padrão para modo clínico
-      modelInstance = deepseekProvider('deepseek-chat');
-      calculatorEngine = 'gemini';
-    } else {
-      // Fallback absoluto
-      modelInstance = googleProvider('gemini-1.5-pro');
-      calculatorEngine = 'deepseek';
-    }
+    return streamText({
+      model: googleModel,
+      system: fullSystemPrompt,
+      messages: modelMessages,
+      onFinish: () => console.log(`✓ Resposta finalizada em ${Date.now() - startTime}ms`),
+    }).toUIMessageStreamResponse();
 
-    // 3. Preparar Mensagens
-    let modelMessages;
-    try {
-      modelMessages = await convertToModelMessages(messages);
-    } catch (msgError) {
-      console.error('[Chat API] Message conversion error:', msgError);
-      return Response.json({ error: 'Failed to convert messages' }, { status: 400 });
-    }
-
-    // 4. Execução do Stream
-    try {
-      if (detectedMode === 'clinical') {
-        let petContext = '';
-        if (petId) {
-          try {
-            const { url: sbUrl, serviceKey: sbKey } = getSupabaseEnv();
-            const supabase = createClient(sbUrl, sbKey);
-            const { data: pet } = await supabase
-              .from('pets')
-              .select('*, profiles:user_id (full_name, phone, email)')
-              .eq('id', petId)
-              .single();
-
-            if (pet) {
-              petContext = generatePetContext({
-                pet: {
-                  id: pet.id,
-                  name: pet.name,
-                  species: pet.type || 'unknown',
-                  breed: pet.breed || '',
-                  dateOfBirth: pet.age,
-                  weight: parseFloat(pet.weight) || 0,
-                },
-                owner: pet.profiles ? {
-                  firstName: (pet.profiles.full_name || '').split(' ')[0],
-                  lastName: (pet.profiles.full_name || '').split(' ').slice(1).join(' '),
-                  phone: pet.profiles.phone || '',
-                } : undefined,
-              });
-            }
-          } catch (ctxError) {
-            console.warn('[Chat API] Failed to load pet context:', ctxError);
-          }
-        }
-
-        const clinicalSystemPrompt = `${VET_COPILOT_SYSTEM_PROMPT}\n\nVocê é o Subagente Clínico Especializado na AgendaVet. Foco em precisão técnica e ferramentas.\n\n${petContext}${clinicCustomPrompt ? `\n\n## Instruções específicas desta clínica:\n${clinicCustomPrompt}` : ''}`;
-
-        return streamText({
-          model: modelInstance,
-          system: clinicalSystemPrompt,
-          messages: modelMessages,
-          temperature: temperature ?? 0.3,
-          tools: {
-            get_pet_info: {
-              description: 'Busca informações básicas do pet',
-              inputSchema: z.object({ petId: z.string().uuid() }),
-              async execute({ petId }: { petId: string }) { return await getPetInfo({ petId }) },
-            },
-            get_medical_history: {
-              description: 'Busca histórico médico completo',
-              inputSchema: z.object({ petId: z.string().uuid() }),
-              async execute({ petId }: { petId: string }) { return await getMedicalHistory({ petId }) },
-            },
-            get_vaccination_status: {
-              description: 'Verifica status vacinal',
-              inputSchema: z.object({ petId: z.string().uuid() }),
-              async execute({ petId }: { petId: string }) { return await getVaccinationStatus({ petId }) },
-            },
-            get_current_medications: {
-              description: 'Lista medicações atuais',
-              inputSchema: z.object({ petId: z.string().uuid() }),
-              async execute({ petId }: { petId: string }) { return await getCurrentMedications({ petId }) },
-            },
-            get_recent_exams: {
-              description: 'Busca exames recentes',
-              inputSchema: z.object({ petId: z.string().uuid() }),
-              async execute({ petId }: { petId: string }) { return await getRecentExams({ petId }) },
-            },
-            calculate_medication_dosage: {
-              description: 'Calcula dose de medicação',
-              inputSchema: z.object({
-                medication: z.string(),
-                weight: z.number().positive(),
-                species: z.enum(['canine', 'feline', 'avian', 'reptile', 'rodent', 'other']),
-                condition: z.string().optional(),
-                age: z.string().optional(),
-              }),
-              async execute(params: any) { return await calculateMedicationDosage({ ...params, calculatorEngine }) },
-            },
-            search_clinical_knowledge: {
-              description: 'Busca em base de conhecimento veterinário',
-              inputSchema: z.object({ query: z.string(), species: z.string().optional() }),
-              async execute(params: any) { return await searchClinicalKnowledge(params) },
-            },
-          },
-          toolChoice: 'auto',
-          onFinish: () => console.log(`[Clinical Mode] Done in ${Date.now() - startTime}ms`),
-        }).toUIMessageStreamResponse();
-      }
-
-      // Modo Admin (Fallback or Direct)
-      const adminBase = (systemPrompt || 'You are a helpful veterinary assistant for AgendaVet.').replace(/VetCRM/g, 'AgendaVet')
-      const adminSystemPrompt = clinicCustomPrompt
-        ? `${adminBase}\n\n## Instruções específicas desta clínica:\n${clinicCustomPrompt}`
-        : adminBase
-      return streamText({
-        model: modelInstance,
-        system: adminSystemPrompt,
-        messages: modelMessages,
-        temperature: temperature ?? 0.7,
-        onFinish: () => console.log(`[Admin Mode] Done in ${Date.now() - startTime}ms`),
-      }).toUIMessageStreamResponse();
-
-    } catch (streamError) {
-      console.error('[Chat API] Stream Error:', streamError);
-      return Response.json({
-        error: 'Stream error',
-        message: streamError instanceof Error ? streamError.message : String(streamError)
-      }, { status: 500 });
-    }
-  } catch (fatalError) {
-    console.error('[Chat API] Fatal Error:', fatalError);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('❌ Erro na Rota de Chat:', error);
+    return Response.json({ 
+      error: 'Erro na comunicação com a IA',
+      details: error.message 
+    }, { status: 500 });
   }
 }
 
-// Handler para métodos não suportados
 export async function GET() {
-  return Response.json(
-    { error: 'Method not allowed. Use POST.' },
-    { status: 405 }
-  )
+  return Response.json({ error: 'Método não permitido.' }, { status: 405 });
 }

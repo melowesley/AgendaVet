@@ -31,8 +31,7 @@ export function OwnerDetailContent({ ownerId }: OwnerDetailContentProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [addPetDialogOpen, setAddPetDialogOpen] = useState(false)
 
-  // Match by profileId (primary link) or legacy ownerId
-  const ownerPets = pets.filter((p) => p.profileId === ownerId || p.ownerId === ownerId)
+  const ownerPets = pets.filter((p) => p.ownerId === ownerId)
   const ownerAppointments = appointments
     .filter((a) => a.ownerId === ownerId)
     .sort((a, b) => b.date.localeCompare(a.date))
@@ -40,7 +39,7 @@ export function OwnerDetailContent({ ownerId }: OwnerDetailContentProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-pulse text-muted-foreground">Carregando dados do tutor...</div>
+        <div className="animate-pulse text-muted-foreground">Loading client details...</div>
       </div>
     )
   }
@@ -276,7 +275,7 @@ export function OwnerDetailContent({ ownerId }: OwnerDetailContentProps) {
       <PetFormDialog
         open={addPetDialogOpen}
         onOpenChange={setAddPetDialogOpen}
-        defaultOwnerId={ownerId}
+        pet={{ ownerId } as any}
       />
     </div>
   )

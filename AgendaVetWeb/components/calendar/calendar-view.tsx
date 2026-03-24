@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { useAppointments, usePets, useOwners } from '@/lib/data-store'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, PawPrint, CheckCircle2, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, PawPrint, CheckCircle2 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import Link from 'next/link'
@@ -139,9 +139,9 @@ export function CalendarView({ onWeekSelect, selectedWeek, onDayDoubleClick }: C
         </div>
 
         {/* Calendar grid */}
-        <div className="flex flex-col gap-1 overflow-visible">
+        <div className="flex flex-col gap-1">
           {weeks.map((week, weekIndex) => (
-            <div key={weekIndex} className="relative flex flex-col">
+            <div key={weekIndex} className="flex flex-col">
               <div className="grid grid-cols-7 gap-1 z-10">
                 {week.map((day) => {
                   const dayAppointments = getAppointmentsForDay(day)
@@ -153,10 +153,10 @@ export function CalendarView({ onWeekSelect, selectedWeek, onDayDoubleClick }: C
                     <div
                       key={day.toString()}
                       className={`
-                        relative min-h-[80px] sm:min-h-[100px] p-2 border transition-all cursor-pointer rounded-sm
+                        relative min-h-[80px] sm:min-h-[100px] p-2 border transition-all cursor-pointer
                         ${!isCurrentMonth ? 'bg-muted/10 text-muted-foreground/50 border-transparent' : 'bg-background border-border/40 hover:border-slate-300'}
                         ${isCurrentDay && !isSelected ? 'bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800' : ''}
-                        ${isSelected ? 'bg-slate-100 dark:bg-slate-800 border-emerald-400 shadow-md ring-1 ring-emerald-400' : ''}
+                        ${isSelected ? 'border-b-0 rounded-b-none bg-slate-100 dark:bg-slate-800 border-[#4b5563] border-b-transparent shadow-sm z-20' : 'rounded-sm'}
                       `}
                       onClick={() => handleDayClick(day)}
                       onDoubleClick={(e) => {
@@ -191,23 +191,14 @@ export function CalendarView({ onWeekSelect, selectedWeek, onDayDoubleClick }: C
                 })}
               </div>
 
-              {/* Floating Details Panel for Selected Day */}
+              {/* Expanding Details Banner for Selected Day */}
               {selectedDayForDetails && week.some(d => isSameDay(d, selectedDayForDetails)) && (
-                <div className="absolute top-[calc(100%+4px)] left-1/2 -translate-x-1/2 w-[70%] bg-[#374151] border border-emerald-500/40 text-white rounded-xl p-4 shadow-2xl z-50 backdrop-blur-sm"
-                  style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2)' }}>
-                  <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
-                    <div className="flex items-center gap-2">
-                      <CalendarIcon className="size-4 text-emerald-400" />
-                      <h4 className="font-semibold text-emerald-50 capitalize">
-                        {format(selectedDayForDetails, "EEEE, dd 'de' MMMM", { locale: ptBR })}
-                      </h4>
-                    </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedDayForDetails(null) }}
-                      className="text-white/40 hover:text-white/80 transition-colors rounded-full p-0.5 hover:bg-white/10"
-                    >
-                      <X className="size-4" />
-                    </button>
+                <div className="bg-[#4b5563] border border-[#4b5563] text-white rounded-md -mt-[1px] p-4 shadow-xl z-0 relative ml-[1px] mr-[1px]">
+                  <div className="flex items-center gap-2 mb-4 border-b border-white/10 pb-2">
+                    <CalendarIcon className="size-4 text-emerald-400" />
+                    <h4 className="font-semibold text-emerald-50">
+                      Agendamentos: {format(selectedDayForDetails, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                    </h4>
                   </div>
 
                   <div className="flex flex-col gap-1.5">

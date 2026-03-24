@@ -1,27 +1,25 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { supabase, usePet, useOwner, useMedicalRecords } from '@/lib/data-store'
 import { mutate } from 'swr'
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from '@/components/ui/dialog'
+import dynamic from 'next/dynamic'
+import DOMPurify from 'dompurify'
+import 'react-quill-new/dist/quill.snow.css'
+import { BaseAttendanceDialog } from '../shared/base-attendance-dialog'
+import { useReactToPrint } from 'react-to-print'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
-import { Scissors, Save, ArrowLeft, Printer, DollarSign, Plus, Trash2, Brush, Sparkles, AlertCircle, PawPrint, Clock, History } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
+import { Scissors, Save, ArrowLeft, Printer, DollarSign, Plus, Trash2, Brush, Sparkles, AlertCircle, PawPrint, Clock, History, Waves, User, FileText } from 'lucide-react'
+import { format } from 'date-fns'
 import { ScrollArea } from '@/components/ui/scroll-area'
-// @ts-ignore
-import { useReactToPrint } from 'react-to-print'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
+
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false, loading: () => <div className="h-[150px] w-full animate-pulse bg-muted rounded-md" /> })
 
 interface BanhoTosaDialogProps {
     open: boolean
@@ -76,7 +74,20 @@ export function BanhoTosaDialog({ open, onOpenChange, onBack, petId, petName }: 
     const [extraServices, setExtraServices] = useState<{ id: string, name: string, value: number }[]>([])
 
     const printRef = useRef<HTMLDivElement>(null)
-    const handlePrint = useReactToPrint({ contentRef: printRef })
+    
+    const handlePrint = useReactToPrint({
+        contentRef: printRef,
+        documentTitle: `Certificado_Estetica_${petName}_${format(new Date(), 'dd_MM_yyyy')}`,
+        pageStyle: `
+            @page { size: A4; margin: 0; }
+            @media print {
+                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
+                html { margin: 0; padding: 0; }
+                .no-print { display: none !important; }
+                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            }
+        `
+    })
 
     const toggleService = (service: string) => {
         setSelectedServices(prev =>
@@ -131,352 +142,210 @@ export function BanhoTosaDialog({ open, onOpenChange, onBack, petId, petName }: 
         }
     }
 
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] max-w-[1400px] h-[90vh] max-h-[90vh] rounded-2xl p-0 flex flex-col overflow-hidden border border-border/20 shadow-2xl text-slate-800">
-                <DialogHeader className="p-4 md:p-6 border-b border-border/50 bg-white flex flex-row items-center justify-between shrink-0 z-20 shadow-sm">
-                    <div className="flex items-center gap-4">
-                        {onBack && (
-                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-slate-100" onClick={onBack}>
-                                <ArrowLeft className="size-5" />
-                            </Button>
-                        )}
-                        <div className={`flex size-12 items-center justify-center rounded-xl text-white shadow-inner`} style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
-                            <Brush className="size-6" />
-                        </div>
-                        <div>
-                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-800">
-                                Banho & Estética
-                            </DialogTitle>
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5 font-medium">
-                                <span className="flex items-center gap-1"><PawPrint className="size-3.5" /> <span className="font-bold text-slate-700">{petName}</span></span>
-                                <span className="text-slate-300">•</span>
-                                <span className={`flex items-center gap-1 font-bold ${themeColor.text} uppercase tracking-tighter text-[11px] ${themeColor.bgGhost} px-2 py-0.5 rounded border ${themeColor.borderLight}`}>Spa & Estética</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <Button variant="outline" onClick={() => onOpenChange(false)} className="h-10 px-6 font-bold text-slate-500">
-                            Fechar
-                        </Button>
-                        <Button onClick={handleSave} disabled={loading} className={`h-10 px-6 font-black bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white shadow-lg`}>
-                            <Save className="size-4 mr-2" />
-                            {loading ? 'Salvando...' : 'Finalizar Estética'}
-                        </Button>
-                    </div>
-                </DialogHeader>
+    const previewContent = (
+        <div className="space-y-8">
+            {/* Cabeçalho */}
+            <div className="text-center border-b-2 border-blue-600 pb-6">
+                <h1 className="text-3xl font-bold mb-2 text-blue-600 flex items-center justify-center gap-3">
+                    <Scissors className="w-8 h-8 text-blue-600" />
+                    CERTIFICADO DE ESTÉTICA ANIMAL
+                </h1>
+                <p className="text-lg text-gray-700">AgendaVet Medical Unit v2.0</p>
+                <p className="text-sm text-gray-500">Centro de Estética e Bem-Estar Animal</p>
+                <p className="text-xs mt-2">Data: {format(new Date(), 'dd/MM/yyyy')}</p>
+            </div>
 
-                <div className="flex-1 overflow-hidden flex bg-slate-100/50">
-                    {/* NEW: Left Sidebar with Patient History */}
-                    <div className="hidden xl:block w-[380px] bg-slate-50/80 border-r border-border/30 p-8 overflow-y-auto shrink-0 shadow-inner">
-                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 border-l-4 border-sky-500 pl-4 mb-8">
-                            Histórico do Paciente
-                        </h3>
-                        
-                        {allRecords.length === 0 ? (
-                            <div className="text-center py-20 flex flex-col items-center gap-4 opacity-50">
-                                <Clock className="size-10 text-slate-300" />
-                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Sem registros prévios</p>
-                            </div>
+            {/* Cards de Dados */}
+            <div className="grid grid-cols-2 gap-6">
+                {/* Card DADOS DO PET */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-md">
+                    <h3 className="font-bold text-lg mb-4 text-blue-600 flex items-center gap-2">
+                        <PawPrint className="w-5 h-5" />
+                        DADOS DO PET
+                    </h3>
+                    <div className="space-y-2">
+                        <p><span className="font-bold">Nome:</span> {petName}</p>
+                        <p><span className="font-bold">Espécie:</span> {pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : 'Animal'}</p>
+                        <p><span className="font-bold">Raça:</span> {pet?.breed || 'Não informada'}</p>
+                        <p><span className="font-bold">Idade:</span> {pet ? Math.floor((new Date().getTime() - new Date(pet.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 365)) + ' anos' : ''}</p>
+                        <p><span className="font-bold">Sexo:</span> {pet?.gender === 'Macho' ? 'Macho' : pet?.gender === 'Fêmea' ? 'Fêmea' : 'Não informado'}</p>
+                        <p><span className="font-bold">Proprietário:</span> {owner?.fullName || 'Proprietário S/R'}</p>
+                    </div>
+                </div>
+
+                {/* Card SERVIÇOS REALIZADOS */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-md">
+                    <h3 className="font-bold text-lg mb-4 text-blue-600 flex items-center gap-2">
+                        <Waves className="w-5 h-5" />
+                        SERVIÇOS REALIZADOS
+                    </h3>
+                    <div className="space-y-2">
+                        {selectedServices.length > 0 ? (
+                            selectedServices.map((service, index) => (
+                                <p key={index} className="flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                                    {service}
+                                </p>
+                            ))
                         ) : (
-                            <div className="space-y-4">
-                                {allRecords.map(record => (
-                                    <div key={record.id} className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-sky-500 transition-all hover:shadow-md group">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <span className="text-[11px] font-black text-white bg-slate-900 px-2 py-0.5 rounded-[3px]">
-                                                {format(new Date(record.date || record.createdAt), "dd/MM/yyyy")}
-                                            </span>
-                                            <span className="text-[10px] font-black uppercase text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 group-hover:bg-sky-500 group-hover:text-white transition-colors">
-                                                {record.type}
-                                            </span>
-                                        </div>
-                                        <h4 className="text-sm font-black text-slate-800 line-clamp-2 leading-snug">{record.title}</h4>
-                                    </div>
-                                ))}
-                            </div>
+                            <p className="text-gray-500 italic">Nenhum serviço selecionado</p>
                         )}
-                    </div>
-
-                    {/* Form Side */}
-                    <div className="w-full md:w-[450px] p-8 bg-white border-r border-border/30 overflow-y-auto shrink-0 shadow-lg z-10 relative">
-                        <div className="space-y-8">
-                            <div className="flex justify-between items-center border-l-4 border-slate-900 pl-4">
-                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 leading-none py-1">
-                                    Novo Atendimento
-                                </h3>
-                            </div>
-
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Data do Serviço *</Label>
-                                        <Input
-                                            type="date"
-                                            value={date}
-                                            onChange={(e) => setDate(e.target.value)}
-                                            className="h-12 border-slate-200 rounded-xl font-bold"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Profissional Responsável</Label>
-                                        <Input
-                                            value={profissional}
-                                            onChange={(e) => setProfissional(e.target.value)}
-                                            className="h-12 border-slate-200 rounded-xl font-bold font-mono"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Serviços Selecionados</Label>
-                                    <div className="grid grid-cols-2 gap-2 p-4 rounded-2xl bg-slate-50 border border-slate-200 shadow-inner">
-                                        {GROOMING_SERVICES.map((s) => (
-                                            <label key={s} className="flex items-center gap-2 text-[11px] font-bold cursor-pointer hover:bg-white p-2 rounded-lg transition-all border border-transparent hover:border-slate-100 hover:shadow-sm">
-                                                <Checkbox
-                                                    checked={selectedServices.includes(s)}
-                                                    onCheckedChange={() => toggleService(s)}
-                                                    className={themeColor.border}
-                                                />
-                                                {s}
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Avaliação Clínica / Pelagem</Label>
-                                    <div className="flex gap-4 p-4 rounded-2xl bg-amber-50/30 border border-amber-100">
-                                        <label className="flex items-center gap-2 text-[11px] font-black uppercase text-amber-700 cursor-pointer">
-                                            <Checkbox checked={presencaParasitas} onCheckedChange={(v) => setPresencaParasitas(!!v)} className="border-amber-400 data-[state=checked]:bg-amber-500" />
-                                            Parasitas
-                                        </label>
-                                        <label className="flex items-center gap-2 text-[11px] font-black uppercase text-rose-700 cursor-pointer">
-                                            <Checkbox checked={presencaNos} onCheckedChange={(v) => setPresencaNos(!!v)} className="border-rose-400 data-[state=checked]:bg-rose-500" />
-                                            Presença de Nós
-                                        </label>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Input
-                                            value={estadoPele}
-                                            onChange={(e) => setEstadoPele(e.target.value)}
-                                            placeholder="Estado da Pele e Pelagem..."
-                                            className="h-12 border-slate-200 rounded-xl font-medium"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Observações Adicionais</Label>
-                                    <Textarea
-                                        value={observacoes}
-                                        onChange={(e) => setObservacoes(e.target.value)}
-                                        placeholder="Comportamento, recomendações..."
-                                        className="min-h-[100px] border-slate-200 rounded-xl font-medium"
-                                    />
-                                </div>
-
-                                {/* Billing Section */}
-                                <div className={`p-6 rounded-2xl border-2 border-dashed ${themeColor.border}/20 ${themeColor.bgGhost}-30 space-y-4 shadow-inner`}>
-                                    <div className={`flex items-center gap-2 ${themeColor.text} font-black text-[10px] uppercase tracking-[0.2em]`}>
-                                        <DollarSign className="size-4" />
-                                        Faturamento e Extras
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <Label className="text-[9px] font-black text-slate-400 uppercase">Valor Base (R$)</Label>
-                                            <Input
-                                                type="number"
-                                                value={baseValue}
-                                                onChange={(e) => setBaseValue(e.target.value)}
-                                                className="h-10 border-slate-200 rounded-xl font-black text-slate-900"
-                                            />
-                                        </div>
-                                        <div className="flex items-end">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className={`w-full h-10 text-[10px] font-black uppercase tracking-widest ${themeColor.border}/30 ${themeColor.text} rounded-xl hover:bg-white`}
-                                                onClick={() => setExtraServices([...extraServices, { id: Math.random().toString(), name: 'Extra (Acessórios/Outros)', value: 0 }])}
-                                            >
-                                                <Plus className="size-3 mr-1" /> Add Extra
-                                            </Button>
-                                        </div>
-                                    </div>
-
-                                    {extraServices.map((service, idx) => (
-                                        <div key={service.id} className="flex gap-2 items-center bg-white/50 p-2 rounded-xl border border-slate-100">
-                                            <Input
-                                                value={service.name}
-                                                onChange={(e) => {
-                                                    const newServices = [...extraServices]
-                                                    newServices[idx].name = e.target.value
-                                                    setExtraServices(newServices)
-                                                }}
-                                                placeholder="Descrição"
-                                                className="h-9 text-[10px] flex-1 border-none bg-transparent font-bold"
-                                            />
-                                            <Input
-                                                type="number"
-                                                value={service.value}
-                                                onChange={(e) => {
-                                                    const newServices = [...extraServices]
-                                                    newServices[idx].value = parseFloat(e.target.value) || 0
-                                                    setExtraServices(newServices)
-                                                }}
-                                                className="h-9 text-[11px] w-20 border-none bg-transparent font-black text-right"
-                                            />
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10 rounded-lg"
-                                                onClick={() => setExtraServices(extraServices.filter((_, i) => i !== idx))}
-                                            >
-                                                <Trash2 className="size-3" />
-                                            </Button>
-                                        </div>
-                                    ))}
-
-                                    <div className={`pt-4 border-t border-slate-200 flex justify-between items-center`}>
-                                        <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Total do Atendimento:</span>
-                                        <span className={`text-xl font-black ${themeColor.text}`}>
-                                            R$ {(parseFloat(baseValue) + extraServices.reduce((acc, s) => acc + s.value, 0)).toFixed(2)}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3 pt-4">
-                                    <Button onClick={handleSave} disabled={loading} className={`flex-1 h-10 font-semibold bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white shadow-sm rounded-lg transition-colors`}>
-                                        <Save className="size-4 mr-2" />
-                                        {loading ? 'Salvando...' : 'Finalizar Estética'}
-                                    </Button>
-                                    <Button variant="outline" className="h-10 px-4 rounded-lg" title="Imprimir" onClick={() => handlePrint()}>
-                                        <Printer className="size-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Preview Section - A4 Page */}
-                    <div className="hidden md:flex flex-1 bg-slate-200/50 p-6 lg:p-12 overflow-y-auto justify-center items-start">
-                        <div
-                            ref={printRef}
-                            className={`w-full max-w-[650px] min-h-[700px] bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-sm border border-slate-200 p-12 flex flex-col text-slate-900`}
-                            style={{borderImage: 'linear-gradient(to right, #13C8CC, #002653) 1', borderTopWidth: '8px'}}
-                        >
-                            {/* AgendaVet Header A4 */}
-                            <div className="flex justify-between items-start pb-6 mb-8 border-b-2" style={{borderImage: 'linear-gradient(to right, #13C8CC, #002653) 1'}}>
-                              <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
-                                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                                    <path d="M14 4C9 4 5 8 5 13c0 3 1.5 5.5 3.8 7L14 24l5.2-4C21.5 18.5 23 16 23 13c0-5-4-9-9-9z" fill="white" opacity="0.9"/>
-                                    <path d="M14 8v10M9 13h10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                                  </svg>
-                                </div>
-                                <div>
-                                  <div className="text-2xl font-black tracking-tight" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
-                                    AgendaVet
-                                  </div>
-                                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">Gestão Veterinária Inteligente</p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-lg font-black text-slate-800 uppercase tracking-tight">FICHA DE BANHO E TOSA</p>
-                                <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Registro de Higienização e Estética</p>
-                                <p className="text-[9px] text-slate-400 mt-2">Emitido em {format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
-                              </div>
-                            </div>
-
-                            <div className="border border-slate-300 p-6 mb-8 rounded-sm bg-slate-50/50 shadow-inner">
-                                <div className="grid grid-cols-2 gap-10">
-                                    <div className="space-y-1.5">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">DADOS DO PACIENTE</p>
-                                        <div className="space-y-0.5 border-t border-slate-200 pt-3 text-[11px] font-medium">
-                                            <p className="text-sm font-black text-slate-800 uppercase mb-1">{petName}</p>
-                                            <p className="text-slate-600 truncate">{pet?.species === 'dog' ? 'Canina' : pet?.species === 'cat' ? 'Felina' : 'Animal'} | {pet?.breed}</p>
-                                            <p className={`font-black uppercase text-[10px] mt-2 inline-block px-2 py-0.5 rounded ${themeColor.bgGhost} ${themeColor.text}`}>
-                                                Data: {format(parseISO(date), 'dd/MM/yyyy')}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1.5 border-l border-slate-200 pl-8 text-right font-medium">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">RESPONSÁVEL / TUTOR</p>
-                                        <div className="space-y-0.5 border-t border-slate-200 pt-3 text-[11px]">
-                                            <p className="font-black text-slate-800 text-sm uppercase mb-1">{owner?.fullName || 'S/R'}</p>
-                                            <p className="text-slate-500 truncate">{owner?.phone || '-'}</p>
-                                            <p className="text-[10px] text-slate-900 mt-2 font-black uppercase italic">Groomer: {profissional}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex-1 space-y-10 text-slate-800 pb-10">
-                                <section className={`p-6 rounded-sm bg-white border border-slate-300 relative overflow-hidden shadow-sm`}>
-                                    <div className={`absolute top-0 left-0 w-1.5 h-full ${themeColor.bg}`}></div>
-                                    <h3 className={`text-[11px] font-black uppercase tracking-widest mb-4 ${themeColor.text}`}>Serviços de Estética Realizados</h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {selectedServices.length > 0 ? selectedServices.map(s => (
-                                            <Badge key={s} variant="outline" className={`text-[10px] px-3 py-1 font-black uppercase tracking-tight bg-slate-50 border-slate-200 text-slate-700 shadow-sm`}>{s}</Badge>
-                                        )) : <p className="text-xs italic text-slate-400 font-medium">Nenhum serviço listado.</p>}
-                                    </div>
-                                </section>
-
-                                <div className="grid grid-cols-2 gap-10">
-                                    <section>
-                                        <h3 className={`text-[11px] font-black uppercase tracking-widest mb-3 ${themeColor.text} border-b border-slate-100 pb-2`}>Avaliação Dermatológica</h3>
-                                        <p className="text-[13px] font-medium leading-relaxed mt-2 text-slate-800 bg-slate-50/50 p-4 rounded-sm italic border-l-4 border-slate-200 break-words whitespace-pre-wrap">{estadoPele || "Pele e pelagem íntegras, sem alterações visuais identificadas no momento do atendimento."}</p>
-                                    </section>
-                                    <section>
-                                        <h3 className={`text-[11px] font-black uppercase tracking-widest mb-3 ${themeColor.text} border-b border-slate-100 pb-2`}>Indicadores de Manejo</h3>
-                                        <div className="space-y-3 mt-4 p-4 bg-slate-50/80 rounded-sm border border-slate-200 shadow-inner">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`size-4 rounded-full border-2 ${presencaParasitas ? 'bg-rose-500 border-rose-600 shadow-[0_0_8px_rgba(244,63,94,0.4)]' : 'bg-slate-200 border-slate-300'}`}></div>
-                                                <span className={`text-[11px] font-black uppercase ${presencaParasitas ? 'text-rose-700' : 'text-slate-400'}`}>Presença de Parasitas</span>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className={`size-4 rounded-full border-2 ${presencaNos ? 'bg-amber-500 border-amber-600 shadow-[0_0_8px_rgba(245,158,11,0.4)]' : 'bg-slate-200 border-slate-300'}`}></div>
-                                                <span className={`text-[11px] font-black uppercase ${presencaNos ? 'text-amber-700' : 'text-slate-400'}`}>Presença de Nós / Embaraço</span>
-                                            </div>
-                                        </div>
-                                    </section>
-                                </div>
-
-                                <section>
-                                    <h3 className={`text-[11px] font-black uppercase tracking-widest mb-3 ${themeColor.text} border-b border-slate-100 pb-2`}>Observações Técnicas e de Bem-estar</h3>
-                                    <p className="text-[13px] leading-relaxed mt-2 text-slate-600 font-medium italic break-words whitespace-pre-wrap">
-                                        {observacoes || "Animal apresentou comportamento dócil e aceitou bem todos os procedimentos de higienização. Sem intercorrências."}
-                                    </p>
-                                </section>
-
-                                <div className={`p-6 rounded-sm bg-slate-50 border border-slate-200 flex items-start gap-5 shadow-inner`}>
-                                    <AlertCircle className={`size-6 ${themeColor.text} mt-0.5 opacity-60`} />
-                                    <div className="space-y-1.5">
-                                        <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight">Orientação Preventiva</p>
-                                        <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
-                                            A estética faz parte da saúde preventiva do seu pet. Observamos cuidadosamente a pele durante todo o processo. Caso note qualquer desconforto ou irritação persistente, procure nossa equipe veterinária.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* AgendaVet Footer A4 */}
-                            <div className="mt-auto pt-8 border-t border-slate-100">
-                              <div className="flex justify-between items-end">
-                                <div className="text-[9px] text-slate-400 leading-tight max-w-[220px]">
-                                  <p className="font-semibold" style={{background: 'linear-gradient(to right, #13C8CC, #002653)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>AgendaVet © 2026</p>
-                                  <p className="opacity-70 mt-0.5">Gestão Veterinária Profissional. As informações são de responsabilidade do médico veterinário.</p>
-                                </div>
-                                <div className="text-center w-56">
-                                  <div className="h-[2px] w-full mb-3 rounded" style={{background: 'linear-gradient(to right, #13C8CC, #002653)'}}></div>
-                                  <p className="text-[13px] font-black uppercase text-slate-900 tracking-tight">{profissional || 'Dr. Responsável'}</p>
-                                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Grooming Specialist • CRMV</p>
-                                </div>
-                              </div>
-                            </div>
+                        <div className="pt-2 border-t border-blue-200">
+                            <p><span className="font-bold">Profissional:</span> {profissional}</p>
+                            <p><span className="font-bold">Data:</span> {format(new Date(date), 'dd/MM/yyyy')}</p>
                         </div>
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+            </div>
+
+            {/* Avaliação da Pele e Condições */}
+            <div className="bg-white border border-gray-300 rounded-lg p-4 shadow-sm">
+                <h3 className="font-bold text-lg mb-3 text-blue-600">AVALIAÇÃO DA PELE E CONDIÇÕES</h3>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <p><span className="font-bold">Estado da Pele:</span> {estadoPele || 'Não avaliado'}</p>
+                        <p><span className="font-bold">Presença de Parasitas:</span> {presencaParasitas ? 'Sim' : 'Não'}</p>
+                    </div>
+                    <div>
+                        <p><span className="font-bold">Presença de Nós:</span> {presencaNos ? 'Sim' : 'Não'}</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Observações do Esteticista */}
+            {observacoes && (
+                <div className="bg-white border border-gray-300 rounded-lg p-4 shadow-sm">
+                    <h3 className="font-bold text-lg mb-3 text-blue-600">OBSERVAÇÕES DO ESTETICISTA</h3>
+                    <div className="text-base leading-relaxed prose prose-sm max-w-none" 
+                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(observacoes) }} />
+                </div>
+            )}
+
+            {/* Assinatura */}
+            <div className="mt-12 pt-8 border-t-2 border-blue-600">
+                <div className="text-center">
+                    <div className="border-t-2 border-blue-600 w-80 mx-auto mb-2"></div>
+                    <p className="font-bold text-lg text-blue-600">{profissional}</p>
+                    <p className="text-sm">Especialista em Estética Animal</p>
+                    <p className="text-xs mt-2">AgendaVet Grooming Specialist</p>
+                    <p className="text-xs mt-1">Data: {format(new Date(), 'dd/MM/yyyy')}</p>
+                </div>
+            </div>
+        </div>
+    )
+
+    return (
+        <BaseAttendanceDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            onBack={onBack}
+            title="Banho & Estética"
+            previewContent={previewContent}
+            onSave={handleSave}
+            saveLabel="Finalizar Estética"
+            isSaving={loading}
+            printTitle={`Certificado_Estetica_${petName}_${format(new Date(), 'dd_MM_yyyy')}`}
+        >
+            <div className="space-y-6">
+                {/* Data do Serviço */}
+                <div>
+                    <Label className="text-sm font-bold">Data do Serviço *</Label>
+                    <Input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="h-9"
+                    />
+                </div>
+
+                {/* Serviços Disponíveis */}
+                <div>
+                    <Label className="text-sm font-bold">Serviços Realizados *</Label>
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                        {GROOMING_SERVICES.map((service) => (
+                            <div key={service} className="flex items-center space-x-2">
+                                <Checkbox
+                                    id={service}
+                                    checked={selectedServices.includes(service)}
+                                    onCheckedChange={() => toggleService(service)}
+                                />
+                                <Label htmlFor={service} className="text-sm cursor-pointer">
+                                    {service}
+                                </Label>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Avaliação da Pele */}
+                <div>
+                    <Label className="text-sm font-bold">Estado da Pele</Label>
+                    <Input
+                        value={estadoPele}
+                        onChange={(e) => setEstadoPele(e.target.value)}
+                        placeholder="Ex: Saudável, Ressecada, Oleosa, Irritada..."
+                        className="h-9"
+                    />
+                </div>
+
+                {/* Condições Especiais */}
+                <div className="space-y-3">
+                    <Label className="text-sm font-bold">Condições Observadas</Label>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox
+                            id="parasitas"
+                            checked={presencaParasitas}
+                            onCheckedChange={(checked) => setPresencaParasitas(checked as boolean)}
+                        />
+                        <Label htmlFor="parasitas" className="text-sm cursor-pointer">
+                            Presença de Ectoparasitas
+                        </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox
+                            id="nos"
+                            checked={presencaNos}
+                            onCheckedChange={(checked) => setPresencaNos(checked as boolean)}
+                        />
+                        <Label htmlFor="nos" className="text-sm cursor-pointer">
+                            Presença de Nós/Emaranhados
+                        </Label>
+                    </div>
+                </div>
+
+                {/* Rich Text Editor para Observações */}
+                <div>
+                    <Label className="text-sm font-bold">Observações do Esteticista</Label>
+                    <div className="border border-gray-200 rounded-lg">
+                        <ReactQuill
+                            value={observacoes}
+                            onChange={setObservacoes}
+                            theme="snow"
+                            modules={{
+                                toolbar: [
+                                    [{ 'header': [1, 2, 3, false] }],
+                                    ['bold', 'italic', 'underline'],
+                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                    ['clean']
+                                ],
+                            }}
+                            style={{ height: '150px' }}
+                            placeholder="Descreva observações sobre o comportamento do pet, reações durante o banho, condições especiais da pele, recomendações..."
+                        />
+                    </div>
+                </div>
+
+                {/* Profissional Responsável */}
+                <div>
+                    <Label className="text-sm font-bold">Profissional Responsável</Label>
+                    <Input
+                        value={profissional}
+                        onChange={(e) => setProfissional(e.target.value)}
+                        placeholder="Nome do profissional"
+                        className="h-9"
+                    />
+                </div>
+            </div>
+        </BaseAttendanceDialog>
     )
 }

@@ -24,20 +24,10 @@ async function checkAdminRole(userId: string): Promise<boolean> {
     return !!data
 }
 
-let activeUnsubscribe: (() => void) | null = null
-
 export function initializeAuth(): () => void {
-    // Prevent duplicate subscriptions on HMR or double-mount
-    if (activeUnsubscribe) {
-        activeUnsubscribe()
-        activeUnsubscribe = null
-    }
-
-    let cancelled = false
     let isInitializing = true
 
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
-        if (cancelled) return
         if (error) {
             console.error('Auth getSession error:', error)
             useAuthStore.setState({ user: null, isAdmin: false, isLoading: false })
@@ -47,16 +37,13 @@ export function initializeAuth(): () => void {
 
         const user = session?.user ?? null
         const isAdmin = user ? await checkAdminRole(user.id) : false
-        if (!cancelled) {
-            useAuthStore.setState({ user, isAdmin, isLoading: false })
-        }
+        useAuthStore.setState({ user, isAdmin, isLoading: false })
         isInitializing = false
     })
 
     const {
         data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (cancelled) return
         if (isInitializing && event === 'INITIAL_SESSION') return
 
         const user = session?.user ?? null
@@ -66,24 +53,9 @@ export function initializeAuth(): () => void {
             return
         }
 
-        if (event === 'TOKEN_REFRESHED' && user) {
-            // Token refreshed — keep current isAdmin, just update user
-            useAuthStore.setState({ user, isLoading: false })
-            return
-        }
-
         const isAdmin = user ? await checkAdminRole(user.id) : false
-        if (!cancelled) {
-            useAuthStore.setState({ user, isAdmin, isLoading: false })
-        }
+        useAuthStore.setState({ user, isAdmin, isLoading: false })
     })
 
-    const cleanup = () => {
-        cancelled = true
-        subscription.unsubscribe()
-        if (activeUnsubscribe === cleanup) activeUnsubscribe = null
-    }
-
-    activeUnsubscribe = cleanup
-    return cleanup
+    return () => subscription.unsubscribe()
 }

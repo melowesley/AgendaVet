@@ -42,10 +42,10 @@ export function ArchiveDialog({ open, onOpenChange, pet, owner, records }: Archi
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] max-w-[1400px] h-[90vh] max-h-[90vh] rounded-2xl p-0 flex flex-col overflow-hidden border border-border/20 shadow-2xl">
+            <DialogContent className="w-screen sm:max-w-none !max-w-none h-screen max-h-none rounded-none p-0 flex flex-col overflow-hidden border-none">
                 <DialogHeader className="p-4 md:p-6 border-b border-border/50 bg-white flex flex-row items-center justify-between shrink-0 z-20 shadow-sm">
                     <div className="flex items-center gap-4">
-                        <div className="flex size-12 items-center justify-center rounded-xl text-white shadow-lg" style={{background: 'linear-gradient(135deg, #13C8CC, #002653)'}}>
+                        <div className="flex size-12 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-emerald-200 shadow-lg">
                             <Folder className="size-6" />
                         </div>
                         <div>

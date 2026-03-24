@@ -35,14 +35,19 @@ interface AgentSettingsDialogProps {
 }
 
 const modelOptions = [
-  { value: 'anthropic/claude-opus-4.5', label: 'Claude Opus 4.5', provider: 'Anthropic', recommended: true },
+  { value: 'kimi/kimi-k2-5', label: 'KIMI K2.5 (Brain)', provider: 'Moonshot', recommended: true, brain: true },
+  { value: 'kimi/kimi-k2', label: 'KIMI K2', provider: 'Moonshot' },
+  { value: 'kimi/kimi-k1-5', label: 'KIMI K1.5', provider: 'Moonshot' },
+  { value: 'google/gemini-1.5-pro', label: 'Gemini 1.5 Pro', provider: 'Google', recommended: true },
+  { value: 'google/gemini-1.5-flash', label: 'Gemini 1.5 Flash', provider: 'Google' },
+  { value: 'deepseek/deepseek-chat', label: 'DeepSeek Chat', provider: 'DeepSeek', recommended: true },
+  { value: 'deepseek/deepseek-coder', label: 'DeepSeek Coder', provider: 'DeepSeek' },
+  { value: 'anthropic/claude-opus-4.5', label: 'Claude Opus 4.5', provider: 'Anthropic' },
   { value: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet 4', provider: 'Anthropic' },
   { value: 'anthropic/claude-3-5-haiku', label: 'Claude 3.5 Haiku', provider: 'Anthropic' },
   { value: 'openai/gpt-4o', label: 'GPT-4o', provider: 'OpenAI' },
   { value: 'openai/gpt-4o-mini', label: 'GPT-4o Mini', provider: 'OpenAI' },
   { value: 'xai/grok-3', label: 'Grok 3', provider: 'xAI' },
-  { value: 'deepseek/deepseek-chat', label: 'DeepSeek Chat', provider: 'DeepSeek' },
-  { value: 'deepseek/deepseek-coder', label: 'DeepSeek Coder', provider: 'DeepSeek' },
 ]
 
 export function AgentSettingsDialog({ open, onOpenChange }: AgentSettingsDialogProps) {
@@ -121,6 +126,11 @@ Always be professional, empathetic, and accurate in your responses.`,
                         <Badge variant="outline" className="text-xs">
                           {option.provider}
                         </Badge>
+                        {option.brain && (
+                          <Badge className="text-xs bg-purple-500 hover:bg-purple-600">
+                            Brain
+                          </Badge>
+                        )}
                         {option.recommended && (
                           <Badge variant="default" className="text-xs">
                             Recommended
@@ -193,6 +203,9 @@ Always be professional, empathetic, and accurate in your responses.`,
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
+                <Badge className="bg-purple-500 hover:bg-purple-600">KIMI Brain Orchestration</Badge>
+                <Badge variant="secondary">Gemini Pro Integration</Badge>
+                <Badge variant="secondary">DeepSeek Integration</Badge>
                 <Badge variant="secondary">Read Clinic Data</Badge>
                 <Badge variant="secondary">Answer Questions</Badge>
                 <Badge variant="secondary">Veterinary Knowledge</Badge>

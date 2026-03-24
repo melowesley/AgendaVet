@@ -1,0 +1,43 @@
+{
+  "name": "AgendaVet - Gestão Veterinária",
+  "short_name": "AgendaVet",
+  "description": "Sistema completo de gestão para clínicas veterinárias",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "pt-BR",
+  "categories": ["medical", "productivity", "business"],
+  "icons": [
+    {
+      "src": "/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192x192.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Novo Agendamento",
+      "short_name": "Agendar",
+      "description": "Criar novo agendamento",
+      "url": "/appointments",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Pacientes",
+      "short_name": "Pacientes",
+      "description": "Ver pacientes",
+      "url": "/pets",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}

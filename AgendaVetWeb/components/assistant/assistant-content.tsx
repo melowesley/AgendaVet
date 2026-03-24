@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { MessageSquare, Send, Bot, User, Settings, Loader2, Stethoscope } from 'lucide-react'
+import { MessageSquare, Send, Bot, User, Settings, Loader2, Stethoscope, Brain } from 'lucide-react'
 import { AgentSettingsDialog } from './agent-settings-dialog'
 import { cn } from '@/lib/utils'
 import ReactMarkdown from 'react-markdown'
@@ -33,20 +33,6 @@ function getMessageText(message: { parts?: Array<{ type: string; text?: string }
     .join('')
 }
 
-// Admin command responses rendered inline
-function AdminCommandResult({ text }: { text: string }) {
-  return (
-    <div className="flex gap-2 justify-start">
-      <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-purple-500/10 border border-purple-500/20 mt-0.5">
-        <span className="text-xs">🛡️</span>
-      </div>
-      <div className="max-w-[85%] rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-sm bg-purple-500/10 border border-purple-500/20 font-mono whitespace-pre-wrap text-purple-200">
-        {text}
-      </div>
-    </div>
-  )
-}
-
 export function AssistantContent() {
   const { settings } = useAgentSettings()
   const { pets } = usePets()
@@ -56,31 +42,72 @@ export function AssistantContent() {
   const [input, setInput] = useState('')
   const [clinicalMode, setClinicalMode] = useState(false)
   const [selectedPetId, setSelectedPetId] = useState<string>('none')
-  const [brainModel, setBrainModel] = useState<'gemini' | 'deepseek'>('gemini')
+  const [brainModel, setBrainModel] = useState<'gemini' | 'deepseek' | 'kimi' | 'kimi-brain' | 'kimi-saas'>('gemini')
+  const [kimiBrainMode, setKimiBrainMode] = useState(false)
+  const [kimiSaasMode, setKimiSaasMode] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [isAdminUser, setIsAdminUser] = useState(false)
-  const [adminResults, setAdminResults] = useState<Array<{ id: string; text: string }>>([])
-
-  // Verifica se é admin ao montar
-  useEffect(() => {
-    fetch('/api/admin/check')
-      .then((r) => r.json())
-      .then((d) => setIsAdminUser(d.isAdmin ?? false))
-      .catch(() => {})
-  }, [])
 
   // Carrega a preferência do modelo do localStorage ao montar
   useEffect(() => {
     const savedModel = localStorage.getItem('agendavet-brain-model')
-    if (savedModel === 'gemini' || savedModel === 'deepseek') {
-      setBrainModel(savedModel as 'gemini' | 'deepseek')
+    if (savedModel === 'gemini' || savedModel === 'deepseek' || savedModel === 'kimi' || savedModel === 'kimi-brain' || savedModel === 'kimi-saas') {
+      setBrainModel(savedModel as 'gemini' | 'deepseek' | 'kimi' | 'kimi-brain' | 'kimi-saas')
+      if (savedModel === 'kimi-brain') {
+        setKimiBrainMode(true)
+      } else if (savedModel === 'kimi-saas') {
+        setKimiSaasMode(true)
+      }
     }
   }, [])
 
   // Salva a preferência sempre que mudar
-  const handleModelChange = (model: 'gemini' | 'deepseek') => {
+  const handleModelChange = (model: 'gemini' | 'deepseek' | 'kimi' | 'kimi-brain' | 'kimi-saas') => {
     setBrainModel(model)
     localStorage.setItem('agendavet-brain-model', model)
+    if (model === 'kimi-brain') {
+      setKimiBrainMode(true)
+      setKimiSaasMode(false)
+      setClinicalMode(false)
+    } else if (model === 'kimi-saas') {
+      setKimiBrainMode(false)
+      setKimiSaasMode(true)
+      setClinicalMode(false)
+    } else {
+      setKimiBrainMode(false)
+      setKimiSaasMode(false)
+    }
+  }
+
+  // Toggle KIMI Brain mode
+  const toggleKimiBrainMode = () => {
+    const newMode = !kimiBrainMode
+    setKimiBrainMode(newMode)
+    setKimiSaasMode(false)
+    if (newMode) {
+      setBrainModel('kimi-brain')
+      localStorage.setItem('agendavet-brain-model', 'kimi-brain')
+      setClinicalMode(false)
+    } else {
+      setBrainModel('gemini')
+      localStorage.setItem('agendavet-brain-model', 'gemini')
+    }
+    setMessages([])
+  }
+
+  // Toggle KIMI Copilot SaaS mode
+  const toggleKimiSaasMode = () => {
+    const newMode = !kimiSaasMode
+    setKimiSaasMode(newMode)
+    setKimiBrainMode(false)
+    if (newMode) {
+      setBrainModel('kimi-saas')
+      localStorage.setItem('agendavet-brain-model', 'kimi-saas')
+      setClinicalMode(false)
+    } else {
+      setBrainModel('gemini')
+      localStorage.setItem('agendavet-brain-model', 'gemini')
+    }
+    setMessages([])
   }
 
   // Build context about the clinic data
@@ -99,13 +126,19 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
     transport: new DefaultChatTransport({
       api: '/api/chat',
       body: {
-        model: brainModel === 'deepseek' ? 'deepseek' : (clinicalMode ? 'gemini-1.5-pro' : settings.model),
-        temperature: clinicalMode ? 0.3 : settings.temperature,
+        model: brainModel === 'kimi-brain' || brainModel === 'kimi-saas' ? 'kimi' : (brainModel === 'deepseek' ? 'deepseek' : (clinicalMode ? 'gemini-1.5-pro' : settings.model)),
+        temperature: clinicalMode || kimiBrainMode || kimiSaasMode ? 0.3 : settings.temperature,
         systemPrompt: (clinicalMode
           ? 'Você é o Vet Copilot, assistente clínico veterinário especializado da AgendaVet.'
-          : settings.systemPrompt.replace(/VetCRM/g, 'AgendaVet')) + '\n\n' + clinicContext,
-        mode: clinicalMode ? 'clinical' : 'admin',
-        petId: clinicalMode && selectedPetId !== 'none' ? selectedPetId : undefined,
+          : kimiSaasMode
+            ? 'Você é o KIMI Copilot SaaS - AI Control Brain do AgendaVet.'
+            : kimiBrainMode
+              ? 'Você é o KIMI Brain, o orquestrador central da AgendaVet.'
+              : settings.systemPrompt.replace(/VetCRM/g, 'AgendaVet')) + '\n\n' + clinicContext,
+        mode: clinicalMode ? 'clinical' : (kimiSaasMode ? 'kimi_copilot_saas' : (kimiBrainMode ? 'kimi_brain' : 'admin')),
+        petId: clinicalMode && selectedPetId && selectedPetId !== 'none' ? selectedPetId : undefined,
+        enableKimiBrain: kimiBrainMode,
+        enableKimiCopilotSaas: kimiSaasMode,
       },
     }),
   })
@@ -123,149 +156,44 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
   }
 
   const toggleClinicalMode = () => {
+    if (kimiBrainMode) {
+      setKimiBrainMode(false)
+      setBrainModel('gemini')
+    }
     setClinicalMode(!clinicalMode)
     setMessages([]) // Limpa o chat ao trocar de modo
   }
 
-  // Processa comandos admin (só executados se isAdminUser=true)
-  const processAdminCommand = async (cmd: string): Promise<boolean> => {
-    if (!isAdminUser || !cmd.startsWith('/')) return false
-
-    const parts = cmd.trim().split(/\s+/)
-    const command = parts[0].toLowerCase()
-    const resultId = Date.now().toString()
-
-    const pushResult = (text: string) =>
-      setAdminResults((prev) => [...prev, { id: resultId, text }])
-
-    if (command === '/clients') {
-      pushResult('⏳ Buscando clínicas...')
-      const res = await fetch('/api/admin/clients')
-      const data = await res.json()
-      const lines = (data.clients || []).map(
-        (c: { name: string; slug: string; plan: string; membersCount: number; tokensToday: number }) =>
-          `📍 ${c.name} (${c.slug}) — ${c.plan} — ${c.membersCount} membros — ${c.tokensToday} tokens hoje`
-      )
-      setAdminResults((prev) =>
-        prev.map((r) =>
-          r.id === resultId
-            ? { id: resultId, text: lines.length ? lines.join('\n') : 'Nenhuma clínica encontrada.' }
-            : r
-        )
-      )
-      return true
-    }
-
-    if (command === '/prompt') {
-      // /prompt <clinic_id> <texto do prompt>
-      const clinicId = parts[1]
-      const promptText = parts.slice(2).join(' ')
-      if (!clinicId || !promptText) {
-        pushResult('❌ Uso: /prompt <clinic_id> <novo prompt>')
-        return true
-      }
-      pushResult('⏳ Salvando prompt...')
-      const res = await fetch('/api/admin/clinic', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId, prompt: promptText }),
-      })
-      const data = await res.json()
-      setAdminResults((prev) =>
-        prev.map((r) =>
-          r.id === resultId
-            ? {
-                id: resultId,
-                text: data.success
-                  ? `✅ Prompt salvo para clínica ${clinicId}`
-                  : `❌ Erro: ${data.error}`,
-              }
-            : r
-        )
-      )
-      return true
-    }
-
-    if (command === '/reset') {
-      const clinicId = parts[1]
-      if (!clinicId) {
-        pushResult('❌ Uso: /reset <clinic_id>')
-        return true
-      }
-      pushResult('⏳ Resetando prompt...')
-      const res = await fetch('/api/admin/clinic', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId, prompt: null }),
-      })
-      const data = await res.json()
-      setAdminResults((prev) =>
-        prev.map((r) =>
-          r.id === resultId
-            ? {
-                id: resultId,
-                text: data.success
-                  ? `✅ Prompt resetado para padrão — clínica ${clinicId}`
-                  : `❌ Erro: ${data.error}`,
-              }
-            : r
-        )
-      )
-      return true
-    }
-
-    if (command === '/inspect') {
-      const clinicId = parts[1]
-      if (!clinicId) {
-        pushResult('❌ Uso: /inspect <clinic_id>')
-        return true
-      }
-      const res = await fetch(`/api/admin/clinic?id=${clinicId}`)
-      const data = await res.json()
-      if (data.error) {
-        pushResult(`❌ ${data.error}`)
-      } else {
-        pushResult(
-          `🔍 Clínica: ${data.name}\nID: ${data.clinicId}\nPrompt customizado:\n${data.customPrompt || '(padrão do sistema)'}`
-        )
-      }
-      return true
-    }
-
-    if (command === '/help') {
-      pushResult(
-        '🛡️ Comandos admin disponíveis:\n' +
-        '/clients — lista todas as clínicas\n' +
-        '/prompt <clinic_id> <texto> — define prompt para uma clínica\n' +
-        '/reset <clinic_id> — reseta prompt para o padrão\n' +
-        '/inspect <clinic_id> — inspeciona config de uma clínica'
-      )
-      return true
-    }
-
-    return false
-  }
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!input.trim() || isLoading) return
-    const cmd = input.trim()
-    const handled = await processAdminCommand(cmd)
-    if (!handled) {
-      sendMessage({ text: cmd })
-    }
+    
+    // Debug: Log do que está sendo enviado
+    console.log("[FRONTEND DEBUG] Enviando mensagem:", {
+      text: input,
+      clinicalMode,
+      selectedPetId,
+      finalPetId: clinicalMode && selectedPetId && selectedPetId !== 'none' ? selectedPetId : undefined
+    })
+    
+    sendMessage({ text: input })
     setInput('')
   }
 
-  const handleKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       if (!input.trim() || isLoading) return
-      const cmd = input.trim()
-      const handled = await processAdminCommand(cmd)
-      if (!handled) {
-        sendMessage({ text: cmd })
-      }
+      
+      // Debug: Log do que está sendo enviado via Enter
+      console.log("[FRONTEND DEBUG] Enviando mensagem (Enter):", {
+        text: input,
+        clinicalMode,
+        selectedPetId,
+        finalPetId: clinicalMode && selectedPetId && selectedPetId !== 'none' ? selectedPetId : undefined
+      })
+      
+      sendMessage({ text: input })
       setInput('')
     }
   }
@@ -276,17 +204,19 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
         <CardHeader className="border-b py-2 md:py-3 px-3 md:px-6">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm md:text-base min-w-0">
-              <Bot className="size-4 md:size-5 text-primary shrink-0" />
+              <Bot className={cn("size-4 md:size-5 shrink-0", kimiBrainMode ? "text-purple-500" : "text-primary")} />
               <span className="truncate">
-                {clinicalMode ? 'Vet Copilot (Clínico)' : settings.model.split('/').pop()}
+                {kimiBrainMode ? 'KIMI Brain (Orquestrador)' : clinicalMode ? 'Vet Copilot (Clínico)' : settings.model.split('/').pop()}
               </span>
               {clinicalMode && <Stethoscope className="size-4 text-green-500" />}
+              {kimiBrainMode && <Brain className="size-4 text-purple-500" />}
               <div className="ml-2 flex bg-muted rounded-md p-0.5 scale-90">
                 <Button
                   variant={brainModel === 'gemini' ? 'secondary' : 'ghost'}
                   size="sm"
                   className="h-6 px-2 text-[10px]"
                   onClick={() => handleModelChange('gemini')}
+                  disabled={kimiBrainMode}
                 >
                   Gemini
                 </Button>
@@ -295,17 +225,38 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
                   size="sm"
                   className="h-6 px-2 text-[10px]"
                   onClick={() => handleModelChange('deepseek')}
+                  disabled={kimiBrainMode}
                 >
                   DeepSeek
+                </Button>
+                <Button
+                  variant={brainModel === 'kimi' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={() => handleModelChange('kimi')}
+                  disabled={kimiBrainMode}
+                >
+                  Kimi
                 </Button>
               </div>
             </div>
             <div className="flex gap-1 shrink-0 items-center">
               <div className="flex items-center gap-2 mr-2">
                 <Switch
+                  id="kimi-brain-mode"
+                  checked={kimiBrainMode}
+                  onCheckedChange={toggleKimiBrainMode}
+                />
+                <Label htmlFor="kimi-brain-mode" className="text-xs hidden md:inline text-purple-600">
+                  KIMI Brain
+                </Label>
+              </div>
+              <div className="flex items-center gap-2 mr-2">
+                <Switch
                   id="clinical-mode"
                   checked={clinicalMode}
                   onCheckedChange={toggleClinicalMode}
+                  disabled={kimiBrainMode}
                 />
                 <Label htmlFor="clinical-mode" className="text-xs hidden md:inline">
                   Modo Clínico
@@ -326,12 +277,14 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
           <ScrollArea className="flex-1 p-3 md:p-4" ref={scrollRef}>
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-8 md:py-12 px-2">
-                <MessageSquare className="size-10 md:size-12 text-muted-foreground/50 mb-3 md:mb-4" />
+                <MessageSquare className={cn("size-10 md:size-12 text-muted-foreground/50 mb-3 md:mb-4", kimiBrainMode && "text-purple-500/50")} />
                 <h3 className="text-base md:text-lg font-medium">
-                  {clinicalMode ? 'Modo Clínico Ativado' : 'How can I help you today?'}
+                  {kimiBrainMode ? 'KIMI Brain Ativado' : clinicalMode ? 'Modo Clínico Ativado' : 'How can I help you today?'}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-md mt-1">
-                  {clinicalMode
+                  {kimiBrainMode
+                    ? 'Eu sou o orquestrador central. Envie comandos como "KIMI melhore o diálogo" ou "KIMI delegue para Gemini".'
+                    : clinicalMode
                     ? 'Selecione um paciente para consultar dados clínicos, histórico médico, vacinas e mais.'
                     : 'I can help with patient info, appointments, medical records, and veterinary questions.'}
                 </p>
@@ -353,7 +306,22 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
                   </div>
                 )}
                 <div className="flex flex-wrap justify-center gap-2 mt-4 md:mt-6">
-                  {clinicalMode ? [
+                  {kimiBrainMode ? [
+                    "KIMI melhore o diálogo",
+                    "KIMI delegue para Gemini",
+                    "KIMI use DeepSeek",
+                    "KIMI modo clínico",
+                  ].map((suggestion) => (
+                    <Button
+                      key={suggestion}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs md:text-sm bg-purple-50/50 border-purple-200 hover:bg-purple-100"
+                      onClick={() => setInput(suggestion)}
+                    >
+                      {suggestion}
+                    </Button>
+                  )) : clinicalMode ? [
                     "Histórico médico",
                     "Status vacinal",
                     "Medicações atuais",
@@ -388,9 +356,6 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
               </div>
             ) : (
               <div className="space-y-3 md:space-y-4">
-                {adminResults.map((r) => (
-                  <AdminCommandResult key={r.id} text={r.text} />
-                ))}
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -466,14 +431,8 @@ Recent owners: ${owners.slice(0, 3).map((o) => `${o.firstName} ${o.lastName}`).j
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={
-              isAdminUser
-                ? "Mensagem ou /help para comandos admin..."
-                : clinicalMode
-                ? "Pergunte sobre o paciente..."
-                : "Ask about your clinic..."
-            }
-              className="min-h-[44px] max-h-24 md:max-h-32 resize-none text-sm md:text-base"
+              placeholder={kimiBrainMode ? "Comandos para KIMI Brain..." : clinicalMode ? "Pergunte sobre o paciente..." : "Ask about your clinic..."}
+              className={cn("min-h-[44px] max-h-24 md:max-h-32 resize-none text-sm md:text-base", kimiBrainMode && "border-purple-200 focus:border-purple-400")}
               rows={1}
               disabled={isLoading}
             />

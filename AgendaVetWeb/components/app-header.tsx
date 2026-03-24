@@ -78,7 +78,19 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className="flex flex-1 items-center justify-end gap-4 md:gap-6">
+      <div className="flex flex-1 items-center justify-end gap-2 md:gap-6">
+        {/* Botão tema - visível em mobile também */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full shrink-0"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <span className="sr-only">Toggle theme</span>
+        </Button>
+
         <div className="relative w-full max-w-[300px] hidden sm:block">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -90,17 +102,6 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
             <span className="text-xs">⌘</span>K
           </kbd>
         </div>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full shrink-0"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        >
-          <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Toggle theme</span>
-        </Button>
       </div>
     </header>
   )

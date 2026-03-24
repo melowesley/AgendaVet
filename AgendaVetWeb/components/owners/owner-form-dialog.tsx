@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { useToast } from '@/components/ui/use-toast'
 import {
   Dialog,
   DialogContent,
@@ -27,8 +26,6 @@ interface OwnerFormDialogProps {
 
 export function OwnerFormDialog({ open, onOpenChange, owner }: OwnerFormDialogProps) {
   const isEditing = !!owner
-  const { toast } = useToast()
-  const [isLoading, setIsLoading] = useState(false)
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -60,29 +57,16 @@ export function OwnerFormDialog({ open, onOpenChange, owner }: OwnerFormDialogPr
     }
   }, [open, owner?.id])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
 
-    try {
-      if (isEditing && owner) {
-        await updateOwner(owner.id, formData)
-        toast({ title: 'Tutor atualizado com sucesso!' })
-      } else {
-        await addOwner(formData)
-        toast({ title: 'Tutor adicionado com sucesso!' })
-      }
-      onOpenChange(false)
-    } catch (error: any) {
-      console.error('Erro ao salvar tutor:', error)
-      toast({
-        title: 'Erro ao salvar tutor',
-        description: error?.message || 'Verifique os dados e tente novamente.',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsLoading(false)
+    if (isEditing && owner) {
+      updateOwner(owner.id, formData)
+    } else {
+      addOwner(formData)
     }
+
+    onOpenChange(false)
   }
 
   return (
@@ -159,12 +143,10 @@ export function OwnerFormDialog({ open, onOpenChange, owner }: OwnerFormDialogPr
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Salvando...' : isEditing ? 'Salvar Alterações' : 'Adicionar Tutor'}
-            </Button>
+            <Button type="submit">{isEditing ? 'Salvar Alterações' : 'Adicionar Tutor'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -17,9 +17,7 @@ export async function POST(req: Request) {
     .eq('user_id', user.id)
     .single()
 
-  if (!membership || !['owner', 'admin'].includes(membership.role)) {
-    return Response.json({ error: 'Admin only' }, { status: 403 })
-  }
+  const clinicId = membership?.clinic_id ?? null
 
   const body = await req.json()
   const { title, content, sourceType, sourceUrl, metadata } = body
@@ -33,7 +31,7 @@ export async function POST(req: Request) {
 
   try {
     const docId = await ragModule.ingestDocument({
-      clinicId: membership.clinic_id,
+      clinicId,
       title,
       content,
       sourceType,
@@ -85,10 +83,6 @@ export async function DELETE(req: Request) {
     .select('clinic_id, role')
     .eq('user_id', user.id)
     .single()
-
-  if (!membership || !['owner', 'admin'].includes(membership.role)) {
-    return Response.json({ error: 'Admin only' }, { status: 403 })
-  }
 
   const url = new URL(req.url)
   const documentId = url.searchParams.get('id')

@@ -1,66 +1,36 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+// Versão sem dependências externas
+const https = require('https');
 
-/**
- * Script para testar a identidade do modelo Google Gemini.
- * 
- * Uso:
- * 1. Instale a dependência: npm install @google/generative-ai
- * 2. Configure sua chave: $env:GEMINI_API_KEY="sua-chave-aqui" (Windows PowerShell)
- * 3. Execute: node test-gemini.js
- */
+// Pegue a chave do seu .env.local manualmente e cole aqui entre as aspas apenas para este teste
+const API_KEY = "AIzaSyCFLleAhxnfG39Wos7mC8icoPc8gLp-mjo"; 
 
-async function testModel() {
-    const apiKey = process.env.GEMINI_API_KEY || process.env.EXPO_PUBLIC_GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-
-    if (!apiKey) {
-        console.error('ERRO: Variável de ambiente GEMINI_API_KEY não encontrada!');
-        console.log('Dica: Use $env:GEMINI_API_KEY="sua-chave" no PowerShell antes de rodar.');
-        return;
-    }
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-
-    // Tenta primeiro o Pro, se falhar tenta o Flash
-    async function runTest(modelName) {
-        console.log(`\nTestando modelo: ${modelName}...`);
-        try {
-            // Alguns modelos 2.0 exigem o prefixo 'models/' completo
-            const name = modelName.startsWith('models/') ? modelName : `models/${modelName}`;
-            const model = genAI.getGenerativeModel({ model: name });
-            const result = await model.generateContent("Olá, qual é exatamente a sua versão e modelo?");
-            return result.response.text();
-        } catch (e) {
-            throw new Error(`[${modelName}] ${e.message}`);
-        }
-    }
-
-    try {
-        console.log('--- Testando Modelos Gemini (Foco no 2.0 Flash) ---');
-
-        try {
-            // Testando o 2.0 Flash com o nome exato da sua lista
-            const text = await runTest("gemini-2.0-flash");
-            console.log('Sucesso no 2.0 Flash:', text);
-        } catch (flashError) {
-            console.error('Falha no Gemini 2.0 Flash:', flashError.message);
-
-            console.log('\nTentando 2.5 Pro como fallback estável...');
-            try {
-                const textPro = await runTest("gemini-2.5-pro");
-                console.log('Sucesso no 2.5 Pro:', textPro);
-            } catch (proError) {
-                console.error('Falha no 2.5 Pro também:', proError.message);
-            }
-        }
-
-
-        console.log('\nTeste concluído com sucesso!');
-
-    } catch (error) {
-
-        console.error('Falha ao testar o modelo:');
-        console.error(error.message);
-    }
+if (API_KEY === "AIzaSyCFLleAhxnfG39Wos7mC8icoPc8gLp-mjo") {
+    console.error("❌ Por favor, cole sua chave API real dentro das aspas no script!");
+    process.exit(1);
 }
 
-testModel();
+const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`;
+
+console.log("🔍 Consultando Google para ver quais modelos sua chave permite...");
+
+https.get(url, (res) => {
+    let data = '';
+    res.on('data', (chunk) => { data += chunk; });
+    res.on('end', () => {
+        const response = JSON.parse(data);
+        if (response.error) {
+            console.error("❌ Erro da API do Google:", response.error.message);
+        } else {
+            console.log("\n✅ MODELOS DISPONÍVEIS NA SUA CHAVE:");
+            response.models.forEach(m => {
+                // Filtra apenas os que suportam geração de conteúdo
+                if (m.supportedGenerationMethods.includes('generateContent')) {
+                    console.log(`- ${m.name}`);
+                }
+            });
+            console.log("\n💡 Copie o nome EXATO de um deles (incluindo o prefixo 'models/')");
+        }
+    });
+}).on('error', (err) => {
+    console.error("❌ Erro de conexão:", err.message);
+});
