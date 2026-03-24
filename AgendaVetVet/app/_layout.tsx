@@ -8,6 +8,33 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '@/components/AuthProvider';
 import { useEffect } from 'react';
 
+// Tema customizado alinhado ao Web (Zinc Palette + Emerald primary)
+const AgendaVetDarkTheme = {
+    ...DarkTheme,
+    colors: {
+        ...DarkTheme.colors,
+        background: '#09090b',   // zinc-950
+        card: '#18181b',         // zinc-900
+        text: '#fafafa',         // zinc-50
+        border: '#27272a',       // zinc-800
+        primary: '#10b981',      // emerald-500
+        notification: '#10b981',
+    },
+};
+
+const AgendaVetLightTheme = {
+    ...DefaultTheme,
+    colors: {
+        ...DefaultTheme.colors,
+        background: '#f9fafb',   // gray-50
+        card: '#ffffff',
+        text: '#111827',         // gray-900
+        border: '#e5e7eb',       // gray-200
+        primary: '#10b981',      // emerald-500
+        notification: '#10b981',
+    },
+};
+
 function InitialLayout() {
     const { session, loading } = useAuth();
     const segments = useSegments();
@@ -31,7 +58,7 @@ function InitialLayout() {
     const colorScheme = useColorScheme();
 
     return (
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <ThemeProvider value={colorScheme === 'dark' ? AgendaVetDarkTheme : AgendaVetLightTheme}>
             <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="login" options={{ headerShown: false }} />

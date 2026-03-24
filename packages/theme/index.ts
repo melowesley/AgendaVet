@@ -1,37 +1,47 @@
 /**
  * Design Tokens extraídos do AgendaVetWeb (globals.css)
  * Centralizando a identidade visual para Web e Mobile.
+ *
+ * Alinhado com AgendaVetWeb globals.css:
+ * - Light: branco com acentos emerald-500 (#10b981)
+ * - Dark: zinc palette (zinc-950 background, zinc-900 card)
  */
 
 export const theme = {
   colors: {
-    // Light Mode (Default)
+    // Light Mode — espelho do Web (globals.css :root)
     light: {
-      background: "#f9fafb",
-      foreground: "#111827",
-      card: "#ffffff",
-      primary: "#0d9488",
-      destructive: "#ef4444",
-      border: "#e5e7eb",
-      muted: "#f3f4f6",
-      accent: "#f0fdfa",
+      background: "#f9fafb",   // gray-50 (próximo do oklch 0.985)
+      foreground: "#111827",   // gray-900
+      card: "#ffffff",         // branco puro
+      primary: "#10b981",      // emerald-500
+      destructive: "#ef4444",  // red-500
+      border: "#e5e7eb",       // gray-200
+      muted: "#f3f4f6",        // gray-100
+      accent: "#d1fae5",       // emerald-100
+      "muted-foreground": "#6b7280",   // gray-500
+      "card-foreground": "#111827",
+      "primary-foreground": "#ffffff",
     },
-    // Dark Mode High-Fidelity (Mockup Matched: Charcoal-Emerald)
+    // Dark Mode — espelho do Web (globals.css .dark) — Zinc Palette
     dark: {
-      background: "#040809", // Deepest Forest Black (No Blue)
-      foreground: "#ecfdf5", // Emerald-50 (Very light green tint)
-      card: "#0a1214",       // Darker charcoal with hint of emerald
-      primary: "#10b981",    // Emerald-500
-      destructive: "#f43f5e",
-      border: "#132724",     // Dark emerald border
-      muted: "#132724",
-      accent: "#059669",
+      background: "#09090b",   // zinc-950
+      foreground: "#fafafa",   // zinc-50
+      card: "#18181b",         // zinc-900
+      primary: "#10b981",      // emerald-500
+      destructive: "#ef4444",  // red-500
+      border: "#27272a",       // zinc-800
+      muted: "#27272a",        // zinc-800
+      accent: "#064e3b",       // emerald-900
+      "muted-foreground": "#a1a1aa",   // zinc-400
+      "card-foreground": "#fafafa",
+      "primary-foreground": "#ffffff",
     }
   },
   radius: {
-    lg: "1.5rem", // 2xl
-    md: "1rem",   // xl
-    sm: "0.5rem", // lg
+    lg: "1rem",    // igual ao --radius: 0.625rem do Web * escalado para mobile
+    md: "0.75rem",
+    sm: "0.5rem",
   }
 };
 

@@ -7,14 +7,27 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: theme.colors.light.primary,
+        primary: {
+          DEFAULT: theme.colors.light.primary,
+          foreground: theme.colors.light["primary-foreground"],
+        },
         background: theme.colors.light.background,
-        card: theme.colors.light.card,
-        border: theme.colors.light.border,
         foreground: theme.colors.light.foreground,
-        destructive: theme.colors.light.destructive,
-        muted: theme.colors.light.muted,
-        accent: theme.colors.light.accent,
+        card: {
+          DEFAULT: theme.colors.light.card,
+          foreground: theme.colors.light["card-foreground"],
+        },
+        border: theme.colors.light.border,
+        destructive: {
+          DEFAULT: theme.colors.light.destructive,
+        },
+        muted: {
+          DEFAULT: theme.colors.light.muted,
+          foreground: theme.colors.light["muted-foreground"],
+        },
+        accent: {
+          DEFAULT: theme.colors.light.accent,
+        },
       },
       borderRadius: {
         lg: theme.radius.lg,

@@ -1,89 +1,90 @@
 /**
- * Paleta de cores AgendaVet — Tema Semi-Claro Premium
+ * Paleta de cores AgendaVet — Tema Emerald Premium
+ * Alinhado com AgendaVetWeb e AgendaVetVet
  *
- * Light: fundo branco-quente com acentos em teal/azul vibrante
- * Dark:  slate profundo (não preto puro) — elegante e suave
+ * Light: fundo branco com acentos emerald-500 (#10b981)
+ * Dark:  zinc profundo — elegante e consistente com o Web
  */
 
 import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    // Identidade visual — Sky Premium
-    primary: '#0284C7',          // sky-600
-    primaryDark: '#0369A1',      // sky-700
-    primaryLight: '#E0F2FE',     // sky-100
+    // Identidade visual — Emerald (igual ao Web)
+    primary: '#10b981',          // emerald-500
+    primaryDark: '#059669',      // emerald-600
+    primaryLight: '#d1fae5',     // emerald-100
 
-    // Fundo e superfícies - Semi-Light balanced
-    background: '#F8FAFC',       // slate-50
-    surface: '#FFFFFF',
-    surfaceElevated: '#F1F5F9',  // slate-100
-    border: '#E2E8F0',           // slate-200
+    // Fundo e superfícies
+    background: '#ffffff',
+    surface: '#f9fafb',          // gray-50
+    surfaceElevated: '#f3f4f6',  // gray-100
+    border: '#e5e7eb',           // gray-200
 
     // Tipografia
-    text: '#0F172A',             // slate-900
-    textSecondary: '#475569',    // slate-600
-    textMuted: '#94A3B8',        // slate-400
+    text: '#111827',             // gray-900
+    textSecondary: '#4b5563',    // gray-600
+    textMuted: '#9ca3af',        // gray-400
 
     // Abas
-    tint: '#0284C7',
-    tabIconDefault: '#94A3B8',
-    tabIconSelected: '#0284C7',
-    icon: '#94A3B8',
+    tint: '#10b981',
+    tabIconDefault: '#9ca3af',
+    tabIconSelected: '#10b981',
+    icon: '#9ca3af',
 
     // Status
-    statusPending: '#F59E0B',
-    statusConfirmed: '#3B82F6',
-    statusCheckedIn: '#06B6D4',
-    statusInProgress: '#8B5CF6',
-    statusCompleted: '#10B981',
-    statusCancelled: '#EF4444',
-    statusNoShow: '#6B7280',
+    statusPending: '#f59e0b',
+    statusConfirmed: '#3b82f6',
+    statusCheckedIn: '#06b6d4',
+    statusInProgress: '#8b5cf6',
+    statusCompleted: '#10b981',
+    statusCancelled: '#ef4444',
+    statusNoShow: '#6b7280',
 
     // Feedback
-    success: '#10B981',
-    error: '#EF4444',
-    warning: '#F59E0B',
-    info: '#3B82F6',
+    success: '#10b981',
+    error: '#ef4444',
+    warning: '#f59e0b',
+    info: '#3b82f6',
   },
 
   dark: {
-    // Identidade visual
-    primary: '#38BDF8',          // sky-400
-    primaryDark: '#0EA5E9',      // sky-500
-    primaryLight: '#0C4A6E',     // sky-900
+    // Identidade visual — Emerald (igual ao Web dark)
+    primary: '#10b981',          // emerald-500
+    primaryDark: '#059669',      // emerald-600
+    primaryLight: '#064e3b',     // emerald-900
 
-    // Fundo Navy Profundo (Premium) - Não preto puro
-    background: '#0F172A',       // slate-900
-    surface: '#1E293B',          // slate-800
-    surfaceElevated: '#293548',  // slate-750 (custom)
-    border: '#334155',           // slate-700
+    // Zinc Palette (igual ao Web dark mode)
+    background: '#09090b',       // zinc-950
+    surface: '#18181b',          // zinc-900
+    surfaceElevated: '#27272a',  // zinc-800
+    border: '#27272a',           // zinc-800
 
     // Tipografia
-    text: '#F1F5F9',             // slate-100
-    textSecondary: '#94A3B8',    // slate-400
-    textMuted: '#475569',        // slate-600
+    text: '#fafafa',             // zinc-50
+    textSecondary: '#a1a1aa',    // zinc-400
+    textMuted: '#52525b',        // zinc-600
 
     // Abas
-    tint: '#38BDF8',
-    tabIconDefault: '#475569',
-    tabIconSelected: '#38BDF8',
-    icon: '#475569',
+    tint: '#10b981',
+    tabIconDefault: '#52525b',
+    tabIconSelected: '#10b981',
+    icon: '#52525b',
 
     // Status
-    statusPending: '#FBBF24',
-    statusConfirmed: '#60A5FA',
-    statusCheckedIn: '#22D3EE',
-    statusInProgress: '#A78BFA',
-    statusCompleted: '#34D399',
-    statusCancelled: '#F87171',
-    statusNoShow: '#94A3B8',
+    statusPending: '#fbbf24',
+    statusConfirmed: '#60a5fa',
+    statusCheckedIn: '#22d3ee',
+    statusInProgress: '#a78bfa',
+    statusCompleted: '#10b981',
+    statusCancelled: '#f87171',
+    statusNoShow: '#71717a',
 
     // Feedback
-    success: '#34D399',
-    error: '#F87171',
-    warning: '#FBBF24',
-    info: '#60A5FA',
+    success: '#10b981',
+    error: '#f87171',
+    warning: '#fbbf24',
+    info: '#60a5fa',
   },
 };
 
