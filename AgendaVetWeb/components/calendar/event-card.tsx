@@ -1,9 +1,23 @@
 'use client'
 
-import type { Appointment } from '@/lib/types'
+// Tipo que espelha as colunas reais da tabela `appointments` no Supabase
+export interface CalendarAppointment {
+  id: string
+  pet_name: string
+  pet_breed?: string | null
+  veterinarian_name: string
+  type: string
+  start_time: string
+  end_time: string
+  room?: string | null
+  status?: string | null
+  notes?: string | null
+  owner_name?: string | null
+  owner_phone?: string | null
+}
 
 interface EventCardProps {
-  appointment: Appointment
+  appointment: CalendarAppointment
   color?: 'blue' | 'emerald' | 'amber' | 'rose'
   onClick?: () => void
 }
@@ -41,7 +55,7 @@ export function EventCard({
         {appointment.pet_name} {appointment.pet_breed && `(${appointment.pet_breed})`}
       </p>
       <p className="text-[9px] text-slate-500">
-        {appointment.veterinarian_name || 'Dr. Ricardo Silva'}
+        {appointment.veterinarian_name}
       </p>
     </div>
   )

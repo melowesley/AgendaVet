@@ -5,10 +5,10 @@ import { Plus, Bell, HelpCircle, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import type { Appointment } from '@/lib/types'
+import type { CalendarAppointment } from './event-card'
 
 interface WeeklyCalendarViewProps {
-  appointments?: Appointment[]
+  appointments?: CalendarAppointment[]
   onAddClick?: () => void
   veterinarian?: string
   room?: string

@@ -1,5 +1,3 @@
-npm warn exec The following package was not found and will be installed: supabase@2.83.0
-Using workdir C:\Users\Computador\AgendaVet-Surgical-Fix
 export type Json =
   | string
   | number
